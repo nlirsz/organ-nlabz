@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Filter, SortAsc, Share, Download, History, ShoppingCart, Search, X } from "lucide-react";
+import { Filter, SortAsc, Share, Download, History, ShoppingCart, Search, X, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/product-card";
@@ -17,6 +17,7 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
   const [selectedCategory, setSelectedCategory] = useState("Geral");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "price" | "date">("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showSearch, setShowSearch] = useState(false);
 
   const filteredProducts = products
@@ -29,16 +30,20 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
       return matchesCategory && matchesSearch;
     })
     .sort((a, b) => {
+      let result = 0;
       switch (sortBy) {
         case "price":
           const priceA = a.price ? parseFloat(a.price) : 0;
           const priceB = b.price ? parseFloat(b.price) : 0;
-          return priceB - priceA;
+          result = priceA - priceB;
+          break;
         case "date":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          result = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
         default:
-          return a.name.localeCompare(b.name);
+          result = a.name.localeCompare(b.name);
       }
+      return sortOrder === "asc" ? result : -result;
     });
 
   if (isLoading) {
@@ -89,14 +94,26 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
               <Search className="w-5 h-5" />
             </button>
             <button 
-              onClick={() => setSortBy(sortBy === "name" ? "price" : sortBy === "price" ? "date" : "name")}
+              onClick={() => {
+                if (sortBy === "name") {
+                  setSortBy("price");
+                  setSortOrder("desc");
+                } else if (sortBy === "price") {
+                  setSortBy("date");
+                  setSortOrder("desc");
+                } else {
+                  setSortBy("name");
+                  setSortOrder("asc");
+                }
+              }}
               className="w-12 h-12 neomorphic-button rounded-full flex items-center justify-center"
-              title={`Ordenar por ${sortBy === "name" ? "preço" : sortBy === "price" ? "data" : "nome"}`}
+              title={`Ordenando por ${sortBy === "name" ? "nome" : sortBy === "price" ? "preço" : "data"} (${sortOrder === "asc" ? "crescente" : "decrescente"})`}
             >
-              <SortAsc className="w-5 h-5" />
+              {sortOrder === "asc" ? <ArrowUp className="w-5 h-5" /> : <ArrowDown className="w-5 h-5" />}
             </button>
-            <button className="neomorphic-button-primary px-4 py-2 rounded-xl text-sm font-medium">
-              Atualizar Preços
+            <button className="neomorphic-button-primary px-4 py-2 rounded-xl text-sm font-medium flex items-center space-x-2">
+              <RefreshCw className="w-4 h-4" />
+              <span>Atualizar Preços</span>
             </button>
           </div>
         </div>
@@ -127,6 +144,19 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
             </div>
           </div>
         )}
+
+        {/* Sort Indicator */}
+        <div className="mb-4 flex items-center justify-center">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 neomorphic-card rounded-full text-sm">
+            <span style={{ color: 'var(--text-secondary)' }}>Ordenado por:</span>
+            <span style={{ color: 'var(--primary-action)' }} className="font-medium">
+              {sortBy === "name" ? "Nome" : sortBy === "price" ? "Preço" : "Data"}
+            </span>
+            <span style={{ color: 'var(--text-secondary)' }}>
+              ({sortOrder === "asc" ? "A-Z" : "Z-A"})
+            </span>
+          </div>
+        </div>
 
         <CategoryFilter 
           onCategoryChange={setSelectedCategory}
