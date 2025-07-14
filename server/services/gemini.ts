@@ -28,9 +28,49 @@ function normalizePrice(price: any): number | null {
   if (typeof price === 'number') return price;
   if (typeof price !== 'string') return null;
   
-  // Remove R$, espaços, pontos como separadores de milhares
-  const priceStr = price.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+  console.log(`[normalizePrice] Entrada: "${price}"`);
+  
+  // Remove R$ e espaços
+  let priceStr = price.replace(/[R$\s]/g, '');
+  console.log(`[normalizePrice] Após remoção R$/espaços: "${priceStr}"`);
+  
+  // Se tem vírgula, assume formato brasileiro (123.456,78)
+  if (priceStr.includes(',')) {
+    console.log(`[normalizePrice] Detectado formato brasileiro com vírgula`);
+    // Remove pontos (separadores de milhares) e troca vírgula por ponto
+    priceStr = priceStr.replace(/\./g, '').replace(',', '.');
+    console.log(`[normalizePrice] Após conversão brasileiro: "${priceStr}"`);
+  }
+  // Se só tem ponto, verifica se é separador decimal ou de milhares
+  else if (priceStr.includes('.')) {
+    const dotCount = (priceStr.match(/\./g) || []).length;
+    console.log(`[normalizePrice] Detectado ${dotCount} ponto(s)`);
+    
+    if (dotCount > 1) {
+      // Remove todos os pontos (são separadores de milhares)
+      priceStr = priceStr.replace(/\./g, '');
+      console.log(`[normalizePrice] Múltiplos pontos removidos: "${priceStr}"`);
+    }
+    // Se tem apenas um ponto, verifica a posição
+    else {
+      const dotIndex = priceStr.indexOf('.');
+      const afterDot = priceStr.substring(dotIndex + 1);
+      console.log(`[normalizePrice] Após ponto: "${afterDot}" (${afterDot.length} dígitos)`);
+      
+      // Se tem mais de 2 dígitos após o ponto, é separador de milhares
+      if (afterDot.length > 2) {
+        priceStr = priceStr.replace(/\./g, '');
+        console.log(`[normalizePrice] Ponto como separador de milhares removido: "${priceStr}"`);
+      }
+      // Se tem 1 ou 2 dígitos após o ponto, é separador decimal - mantém
+      else {
+        console.log(`[normalizePrice] Ponto mantido como separador decimal`);
+      }
+    }
+  }
+  
   const priceNum = parseFloat(priceStr);
+  console.log(`[normalizePrice] Resultado final: ${priceNum}`);
   return isNaN(priceNum) ? null : priceNum;
 }
 
@@ -40,20 +80,25 @@ async function scrapeByAnalyzingHtml(productUrl: string, htmlContent: string): P
   
   const prompt = `Analise o HTML a seguir para extrair os detalhes de um produto BRASILEIRO.
   
-MUITO IMPORTANTE - REGRAS PARA PREÇOS BRASILEIROS:
-- Procure por preços no formato: R$ 123,45 ou R$123,45 ou 123,45 ou R$ 123.45
-- Procure por classes CSS: price, preco, valor, amount, cost, product-price, current-price, price-current
-- Procure por seletores: [data-price], [data-valor], .price-value, .preco-atual
-- Procure por textos: "R$", "BRL", "reais", "por:", "de:", "à vista", "preço", "valor"
-- Se encontrar parcelas como "3x de R$ 50,00", calcule o total (150,00)
-- Ignore preços muito baixos (<1 real) ou muito altos (>100.000 reais)
-- Procure por elementos span, div, p que contenham números com R$
-- Analise meta tags com preços: og:price, product:price
+CRÍTICO - REGRAS PARA PREÇOS BRASILEIROS:
+- Procure por preços no formato brasileiro: R$ 1.234,56 ou R$1234,56 ou 1234,56
+- IMPORTANTE: No Brasil, ponto é separador de milhares e vírgula é separador decimal
+- Exemplos corretos: R$ 4.941,00 = 4941.00 | R$ 123,45 = 123.45 | R$ 12.345,67 = 12345.67
+- Procure por classes CSS: price, preco, valor, amount, cost, product-price, current-price, price-current, price-value
+- Procure por IDs: #price, #preco, #valor, #product-price
+- Procure por atributos: data-price, data-valor, data-amount
+- Procure por textos próximos: "R$", "BRL", "reais", "por:", "de:", "à vista", "preço", "valor"
+- Se encontrar parcelas como "12x de R$ 100,00", o preço total é 1200.00
+- Ignore preços muito baixos (<5 reais) ou muito altos (>500.000 reais)
+- Procure por elementos span, div, p, strong, em que contenham números com R$
+- Analise meta tags: og:price, product:price, twitter:data1
+- Procure por schemas JSON-LD com preços
+- SEMPRE retorne o preço como string no formato "1234.56" (ponto como decimal)
 
 Retorne um objeto JSON com:
 {
   "name": "Nome do produto",
-  "price": "123.45",
+  "price": "4941.00",
   "image": "URL da imagem",
   "brand": "Marca",
   "category": "Categoria",
@@ -75,6 +120,7 @@ HTML: ${htmlContent.substring(0, 200000)}`;
   let jsonData = JSON.parse(responseText);
   
   if (jsonData && jsonData.price) {
+    console.log(`[Gemini HTML] Preço original: "${jsonData.price}" (tipo: ${typeof jsonData.price})`);
     const normalizedPrice = normalizePrice(jsonData.price);
     console.log(`[Gemini HTML] Preço normalizado: ${jsonData.price} -> ${normalizedPrice}`);
     jsonData.price = normalizedPrice;
