@@ -247,25 +247,95 @@ async function createFallbackProduct(url: string, htmlContent: string): Promise<
     }
   }
   
-  // Extrai preço básico procurando por padrões R$
+  // Extrai preço com análise de contexto mais inteligente
   let price = null;
-  const pricePatterns = [
-    /R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/g,
-    /(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)\s*reais/gi,
-    /pre[çc]o[^>]*>([^<]*\d+[^<]*)/gi
+  const foundPrices = [];
+  
+  // Primeiro, procura por preços em meta tags (mais confiável)
+  const metaPricePatterns = [
+    /property=["']product:price:amount["'][^>]*content=["']([^"']+)["']/gi,
+    /property=["']og:price:amount["'][^>]*content=["']([^"']+)["']/gi,
+    /name=["']price["'][^>]*content=["']([^"']+)["']/gi
   ];
   
-  for (const pattern of pricePatterns) {
+  for (const pattern of metaPricePatterns) {
     const matches = Array.from(htmlContent.matchAll(pattern));
     for (const match of matches) {
-      const priceText = match[1] || match[0];
-      const normalizedPrice = normalizePrice(priceText);
-      if (normalizedPrice && normalizedPrice > 1 && normalizedPrice < 100000) {
-        price = normalizedPrice;
-        break;
+      const normalizedPrice = normalizePrice(match[1]);
+      if (normalizedPrice && normalizedPrice > 10 && normalizedPrice < 50000) {
+        foundPrices.push({
+          price: normalizedPrice,
+          context: match[0],
+          priority: 1, // Meta tags têm prioridade máxima
+          source: 'meta'
+        });
       }
     }
-    if (price) break;
+  }
+  
+  // Segundo, procura por preços em classes e IDs específicos
+  const specificPricePatterns = [
+    // Classes específicas de preço
+    /class=["'][^"']*(?:price|preco|valor|current-price|product-price|final-price)[^"']*["'][^>]*>[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
+    // IDs específicos
+    /id=["'][^"']*(?:price|preco|valor)[^"']*["'][^>]*>[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
+    // Data attributes
+    /data-price=["']([^"']+)["']/gi,
+    /data-valor=["']([^"']+)["']/gi,
+    /data-amount=["']([^"']+)["']/gi
+  ];
+  
+  for (const pattern of specificPricePatterns) {
+    const matches = Array.from(htmlContent.matchAll(pattern));
+    for (const match of matches) {
+      const normalizedPrice = normalizePrice(match[1]);
+      if (normalizedPrice && normalizedPrice > 10 && normalizedPrice < 50000) {
+        foundPrices.push({
+          price: normalizedPrice,
+          context: match[0],
+          priority: 2, // Classes específicas têm prioridade alta
+          source: 'specific'
+        });
+      }
+    }
+  }
+  
+  // Terceiro, procura por preços em contextos gerais
+  const generalPricePatterns = [
+    // Preços em contexto de "à vista" (mais confiável)
+    /(?:à\s*vista|a\s*vista)[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
+    // Preços próximos a texto de preço
+    /(?:preço|valor|por)[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
+    // Preços em spans e divs
+    /<(?:span|div|strong|b)[^>]*>[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi
+  ];
+  
+  for (const pattern of generalPricePatterns) {
+    const matches = Array.from(htmlContent.matchAll(pattern));
+    for (const match of matches) {
+      const normalizedPrice = normalizePrice(match[1]);
+      if (normalizedPrice && normalizedPrice > 10 && normalizedPrice < 50000) {
+        // Evita preços muito próximos (diferença < 10%)
+        const isDuplicate = foundPrices.some(p => 
+          Math.abs(p.price - normalizedPrice) / normalizedPrice < 0.1
+        );
+        if (!isDuplicate) {
+          foundPrices.push({
+            price: normalizedPrice,
+            context: match[0],
+            priority: 3, // Contexto geral tem prioridade menor
+            source: 'general'
+          });
+        }
+      }
+    }
+  }
+  
+  // Ordena por prioridade e escolhe o melhor preço
+  if (foundPrices.length > 0) {
+    foundPrices.sort((a, b) => a.priority - b.priority);
+    price = foundPrices[0].price;
+    console.log(`[Fallback] Preços encontrados: ${foundPrices.map(p => `${p.price}(${p.source})`).join(', ')}, escolhido: ${price}`);
   }
   
   // Extrai imagem básica
