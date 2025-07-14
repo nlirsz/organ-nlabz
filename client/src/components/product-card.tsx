@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2, Edit, ExternalLink, Check, RotateCcw, ShoppingCart } from "lucide-react";
+import { Trash2, Edit, ExternalLink, Check, RotateCcw, ShoppingCart, Heart, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { PriceHistoryChart } from "@/components/price-history-chart";
+import { useFavorites } from "@/components/favorites-system";
 import type { Product } from "@shared/schema";
 
 interface ProductCardProps {
@@ -14,6 +17,7 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
   const [isChecked, setIsChecked] = useState(product.isPurchased);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const updateProductMutation = useMutation({
     mutationFn: async (updates: Partial<Product>) => {
@@ -209,6 +213,34 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
         >
           <Edit className="w-5 h-5" style={{ color: 'var(--edit-color)' }} />
         </button>
+
+        <button
+          onClick={() => toggleFavorite(product.id)}
+          className={`w-10 h-10 neomorphic-button rounded-full flex items-center justify-center ${
+            isFavorite(product.id) ? 'neomorphic-button-primary' : ''
+          }`}
+          title={isFavorite(product.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+        >
+          <Heart className={`w-5 h-5 ${isFavorite(product.id) ? 'fill-current text-white' : ''}`} 
+                 style={{ color: isFavorite(product.id) ? 'white' : 'var(--primary-action)' }} />
+        </button>
+
+        <Dialog>
+          <DialogTrigger asChild>
+            <button
+              className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
+              title="Ver histórico de preços"
+            >
+              <TrendingUp className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
+            </button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Histórico de Preços - {product.name}</DialogTitle>
+            </DialogHeader>
+            <PriceHistoryChart productId={product.id} />
+          </DialogContent>
+        </Dialog>
 
         <button
           onClick={handleDelete}

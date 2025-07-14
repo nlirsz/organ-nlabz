@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
 import { scrapeProductFromUrl } from "./services/scraper.js";
+import { priceHistoryService } from "./services/priceHistory.js";
+import { notificationService } from "./services/notifications.js";
 import { insertProductSchema, updateProductSchema } from "@shared/schema.js";
 import { z } from "zod";
 
@@ -89,6 +91,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedProduct = insertProductSchema.parse(productData);
       const product = await storage.createProduct(validatedProduct);
       
+      // Adiciona preço inicial ao histórico
+      if (product.price) {
+        priceHistoryService.addPriceEntry(product.id, parseFloat(product.price), 'initial');
+      }
+      
       res.json(product);
     } catch (error) {
       console.error("Scraping error:", error);
@@ -139,6 +146,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete product" });
+    }
+  });
+
+  // APIs para histórico de preços
+  app.get("/api/products/:id/price-history", async (req, res) => {
+    try {
+      const productId = parseInt(req.params.id);
+      const history = priceHistoryService.getPriceHistory(productId);
+      res.json(history);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch price history" });
+    }
+  });
+
+  // APIs para notificações
+  app.get("/api/notifications/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId) || 1;
+      const notifications = notificationService.getUserNotifications(userId);
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post("/api/notifications/:userId/rules", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId) || 1;
+      const { productId, type, threshold } = req.body;
+      
+      notificationService.addRule({
+        userId,
+        productId,
+        type,
+        threshold,
+        active: true
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to add notification rule" });
+    }
+  });
+
+  app.put("/api/notifications/:userId/:notificationId/read", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId) || 1;
+      const notificationId = req.params.notificationId;
+      
+      notificationService.markAsRead(userId, notificationId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  app.get("/api/notifications/:userId/unread-count", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId) || 1;
+      const count = notificationService.getUnreadCount(userId);
+      res.json({ count });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get unread count" });
     }
   });
 

@@ -1,6 +1,19 @@
 import { extractProductInfo, type ScrapedProduct } from "./gemini.js";
+import { scrapingCache } from './cache';
+import { priceHistoryService } from './priceHistory';
+import { notificationService } from './notifications';
 
-export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct> {
+export async function scrapeProductFromUrl(url: string, productId?: number): Promise<ScrapedProduct> {
+  console.log(`[Scraper] Iniciando scraping para: ${url}`);
+  
+  // Verifica cache primeiro
+  const cacheKey = `scrape_${url}`;
+  const cached = scrapingCache.get(cacheKey);
+  if (cached) {
+    console.log(`[Scraper] Retornando dados do cache para: ${url}`);
+    return cached;
+  }
+  
   try {
     // Validate URL
     const urlObj = new URL(url);
@@ -32,6 +45,24 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
 
     // Use Gemini to extract product information
     const productInfo = await extractProductInfo(url, html);
+    
+    // Adiciona ao cache (30 minutos)
+    scrapingCache.set(cacheKey, productInfo, 30 * 60 * 1000);
+    
+    // Se temos um productId, adiciona ao histórico de preços
+    if (productId && productInfo.price) {
+      const oldEntries = priceHistoryService.getPriceHistory(productId);
+      const lastPrice = oldEntries.length > 0 ? oldEntries[oldEntries.length - 1].price : null;
+      
+      priceHistoryService.addPriceEntry(productId, productInfo.price, 'scraping');
+      
+      // Verifica se houve mudança de preço para notificações
+      if (lastPrice && lastPrice !== productInfo.price) {
+        notificationService.checkPriceChange(productId, lastPrice, productInfo.price);
+      }
+    }
+    
+    console.log(`[Scraper] Produto extraído: ${productInfo.name} - R$ ${productInfo.price}`);
 
     return productInfo;
   } catch (error) {
