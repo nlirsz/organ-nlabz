@@ -55,9 +55,7 @@ export default function Home() {
                 fontFamily: 'Almarai, sans-serif',
                 color: 'var(--text-primary)',
                 textShadow: '1px 1px 2px var(--c-light)'
-              }}>
-                Meus Produtos
-              </h1>
+              }}>orgaN</h1>
             </div>
             <div className="flex items-center space-x-3">
               <button 
@@ -76,7 +74,6 @@ export default function Home() {
           </div>
         </div>
       </header>
-
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-6 space-y-8 pb-8">
         {/* Tab Navigation */}
