@@ -251,7 +251,34 @@ async function createFallbackProduct(url: string, htmlContent: string): Promise<
   let price = null;
   const foundPrices = [];
   
-  // Primeiro, procura por preços em meta tags (mais confiável)
+  // Primeiro, procura por preços principais com padrões específicos
+  const primaryPricePatterns = [
+    // Preço principal do produto (h1, h2, h3 com preço próximo)
+    /<h[1-3][^>]*>[^<]*Cockpit[^<]*<\/h[1-3]>[^<]*(?:<[^>]*>)*[^<]*R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
+    // Preço após título do produto
+    /Cockpit[^<]*<[^>]*>[^<]*R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
+    // Preço em contexto de "à vista" (individual)
+    /(?:à\s*vista|a\s*vista)(?![^<]*total)[^<]*R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
+    // Preço de produto isolado (evita combo/total)
+    /(?:preço|valor)(?![^<]*(?:total|combo|junto))[^<]*R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi
+  ];
+  
+  for (const pattern of primaryPricePatterns) {
+    const matches = Array.from(htmlContent.matchAll(pattern));
+    for (const match of matches) {
+      const normalizedPrice = normalizePrice(match[1]);
+      if (normalizedPrice && normalizedPrice > 100 && normalizedPrice < 20000) {
+        foundPrices.push({
+          price: normalizedPrice,
+          context: match[0],
+          priority: 1, // Preços principais têm prioridade máxima
+          source: 'primary'
+        });
+      }
+    }
+  }
+  
+  // Segundo, procura por preços em meta tags (confiável)
   const metaPricePatterns = [
     /property=["']product:price:amount["'][^>]*content=["']([^"']+)["']/gi,
     /property=["']og:price:amount["'][^>]*content=["']([^"']+)["']/gi,
@@ -266,16 +293,16 @@ async function createFallbackProduct(url: string, htmlContent: string): Promise<
         foundPrices.push({
           price: normalizedPrice,
           context: match[0],
-          priority: 1, // Meta tags têm prioridade máxima
+          priority: 2, // Meta tags têm prioridade alta
           source: 'meta'
         });
       }
     }
   }
   
-  // Segundo, procura por preços em classes e IDs específicos
+  // Terceiro, procura por preços em classes e IDs específicos
   const specificPricePatterns = [
-    // Classes específicas de preço
+    // Classes específicas de preço principal (evita combo/total)
     /class=["'][^"']*(?:price|preco|valor|current-price|product-price|final-price)[^"']*["'][^>]*>[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
     // IDs específicos
     /id=["'][^"']*(?:price|preco|valor)[^"']*["'][^>]*>[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
@@ -290,23 +317,23 @@ async function createFallbackProduct(url: string, htmlContent: string): Promise<
     for (const match of matches) {
       const normalizedPrice = normalizePrice(match[1]);
       if (normalizedPrice && normalizedPrice > 10 && normalizedPrice < 50000) {
+        // Verifica se não é preço de combo/total (evita contextos com "total", "combo", "junto")
+        const context = match[0].toLowerCase();
+        const isComboPrice = context.includes('total') || context.includes('combo') || context.includes('junto');
+        
         foundPrices.push({
           price: normalizedPrice,
           context: match[0],
-          priority: 2, // Classes específicas têm prioridade alta
-          source: 'specific'
+          priority: isComboPrice ? 5 : 3, // Preços de combo têm prioridade menor
+          source: isComboPrice ? 'combo' : 'specific'
         });
       }
     }
   }
   
-  // Terceiro, procura por preços em contextos gerais
+  // Quarto, procura por preços em contextos gerais
   const generalPricePatterns = [
-    // Preços em contexto de "à vista" (mais confiável)
-    /(?:à\s*vista|a\s*vista)[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
-    // Preços próximos a texto de preço
-    /(?:preço|valor|por)[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
-    // Preços em spans e divs
+    // Preços em spans e divs (evita contextos de combo)
     /<(?:span|div|strong|b)[^>]*>[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi
   ];
   
@@ -319,12 +346,17 @@ async function createFallbackProduct(url: string, htmlContent: string): Promise<
         const isDuplicate = foundPrices.some(p => 
           Math.abs(p.price - normalizedPrice) / normalizedPrice < 0.1
         );
+        
+        // Verifica se não é preço de combo/total
+        const context = match[0].toLowerCase();
+        const isComboPrice = context.includes('total') || context.includes('combo') || context.includes('junto') || context.includes('comprando');
+        
         if (!isDuplicate) {
           foundPrices.push({
             price: normalizedPrice,
             context: match[0],
-            priority: 3, // Contexto geral tem prioridade menor
-            source: 'general'
+            priority: isComboPrice ? 6 : 4, // Preços de combo têm prioridade bem menor
+            source: isComboPrice ? 'combo' : 'general'
           });
         }
       }
