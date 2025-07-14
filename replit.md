@@ -150,5 +150,17 @@ Currency: Brazilian Real (BRL)
 - Fixed price conversion issues that were causing incorrect values (R$ 4.941,00 → 4941.00)
 - Added automatic store name extraction from URLs
 - Enhanced category mapping system for consistent product classification
+- Implemented intelligent price detection with priority-based selection
+- Added specific price targeting system to avoid combo/total prices
+- Created robust fallback system that guarantees essential data extraction
+
+## Price Detection System Refinements (January 14, 2025)
+- Implemented hierarchical price detection with 5 priority levels (0-4)
+- Added specific price targeting for accurate individual product pricing
+- Enhanced context analysis to avoid combo/bundle/total prices
+- Created comprehensive logging system for debugging price selection
+- Improved pattern matching for Brazilian e-commerce sites
+- Added intelligent duplicate detection with 10% tolerance
+- Implemented class-based priority system for main product prices
 
 The application follows a clean architecture pattern with clear separation between frontend, backend, and data layers, making it maintainable and scalable for future enhancements.
