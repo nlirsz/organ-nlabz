@@ -54,8 +54,9 @@ Currency: Brazilian Real (BRL)
 - **Statistics Dashboard**: Real-time shopping metrics
 
 ### External Integrations
-- **OpenAI GPT-4**: Intelligent product information extraction from HTML
+- **Gemini AI**: Intelligent product information extraction from HTML with automatic categorization
 - **Web Scraping**: Custom fetch-based scraping with user agent spoofing
+- **URL Verification**: Pre-scraping URL validation endpoint
 
 ## Data Flow
 
@@ -91,7 +92,11 @@ Currency: Brazilian Real (BRL)
 - **Database**: PostgreSQL with connection via `DATABASE_URL`
 
 ### Key Features
-- **Automatic Product Detection**: AI-powered product information extraction
+- **Tab-based Navigation**: Organized interface with 5 main sections
+- **Automatic Product Detection**: AI-powered product information extraction with Gemini
+- **Category System**: Automatic product categorization with filtering
+- **Financial Dashboard**: Comprehensive spending analysis by category and store
+- **Purchase History**: Track all bought products with detailed analytics
 - **Real-time Updates**: Immediate UI feedback for all operations
 - **Neumorphic Design**: Modern 3D-style interface with soft shadows and depth
 - **Dark/Light Theme**: Toggle between themes with smooth transitions
@@ -100,13 +105,22 @@ Currency: Brazilian Real (BRL)
 - **Brazilian Localization**: Portuguese interface with BRL currency formatting
 - **Interactive Cards**: Product cards with hover effects and category tags
 
-## Recent Changes (January 12, 2025)
-- Implemented neumorphic design system with CSS custom properties
-- Added Brazilian Portuguese localization for all UI text
-- Created modern product cards with category tags and purchase status overlays
-- Added dark/light theme toggle functionality
-- Integrated custom fonts (Inter, Almarai, Space Grotesk) for typography hierarchy
-- Updated color scheme to match provided design references
+## Recent Changes (January 14, 2025)
+- Implemented tab-based navigation system (Dashboard Principal, Produtos, Add Produtos, Histórico de Compra, Financeiro)
+- Enhanced Gemini AI integration with automatic product categorization
+- Added comprehensive category filtering system (Geral, Casa, Roupas, Eletronicos, Games, Livros, Presentes)
+- Created dedicated tabs for different functionality areas:
+  - Dashboard: Overview with stats and recent products
+  - Produtos: Product list with category filters
+  - Add Produtos: URL input with instructions and supported stores
+  - Histórico: Purchase history with spending analysis
+  - Financeiro: Financial dashboard with category and store breakdowns
+- Improved product data model with additional fields (category, brand, tags, priority, notes)
+- Added URL verification endpoint before product scraping
+- Implemented sample products for testing with different categories
+- Fixed product display issues in tabbed interface
+- Maintained neumorphic design system with CSS custom properties
+- Enhanced Brazilian Portuguese localization for all UI text
 - Added BRL currency formatting throughout the application
 
 The application follows a clean architecture pattern with clear separation between frontend, backend, and data layers, making it maintainable and scalable for future enhancements.

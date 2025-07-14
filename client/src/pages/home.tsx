@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ShoppingCart, Settings, UserCircle, Moon, Sun } from "lucide-react";
-import { UrlInput } from "@/components/url-input";
-import { StatsCards } from "@/components/stats-cards";
-import { ShoppingList } from "@/components/shopping-list";
-import { Button } from "@/components/ui/button";
+import { TabNavigation } from "@/components/tab-navigation";
+import { DashboardTab } from "@/components/tabs/dashboard-tab";
+import { ProdutosTab } from "@/components/tabs/produtos-tab";
+import { AddProdutosTab } from "@/components/tabs/add-produtos-tab";
+import { HistoricoTab } from "@/components/tabs/historico-tab";
+import { FinanceiroTab } from "@/components/tabs/financeiro-tab";
 import type { Product } from "@shared/schema";
 
 export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [isDark, setIsDark] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   const { data: products = [], isLoading, refetch } = useQuery<Product[]>({
     queryKey: ["/api/products", refreshKey],
@@ -72,23 +75,33 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-6 space-y-8 pb-8">
-        {/* URL Input Section */}
-        <div className="fade-in">
-          <UrlInput onProductAdded={handleProductAdded} />
-        </div>
+        {/* Tab Navigation */}
+        <TabNavigation 
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
 
-        {/* Stats Cards */}
+        {/* Tab Content */}
         <div className="fade-in">
-          <StatsCards stats={stats} />
-        </div>
-
-        {/* Shopping List */}
-        <div className="fade-in">
-          <ShoppingList 
-            products={products} 
-            isLoading={isLoading} 
-            onProductUpdated={handleProductUpdated}
-          />
+          {activeTab === "dashboard" && (
+            <DashboardTab refreshKey={refreshKey} />
+          )}
+          {activeTab === "produtos" && (
+            <ProdutosTab 
+              products={products} 
+              isLoading={isLoading} 
+              onProductUpdated={handleProductUpdated}
+            />
+          )}
+          {activeTab === "add-produtos" && (
+            <AddProdutosTab onProductAdded={handleProductAdded} />
+          )}
+          {activeTab === "historico" && (
+            <HistoricoTab refreshKey={refreshKey} />
+          )}
+          {activeTab === "financeiro" && (
+            <FinanceiroTab refreshKey={refreshKey} />
+          )}
         </div>
       </main>
     </div>
