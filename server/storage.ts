@@ -29,6 +29,89 @@ export class MemStorage implements IStorage {
     this.products = new Map();
     this.currentUserId = 1;
     this.currentProductId = 1;
+    
+    // Add sample products for testing
+    this.addSampleProducts();
+  }
+  
+  private addSampleProducts() {
+    const sampleProducts = [
+      {
+        url: "https://example.com/mouse-gamer",
+        name: "Mouse Gamer RGB",
+        price: "199.99",
+        originalPrice: "299.99",
+        imageUrl: "https://via.placeholder.com/300x300/4CAF50/FFFFFF?text=Mouse+Gamer",
+        store: "TechStore",
+        description: "Mouse gamer com RGB e 7 botões programáveis",
+        category: "Eletronicos",
+        brand: "Logitech",
+        isPurchased: false
+      },
+      {
+        url: "https://example.com/smartphone",
+        name: "Smartphone Galaxy A54",
+        price: "1299.99",
+        originalPrice: "1499.99",
+        imageUrl: "https://via.placeholder.com/300x300/2196F3/FFFFFF?text=Smartphone",
+        store: "MobileWorld",
+        description: "Smartphone com tela de 6.5 polegadas e câmera tripla",
+        category: "Eletronicos",
+        brand: "Samsung",
+        isPurchased: false
+      },
+      {
+        url: "https://example.com/camiseta",
+        name: "Camiseta Básica Cotton",
+        price: "39.99",
+        originalPrice: null,
+        imageUrl: "https://via.placeholder.com/300x300/FF9800/FFFFFF?text=Camiseta",
+        store: "FashionStore",
+        description: "Camiseta básica 100% algodão",
+        category: "Roupas",
+        brand: "BasicWear",
+        isPurchased: false
+      },
+      {
+        url: "https://example.com/jogo-ps5",
+        name: "The Last of Us Part II",
+        price: "149.99",
+        originalPrice: "199.99",
+        imageUrl: "https://via.placeholder.com/300x300/9C27B0/FFFFFF?text=Game+PS5",
+        store: "GameStore",
+        description: "Jogo exclusivo para PlayStation 5",
+        category: "Games",
+        brand: "Sony",
+        isPurchased: true
+      },
+      {
+        url: "https://example.com/presente",
+        name: "Kit Presente Romântico",
+        price: "89.99",
+        originalPrice: null,
+        imageUrl: "https://via.placeholder.com/300x300/E91E63/FFFFFF?text=Presente",
+        store: "GiftShop",
+        description: "Kit com chocolates, flores e cartão",
+        category: "Presentes",
+        brand: "RomanticGifts",
+        isPurchased: false
+      }
+    ];
+    
+    sampleProducts.forEach(product => {
+      const id = this.currentProductId++;
+      const now = new Date();
+      const fullProduct = {
+        ...product,
+        id,
+        createdAt: now,
+        updatedAt: now,
+        tags: null,
+        priority: "medium",
+        notes: null
+      };
+      this.products.set(id, fullProduct);
+    });
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -71,6 +154,11 @@ export class MemStorage implements IStorage {
       originalPrice: insertProduct.originalPrice || null,
       imageUrl: insertProduct.imageUrl || null,
       store: insertProduct.store || null,
+      category: insertProduct.category || "Geral",
+      brand: insertProduct.brand || null,
+      tags: insertProduct.tags || null,
+      priority: insertProduct.priority || "medium",
+      notes: insertProduct.notes || null,
       isPurchased: insertProduct.isPurchased || false
     };
     this.products.set(id, product);

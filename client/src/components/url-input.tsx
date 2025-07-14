@@ -19,18 +19,18 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
       const response = await apiRequest("POST", "/api/products/scrape", { url });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Success",
-        description: "Product added to your shopping list!",
+        title: "Sucesso",
+        description: `${data.name} foi adicionado à sua lista de compras!`,
       });
       setUrl("");
       onProductAdded();
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to add product. Please check the URL and try again.",
+        title: "Erro",
+        description: error.message || "Falha ao adicionar produto. Verifique a URL e tente novamente.",
         variant: "destructive",
       });
     },
@@ -40,8 +40,8 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
     e.preventDefault();
     if (!url.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter a product URL",
+        title: "Erro",
+        description: "Por favor, digite uma URL de produto",
         variant: "destructive",
       });
       return;
@@ -51,8 +51,8 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
       new URL(url);
     } catch {
       toast({
-        title: "Error",
-        description: "Please enter a valid URL",
+        title: "Erro",
+        description: "Por favor, digite uma URL válida",
         variant: "destructive",
       });
       return;

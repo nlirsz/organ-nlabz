@@ -27,6 +27,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Verify URL without adding product
+  app.post("/api/products/verify", async (req, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: "Valid URL is required" });
+      }
+
+      // Scrape product information without saving
+      const scrapedProduct = await scrapeProductFromUrl(url);
+      
+      res.json({
+        name: scrapedProduct.name,
+        price: scrapedProduct.price,
+        originalPrice: scrapedProduct.originalPrice,
+        imageUrl: scrapedProduct.imageUrl,
+        store: scrapedProduct.store,
+        description: scrapedProduct.description
+      });
+    } catch (error) {
+      console.error("Verification error:", error);
+      if (error instanceof Error) {
+        res.status(500).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to verify product URL" });
+      }
+    }
+  });
+
   // Add product from URL
   app.post("/api/products/scrape", async (req, res) => {
     try {
@@ -48,6 +78,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imageUrl: scrapedProduct.imageUrl,
         store: scrapedProduct.store,
         description: scrapedProduct.description,
+        category: scrapedProduct.category || "Geral",
+        brand: scrapedProduct.brand,
         isPurchased: false
       };
 

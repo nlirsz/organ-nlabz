@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Filter, SortAsc, Share, Download, History, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product-card";
+import { CategoryFilter } from "@/components/category-filter";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Product } from "@shared/schema";
 
@@ -11,6 +13,12 @@ interface ShoppingListProps {
 }
 
 export function ShoppingList({ products, isLoading, onProductUpdated }: ShoppingListProps) {
+  const [selectedCategory, setSelectedCategory] = useState("Geral");
+
+  const filteredProducts = selectedCategory === "Geral" 
+    ? products 
+    : products.filter(product => product.category === selectedCategory);
+
   if (isLoading) {
     return (
       <section className="neomorphic-card p-8">
@@ -47,7 +55,7 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
               Meus Produtos
             </h2>
             <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
-              Valor Total da Lista: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(products.reduce((sum, p) => sum + (p.price ? parseFloat(p.price) : 0), 0))}
+              Valor Total da Lista: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(filteredProducts.reduce((sum, p) => sum + (p.price ? parseFloat(p.price) : 0), 0))}
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -63,21 +71,26 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
           </div>
         </div>
 
-        {products.length === 0 ? (
+        <CategoryFilter 
+          onCategoryChange={setSelectedCategory}
+          selectedCategory={selectedCategory}
+        />
+
+        {filteredProducts.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-24 h-24 mx-auto mb-6 neomorphic-card rounded-full flex items-center justify-center">
               <ShoppingCart className="w-12 h-12" style={{ color: 'var(--text-secondary)' }} />
             </div>
             <h3 className="text-xl font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-              Nenhuma venda registrada
+              {selectedCategory === "Geral" ? "Nenhum produto encontrado" : `Nenhum produto em "${selectedCategory}"`}
             </h3>
             <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
-              Sem dados de valor.
+              {selectedCategory === "Geral" ? "Adicione alguns produtos à sua lista!" : `Adicione produtos na categoria "${selectedCategory}".`}
             </p>
           </div>
         ) : (
           <div className="product-grid">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
@@ -88,7 +101,7 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
         )}
       </section>
 
-      {products.length > 0 && (
+      {filteredProducts.length > 0 && (
         <section className="flex flex-col sm:flex-row gap-4">
           <button className="flex-1 neomorphic-button py-3 rounded-xl">
             <Share className="w-4 h-4 mr-2" />

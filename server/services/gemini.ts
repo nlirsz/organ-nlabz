@@ -1,7 +1,6 @@
-import * as fs from "fs";
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export interface ScrapedProduct {
   name: string;
@@ -10,12 +9,12 @@ export interface ScrapedProduct {
   imageUrl: string | null;
   store: string | null;
   description: string | null;
+  category: string | null;
+  brand: string | null;
 }
 
 export async function extractProductInfo(url: string, htmlContent: string): Promise<ScrapedProduct> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    
     const prompt = `
 Você é um assistente de web scraping. Extraia informações do produto a partir do seguinte conteúdo HTML da URL: ${url}
 
@@ -26,7 +25,9 @@ Por favor, extraia as seguintes informações e responda com JSON válido:
   "originalPrice": 234.56,
   "imageUrl": "https://example.com/image.jpg",
   "store": "Nome da loja",
-  "description": "Descrição do produto"
+  "description": "Descrição do produto",
+  "category": "Categoria do produto",
+  "brand": "Marca do produto"
 }
 
 Regras:
@@ -36,6 +37,8 @@ Regras:
 - imageUrl deve ser a URL da imagem principal do produto ou null se não encontrado
 - store deve ser o nome do site/loja ou null se não encontrado
 - description deve ser uma breve descrição do produto ou null se não encontrado
+- category deve ser classificada em uma das categorias: Geral, Casa, Roupas, Eletronicos, Games, Livros, Presentes
+- brand deve ser a marca/fabricante do produto ou null se não encontrado
 - Todo texto deve estar limpo e formatado corretamente
 - Se algum campo não puder ser determinado, use null
 
@@ -43,15 +46,18 @@ Conteúdo HTML:
 ${htmlContent.substring(0, 8000)}
 `;
 
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    
     const result = await model.generateContent(prompt);
     const response = await result.response;
+
     const text = response.text();
     
     if (!text) {
       throw new Error('Nenhuma resposta do Gemini');
     }
 
-    // Limpar markdown da resposta
+    // Limpar markdown da resposta caso necessário
     const cleanText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     
     const productInfo = JSON.parse(cleanText);
@@ -62,7 +68,9 @@ ${htmlContent.substring(0, 8000)}
       originalPrice: productInfo.originalPrice ? parseFloat(productInfo.originalPrice.toString()) : null,
       imageUrl: productInfo.imageUrl || null,
       store: productInfo.store || null,
-      description: productInfo.description || null
+      description: productInfo.description || null,
+      category: productInfo.category || "Geral",
+      brand: productInfo.brand || null
     };
   } catch (error) {
     console.error("Extração com Gemini falhou:", error);
@@ -74,7 +82,9 @@ ${htmlContent.substring(0, 8000)}
       originalPrice: null,
       imageUrl: null,
       store: url.includes('.com.br') ? 'Loja Brasileira' : 'Loja Online',
-      description: `Produto extraído da URL: ${url}`
+      description: `Produto extraído da URL: ${url}`,
+      category: "Geral",
+      brand: null
     };
   }
 }
