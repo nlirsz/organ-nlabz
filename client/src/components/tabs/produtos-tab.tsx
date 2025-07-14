@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ShoppingList } from "@/components/shopping-list";
 import { AdvancedSearch } from '@/components/advanced-search';
 import { FavoritesSystem, useFavorites } from '@/components/favorites-system';
@@ -6,7 +6,6 @@ import { CategoryFilter } from '@/components/category-filter';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Heart, Search, Filter, Package } from 'lucide-react';
-import { useOfflineMode } from "@/components/offline-mode";
 import type { Product } from "@shared/schema";
 
 interface ProdutosTabProps {
@@ -20,16 +19,9 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
   const [filteredProducts, setFilteredProducts] = useState(products);
   const [activeView, setActiveView] = useState('all');
   const { toggleFavorite } = useFavorites();
-  const { isOnline, offlineProducts } = useOfflineMode();
-
-  const currentProducts = isOnline ? products : offlineProducts;
-
-  useEffect(() => {
-    setFilteredProducts(currentProducts);
-  }, [currentProducts]);
 
   const handleSearch = (filters: any) => {
-    let filtered = [...currentProducts];
+    let filtered = [...products];
 
     // Filtro por texto
     if (filters.query) {
@@ -94,17 +86,17 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
   };
 
   const handleReset = () => {
-    setFilteredProducts(currentProducts);
+    setFilteredProducts(products);
     setSelectedCategory('');
   };
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
-    const filtered = category ? currentProducts.filter(p => p.category === category) : currentProducts;
+    const filtered = category ? products.filter(p => p.category === category) : products;
     setFilteredProducts(filtered);
   };
 
-  const displayProducts = filteredProducts.length > 0 ? filteredProducts : currentProducts;
+  const displayProducts = filteredProducts.length > 0 ? filteredProducts : products;
 
   return (
     <div className="space-y-6 fade-in">
@@ -144,7 +136,7 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
 
           <ShoppingList 
             products={displayProducts} 
-            isLoading={isLoading && isOnline} 
+            isLoading={isLoading} 
             onProductUpdated={onProductUpdated}
           />
         </TabsContent>
@@ -156,19 +148,19 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
           />
 
           <div className="text-sm text-gray-600">
-            Mostrando {filteredProducts.length} de {currentProducts.length} produtos
+            Mostrando {filteredProducts.length} de {products.length} produtos
           </div>
 
           <ShoppingList 
             products={filteredProducts} 
-            isLoading={isLoading && isOnline} 
+            isLoading={isLoading} 
             onProductUpdated={onProductUpdated}
           />
         </TabsContent>
 
         <TabsContent value="favorites" className="space-y-6">
           <FavoritesSystem
-            products={currentProducts}
+            products={products}
             onFavoriteToggle={toggleFavorite}
           />
         </TabsContent>
