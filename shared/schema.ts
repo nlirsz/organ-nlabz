@@ -10,10 +10,11 @@ export const users = pgTable("users", {
 
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
   url: text("url").notNull(),
   name: text("name").notNull(),
-  price: decimal("price", { precision: 10, scale: 2 }),
-  originalPrice: decimal("original_price", { precision: 10, scale: 2 }),
+  price: text("price"),
+  originalPrice: text("original_price"),
   imageUrl: text("image_url"),
   store: text("store"),
   description: text("description"),
@@ -36,10 +37,13 @@ export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  userId: z.number().default(1),
 });
 
 export const updateProductSchema = createInsertSchema(products).omit({
   id: true,
+  userId: true,
   createdAt: true,
   updatedAt: true,
 }).partial();

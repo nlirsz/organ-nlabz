@@ -14,12 +14,16 @@ export default function Home() {
   const [isDark, setIsDark] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
 
+  const userId = 1; // Default user ID
+
   const { data: products = [], isLoading, refetch } = useQuery<Product[]>({
-    queryKey: ["/api/products", refreshKey],
+    queryKey: ["/api/products", userId, refreshKey],
+    queryFn: () => fetch(`/api/products/${userId}`).then(res => res.json()),
   });
 
   const { data: stats } = useQuery({
-    queryKey: ["/api/products/stats", refreshKey],
+    queryKey: ["/api/products/stats", userId, refreshKey],
+    queryFn: () => fetch(`/api/products/stats/${userId}`).then(res => res.json()),
   });
 
   const handleProductAdded = () => {

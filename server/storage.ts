@@ -6,12 +6,12 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   
   // Product operations
-  getProducts(): Promise<Product[]>;
-  getProduct(id: number): Promise<Product | undefined>;
+  getProducts(userId: number): Promise<Product[]>;
+  getProduct(id: number, userId: number): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
-  updateProduct(id: number, product: UpdateProduct): Promise<Product | undefined>;
-  deleteProduct(id: number): Promise<boolean>;
-  getProductStats(): Promise<{
+  updateProduct(id: number, product: UpdateProduct, userId: number): Promise<Product | undefined>;
+  deleteProduct(id: number, userId: number): Promise<boolean>;
+  getProductStats(userId: number): Promise<{
     totalItems: number;
     purchasedItems: number;
     estimatedTotal: number;
@@ -30,13 +30,27 @@ export class MemStorage implements IStorage {
     this.currentUserId = 1;
     this.currentProductId = 1;
     
+    // Create default user
+    this.createDefaultUser();
+    
     // Add sample products for testing
     this.addSampleProducts();
+  }
+  
+  private createDefaultUser() {
+    const defaultUser: User = {
+      id: 1,
+      username: "usuario_padrao",
+      password: "123456"
+    };
+    this.users.set(1, defaultUser);
+    this.currentUserId = 2;
   }
   
   private addSampleProducts() {
     const sampleProducts = [
       {
+        userId: 1,
         url: "https://example.com/mouse-gamer",
         name: "Mouse Gamer RGB",
         price: "199.99",
@@ -49,6 +63,7 @@ export class MemStorage implements IStorage {
         isPurchased: false
       },
       {
+        userId: 1,
         url: "https://example.com/smartphone",
         name: "Smartphone Galaxy A54",
         price: "1299.99",
@@ -61,6 +76,7 @@ export class MemStorage implements IStorage {
         isPurchased: false
       },
       {
+        userId: 1,
         url: "https://example.com/camiseta",
         name: "Camiseta Básica Cotton",
         price: "39.99",
@@ -73,6 +89,7 @@ export class MemStorage implements IStorage {
         isPurchased: false
       },
       {
+        userId: 1,
         url: "https://example.com/jogo-ps5",
         name: "The Last of Us Part II",
         price: "149.99",
@@ -85,6 +102,7 @@ export class MemStorage implements IStorage {
         isPurchased: true
       },
       {
+        userId: 1,
         url: "https://example.com/presente",
         name: "Kit Presente Romântico",
         price: "89.99",
@@ -131,14 +149,17 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  async getProducts(): Promise<Product[]> {
-    return Array.from(this.products.values()).sort((a, b) => 
-      new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
-    );
+  async getProducts(userId: number): Promise<Product[]> {
+    return Array.from(this.products.values())
+      .filter(product => product.userId === userId)
+      .sort((a, b) => 
+        new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+      );
   }
 
-  async getProduct(id: number): Promise<Product | undefined> {
-    return this.products.get(id);
+  async getProduct(id: number, userId: number): Promise<Product | undefined> {
+    const product = this.products.get(id);
+    return product && product.userId === userId ? product : undefined;
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
@@ -165,9 +186,9 @@ export class MemStorage implements IStorage {
     return product;
   }
 
-  async updateProduct(id: number, updateProduct: UpdateProduct): Promise<Product | undefined> {
+  async updateProduct(id: number, updateProduct: UpdateProduct, userId: number): Promise<Product | undefined> {
     const existingProduct = this.products.get(id);
-    if (!existingProduct) return undefined;
+    if (!existingProduct || existingProduct.userId !== userId) return undefined;
     
     const updatedProduct: Product = {
       ...existingProduct,
@@ -178,16 +199,18 @@ export class MemStorage implements IStorage {
     return updatedProduct;
   }
 
-  async deleteProduct(id: number): Promise<boolean> {
+  async deleteProduct(id: number, userId: number): Promise<boolean> {
+    const product = this.products.get(id);
+    if (!product || product.userId !== userId) return false;
     return this.products.delete(id);
   }
 
-  async getProductStats(): Promise<{
+  async getProductStats(userId: number): Promise<{
     totalItems: number;
     purchasedItems: number;
     estimatedTotal: number;
   }> {
-    const products = Array.from(this.products.values());
+    const products = Array.from(this.products.values()).filter(p => p.userId === userId);
     const totalItems = products.length;
     const purchasedItems = products.filter(p => p.isPurchased).length;
     const estimatedTotal = products.reduce((sum, p) => {

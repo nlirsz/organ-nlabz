@@ -21,8 +21,8 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products", 1] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats", 1] });
       onProductUpdated();
     },
     onError: (error: Error) => {
@@ -40,8 +40,8 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
       await apiRequest("DELETE", `/api/products/${product.id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products", 1] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats", 1] });
       onProductUpdated();
       toast({
         title: "Sucesso",

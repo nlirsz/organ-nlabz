@@ -7,20 +7,22 @@ import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Get all products
-  app.get("/api/products", async (req, res) => {
+  // Get all products for a user
+  app.get("/api/products/:userId", async (req, res) => {
     try {
-      const products = await storage.getProducts();
+      const userId = parseInt(req.params.userId) || 1; // Default to user 1
+      const products = await storage.getProducts(userId);
       res.json(products);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch products" });
     }
   });
 
-  // Get product stats
-  app.get("/api/products/stats", async (req, res) => {
+  // Get product stats for a user
+  app.get("/api/products/stats/:userId", async (req, res) => {
     try {
-      const stats = await storage.getProductStats();
+      const userId = parseInt(req.params.userId) || 1; // Default to user 1
+      const stats = await storage.getProductStats(userId);
       res.json(stats);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch product stats" });
@@ -71,6 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create product in storage
       const productData = {
+        userId: 1, // Default to user 1
         url,
         name: scrapedProduct.name,
         price: scrapedProduct.price?.toString() || null,
@@ -103,9 +106,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/products/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = 1; // Default to user 1
       const validatedData = updateProductSchema.parse(req.body);
       
-      const product = await storage.updateProduct(id, validatedData);
+      const product = await storage.updateProduct(id, validatedData, userId);
       
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
@@ -125,7 +129,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/products/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const deleted = await storage.deleteProduct(id);
+      const userId = 1; // Default to user 1
+      const deleted = await storage.deleteProduct(id, userId);
       
       if (!deleted) {
         return res.status(404).json({ error: "Product not found" });
