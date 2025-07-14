@@ -186,7 +186,11 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
           }`}
           title={isPurchased ? "Marcar como não comprado" : "Marcar como comprado"}
         >
-          {isPurchased ? <RotateCcw className="w-5 h-5" /> : <Check className="w-5 h-5" />}
+          {isPurchased ? (
+            <RotateCcw className="w-5 h-5" style={{ color: 'white' }} />
+          ) : (
+            <Check className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
+          )}
         </button>
 
         <a
@@ -196,14 +200,14 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
           className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
           title="Abrir link do produto"
         >
-          <ExternalLink className="w-5 h-5" />
+          <ExternalLink className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
         </a>
 
         <button
           className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
           title="Editar produto"
         >
-          <Edit className="w-5 h-5" />
+          <Edit className="w-5 h-5" style={{ color: 'var(--edit-color)' }} />
         </button>
 
         <button
@@ -212,7 +216,7 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
           className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center hover:text-red-500"
           title="Remover produto"
         >
-          <Trash2 className="w-5 h-5" />
+          <Trash2 className="w-5 h-5" style={{ color: 'var(--delete-color)' }} />
         </button>
       </div>
     </div>
