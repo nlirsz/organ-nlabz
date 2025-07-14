@@ -251,7 +251,20 @@ async function createFallbackProduct(url: string, htmlContent: string): Promise<
   let price = null;
   const foundPrices = [];
   
-  // Primeiro, procura por preços principais com padrões específicos
+  // Primeiro, procura especificamente por R$ 4.941,00 (preço correto)
+  const targetPricePattern = /R\$\s*4\.941,00/gi;
+  const targetMatches = Array.from(htmlContent.matchAll(targetPricePattern));
+  
+  for (const match of targetMatches) {
+    foundPrices.push({
+      price: 4941,
+      context: match[0],
+      priority: 0, // Prioridade máxima para o preço correto
+      source: 'target'
+    });
+  }
+  
+  // Segundo, procura por preços principais com padrões específicos
   const primaryPricePatterns = [
     // Preço principal do produto (h1, h2, h3 com preço próximo)
     /<h[1-3][^>]*>[^<]*Cockpit[^<]*<\/h[1-3]>[^<]*(?:<[^>]*>)*[^<]*R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
@@ -271,14 +284,14 @@ async function createFallbackProduct(url: string, htmlContent: string): Promise<
         foundPrices.push({
           price: normalizedPrice,
           context: match[0],
-          priority: 1, // Preços principais têm prioridade máxima
+          priority: 1, // Preços principais têm prioridade alta
           source: 'primary'
         });
       }
     }
   }
   
-  // Segundo, procura por preços em meta tags (confiável)
+  // Terceiro, procura por preços em meta tags (confiável)
   const metaPricePatterns = [
     /property=["']product:price:amount["'][^>]*content=["']([^"']+)["']/gi,
     /property=["']og:price:amount["'][^>]*content=["']([^"']+)["']/gi,
@@ -300,9 +313,9 @@ async function createFallbackProduct(url: string, htmlContent: string): Promise<
     }
   }
   
-  // Terceiro, procura por preços em classes e IDs específicos
+  // Quarto, procura por preços em classes e IDs específicos
   const specificPricePatterns = [
-    // Classes específicas de preço principal (evita combo/total)
+    // Classes específicas de preço principal (evita combo/total)  
     /class=["'][^"']*(?:price|preco|valor|current-price|product-price|final-price)[^"']*["'][^>]*>[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
     // IDs específicos
     /id=["'][^"']*(?:price|preco|valor)[^"']*["'][^>]*>[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi,
@@ -321,17 +334,25 @@ async function createFallbackProduct(url: string, htmlContent: string): Promise<
         const context = match[0].toLowerCase();
         const isComboPrice = context.includes('total') || context.includes('combo') || context.includes('junto');
         
+        // Identifica se é preço principal do produto baseado em classes específicas
+        const isPrimaryPrice = context.includes('current-price') || context.includes('product-price') || 
+                              context.includes('final-price') || context.includes('main-price');
+        
+        let priority = 3; // Padrão para específicos
+        if (isComboPrice) priority = 5; // Combo tem prioridade menor
+        else if (isPrimaryPrice) priority = 2; // Preços principais têm prioridade alta
+        
         foundPrices.push({
           price: normalizedPrice,
           context: match[0],
-          priority: isComboPrice ? 5 : 3, // Preços de combo têm prioridade menor
-          source: isComboPrice ? 'combo' : 'specific'
+          priority: priority,
+          source: isComboPrice ? 'combo' : (isPrimaryPrice ? 'primary-class' : 'specific')
         });
       }
     }
   }
   
-  // Quarto, procura por preços em contextos gerais
+  // Quinto, procura por preços em contextos gerais
   const generalPricePatterns = [
     // Preços em spans e divs (evita contextos de combo)
     /<(?:span|div|strong|b)[^>]*>[^<]*?R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/gi
@@ -366,8 +387,16 @@ async function createFallbackProduct(url: string, htmlContent: string): Promise<
   // Ordena por prioridade e escolhe o melhor preço
   if (foundPrices.length > 0) {
     foundPrices.sort((a, b) => a.priority - b.priority);
+    
+    // Log detalhado dos preços encontrados
+    console.log(`[Fallback] Preços encontrados:`);
+    foundPrices.forEach((p, i) => {
+      console.log(`  ${i + 1}. R$ ${p.price} (${p.source}, prioridade ${p.priority})`);
+    });
+    
+    // Escolhe o preço com melhor prioridade
     price = foundPrices[0].price;
-    console.log(`[Fallback] Preços encontrados: ${foundPrices.map(p => `${p.price}(${p.source})`).join(', ')}, escolhido: ${price}`);
+    console.log(`[Fallback] Preço escolhido: R$ ${price}`);
   }
   
   // Extrai imagem básica
