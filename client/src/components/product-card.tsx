@@ -70,11 +70,13 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
   };
 
   const formatPrice = (price: string | null) => {
-    if (!price) return "R$ 0,00";
+    if (!price || price === "0" || price === "0.00") return "Preço não disponível";
+    const numPrice = parseFloat(price);
+    if (isNaN(numPrice) || numPrice === 0) return "Preço não disponível";
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-    }).format(parseFloat(price));
+    }).format(numPrice);
   };
 
   const getRandomCategory = () => {

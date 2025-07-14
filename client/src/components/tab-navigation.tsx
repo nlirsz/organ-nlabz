@@ -35,17 +35,17 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
               onClick={() => onTabChange(tab.id)}
               className={cn(
                 "flex items-center space-x-2 px-4 py-3 rounded-xl transition-all duration-200",
-                "text-sm font-medium",
+                "text-sm font-medium border-0 outline-none focus:outline-none",
                 isActive
-                  ? "neomorphic-pressed text-white"
-                  : "neomorphic-button hover:neomorphic-hover"
+                  ? "text-white shadow-inner"
+                  : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
               )}
               style={{
-                backgroundColor: isActive ? 'var(--primary-action)' : 'transparent',
+                backgroundColor: isActive ? '#3b82f6' : 'var(--bg-light)',
                 color: isActive ? 'white' : 'var(--text-primary)',
                 boxShadow: isActive 
-                  ? 'inset 2px 2px 4px var(--c-dark), inset -2px -2px 4px var(--c-light)'
-                  : 'var(--neomorphic-shadow)'
+                  ? 'inset 2px 2px 6px rgba(0,0,0,0.3), inset -2px -2px 6px rgba(255,255,255,0.1)'
+                  : '4px 4px 8px rgba(0,0,0,0.1), -4px -4px 8px rgba(255,255,255,0.9)'
               }}
             >
               <Icon className="w-4 h-4" />

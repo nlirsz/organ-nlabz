@@ -19,6 +19,7 @@
   --c-primary: #e0e5ec; /* Fundo principal */
   --c-light: #ffffff;   /* Sombra clara */
   --c-dark: #a3b1c6;    /* Sombra escura */
+  --bg-light: #f5f5f5;  /* Fundo claro para botões */
   
   --text-primary: #3a3f44;
   --text-secondary: #6c757d;
@@ -58,6 +59,7 @@
   --c-dark: #000000;
   --text-primary: #e0e0e0;
   --text-secondary: #a3b1c6;
+  --bg-light: #2a2a2a;
   
   --shadow: 4px 4px 8px var(--c-dark), -4px -4px 8px var(--c-light);
   --shadow-inset: inset 4px 4px 8px var(--c-dark), inset -4px -4px 8px var(--c-light);

@@ -16,9 +16,9 @@ export interface ScrapedProduct {
 export async function extractProductInfo(url: string, htmlContent: string): Promise<ScrapedProduct> {
   try {
     const prompt = `
-Você é um assistente de web scraping. Extraia informações do produto a partir do seguinte conteúdo HTML da URL: ${url}
+Você é um assistente de web scraping especializado em extrair informações de produtos brasileiros. Extraia informações do produto a partir do seguinte conteúdo HTML da URL: ${url}
 
-Por favor, extraia as seguintes informações e responda com JSON válido:
+Por favor, extraia as seguintes informações e responda APENAS com JSON válido:
 {
   "name": "Nome do produto",
   "price": 123.45,
@@ -30,7 +30,16 @@ Por favor, extraia as seguintes informações e responda com JSON válido:
   "brand": "Marca do produto"
 }
 
-Regras:
+Regras específicas para PREÇOS:
+- Procure por preços em formato brasileiro: R$ 123,45 ou R$123.45 ou 123,45
+- Procure por classes CSS como: price, preco, valor, amount, cost
+- Procure por textos como: "R$", "BRL", "reais", "por", "de", "à vista"
+- Procure por preços promocionais e preços originais (riscados)
+- Converta vírgula para ponto: R$ 123,45 = 123.45
+- Remove símbolos: R$ 123,45 = 123.45
+- Se encontrar "3x de R$ 50,00", o preço total é 150.00
+
+Outras regras:
 - Extraia o nome principal do produto, não texto de categoria ou breadcrumb
 - Price deve ser um número (ex: 123.45) ou null se não encontrado
 - originalPrice deve ser o preço original/riscado ou null se não encontrado
@@ -43,7 +52,7 @@ Regras:
 - Se algum campo não puder ser determinado, use null
 
 Conteúdo HTML:
-${htmlContent.substring(0, 8000)}
+${htmlContent.substring(0, 12000)}
 `;
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
