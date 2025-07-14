@@ -9,9 +9,8 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 const generationConfig = {
-  temperature: 0.1,
-  responseMimeType: "application/json",
-  maxOutputTokens: 1000,
+  temperature: 0.2,
+  maxOutputTokens: 800,
 };
 
 export interface ScrapedProduct {
@@ -66,36 +65,33 @@ function normalizePrice(price: any): number | null {
 async function scrapeByAnalyzingHtml(productUrl: string, htmlContent: string): Promise<ScrapedProduct> {
   console.log(`[Gemini HTML Mode] Iniciando para: ${productUrl}`);
   
-  const prompt = `Analise o HTML a seguir para extrair os detalhes de um produto BRASILEIRO.
-  
-CRÍTICO - REGRAS PARA PREÇOS BRASILEIROS:
-- Procure por preços no formato brasileiro: R$ 1.234,56 ou R$1234,56 ou 1234,56
-- IMPORTANTE: No Brasil, ponto é separador de milhares e vírgula é separador decimal
-- Exemplos corretos: R$ 4.941,00 = 4941.00 | R$ 123,45 = 123.45 | R$ 12.345,67 = 12345.67
-- Procure por classes CSS: price, preco, valor, amount, cost, product-price, current-price, price-current, price-value
-- Procure por IDs: #price, #preco, #valor, #product-price
-- Procure por atributos: data-price, data-valor, data-amount
-- Procure por textos próximos: "R$", "BRL", "reais", "por:", "de:", "à vista", "preço", "valor"
-- Se encontrar parcelas como "12x de R$ 100,00", o preço total é 1200.00
-- Ignore preços muito baixos (<5 reais) ou muito altos (>500.000 reais)
-- Procure por elementos span, div, p, strong, em que contenham números com R$
-- Analise meta tags: og:price, product:price, twitter:data1
-- Procure por schemas JSON-LD com preços
-- SEMPRE retorne o preço como string no formato "1234.56" (ponto como decimal)
+  const prompt = `Extraia informações do produto brasileiro deste HTML.
 
-Retorne um objeto JSON com:
+OBRIGATÓRIO - retorne JSON com:
 {
   "name": "Nome do produto",
-  "price": "4941.00",
+  "price": "1234.56",
   "image": "URL da imagem",
-  "brand": "Marca",
-  "category": "Categoria",
-  "description": "Descrição"
+  "category": "Categoria"
 }
 
-Categorias válidas: Eletrônicos, Roupas e Acessórios, Casa e Decoração, Livros e Mídia, Esportes e Lazer, Ferramentas e Construção, Alimentos e Bebidas, Saúde e Beleza, Automotivo, Pet Shop, Outros
+REGRAS PREÇO:
+- Procure R$ com números: R$ 1.234,56 ou R$1234,56
+- Classes CSS: price, preco, valor, product-price
+- Meta tags: og:price, product:price
+- Formato retorno: "1234.56" (ponto decimal)
 
-HTML: ${htmlContent.substring(0, 100000)}`;
+REGRAS NOME:
+- Procure: <title>, <h1>, .product-name, .product-title
+- Limpe texto extra, mantenha só o nome
+
+REGRAS IMAGEM:
+- Procure: og:image, product:image, .product-image src
+- URL completa da imagem
+
+CATEGORIAS: Eletrônicos, Roupas, Casa, Livros, Games, Presentes, Outros
+
+HTML: ${htmlContent.substring(0, 50000)}`;
   
   const result = await model.generateContent({ 
     contents: [{ role: "user", parts: [{ text: prompt }] }], 
@@ -143,10 +139,21 @@ HTML: ${htmlContent.substring(0, 100000)}`;
 async function scrapeBySearching(productUrl: string): Promise<ScrapedProduct> {
   console.log(`[Gemini Search Mode] Iniciando para: ${productUrl}`);
 
-  const prompt = 'Use sua ferramenta de busca para encontrar os detalhes do produto na URL: "' + productUrl + '".' +
-    ' Retorne um objeto JSON com: "name", "price", "image", "brand", "category", "description".' +
-    ' Para "image", encontre uma URL de imagem pública e de alta resolução.' +
-    ' "price" deve ser um número ou um texto que inclua o valor numérico.';
+  const prompt = `Encontre informações do produto em: ${productUrl}
+
+OBRIGATÓRIO - retorne JSON:
+{
+  "name": "Nome do produto",
+  "price": "1234.56",
+  "image": "URL da imagem",
+  "category": "Categoria"
+}
+
+ESSENCIAL:
+- Nome: nome real do produto
+- Preço: formato brasileiro R$ convertido para "1234.56"
+- Imagem: URL pública da imagem
+- Categoria: Eletrônicos, Roupas, Casa, Livros, Games, Presentes, Outros`;
   
   const result = await model.generateContent({ 
     contents: [{ role: "user", parts: [{ text: prompt }] }], 
@@ -219,6 +226,106 @@ function mapCategoryToApp(category: string | null): string {
   return categoryMap[normalized] || "Geral";
 }
 
+// Função de fallback que extrai dados básicos do HTML
+async function createFallbackProduct(url: string, htmlContent: string): Promise<ScrapedProduct> {
+  console.log(`[Fallback] Extraindo dados básicos para: ${url}`);
+  
+  // Extrai nome básico do HTML
+  let name = "Produto Extraído";
+  
+  // Procura pelo title
+  const titleMatch = htmlContent.match(/<title[^>]*>([^<]+)<\/title>/i);
+  if (titleMatch && titleMatch[1]) {
+    name = titleMatch[1].trim().replace(/\s+/g, ' ').substring(0, 100);
+  }
+  
+  // Procura por h1 se não encontrou um bom title
+  if (name === "Produto Extraído" || name.length < 10) {
+    const h1Match = htmlContent.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+    if (h1Match && h1Match[1]) {
+      name = h1Match[1].trim().replace(/\s+/g, ' ').substring(0, 100);
+    }
+  }
+  
+  // Extrai preço básico procurando por padrões R$
+  let price = null;
+  const pricePatterns = [
+    /R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/g,
+    /(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)\s*reais/gi,
+    /pre[çc]o[^>]*>([^<]*\d+[^<]*)/gi
+  ];
+  
+  for (const pattern of pricePatterns) {
+    const matches = Array.from(htmlContent.matchAll(pattern));
+    for (const match of matches) {
+      const priceText = match[1] || match[0];
+      const normalizedPrice = normalizePrice(priceText);
+      if (normalizedPrice && normalizedPrice > 1 && normalizedPrice < 100000) {
+        price = normalizedPrice;
+        break;
+      }
+    }
+    if (price) break;
+  }
+  
+  // Extrai imagem básica
+  let imageUrl = null;
+  
+  // Procura por og:image
+  const ogImageMatch = htmlContent.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+  if (ogImageMatch && ogImageMatch[1]) {
+    imageUrl = ogImageMatch[1];
+  }
+  
+  // Procura por product:image se não encontrou og:image
+  if (!imageUrl) {
+    const prodImageMatch = htmlContent.match(/<meta[^>]*property=["']product:image["'][^>]*content=["']([^"']+)["']/i);
+    if (prodImageMatch && prodImageMatch[1]) {
+      imageUrl = prodImageMatch[1];
+    }
+  }
+  
+  // Procura por primeira imagem com src se não encontrou meta tags
+  if (!imageUrl) {
+    const imgMatch = htmlContent.match(/<img[^>]*src=["']([^"']+)["'][^>]*>/i);
+    if (imgMatch && imgMatch[1] && !imgMatch[1].includes('data:')) {
+      imageUrl = imgMatch[1];
+    }
+  }
+  
+  // Garante URL absoluta para a imagem
+  if (imageUrl && !imageUrl.startsWith('http')) {
+    const urlObj = new URL(url);
+    if (imageUrl.startsWith('/')) {
+      imageUrl = `${urlObj.protocol}//${urlObj.host}${imageUrl}`;
+    } else {
+      imageUrl = `${urlObj.protocol}//${urlObj.host}/${imageUrl}`;
+    }
+  }
+  
+  // Categoria baseada na URL
+  let category = "Geral";
+  const urlLower = url.toLowerCase();
+  if (urlLower.includes('games') || urlLower.includes('jogo')) category = "Games";
+  else if (urlLower.includes('roupa') || urlLower.includes('moda')) category = "Roupas";
+  else if (urlLower.includes('casa') || urlLower.includes('decoracao')) category = "Casa";
+  else if (urlLower.includes('eletronico') || urlLower.includes('tech')) category = "Eletronicos";
+  else if (urlLower.includes('livro') || urlLower.includes('book')) category = "Livros";
+  
+  console.log(`[Fallback] Dados extraídos - Nome: ${name}, Preço: ${price}, Imagem: ${imageUrl ? 'Sim' : 'Não'}`);
+  
+  return {
+    name,
+    price,
+    originalPrice: null,
+    imageUrl,
+    store: extractStoreFromUrl(url),
+    description: `Produto extraído da URL: ${url}`,
+    category,
+    brand: null
+  };
+}
+
 export async function extractProductInfo(url: string, htmlContent: string): Promise<ScrapedProduct> {
   try {
     console.log(`[Gemini] Iniciando extração para: ${url}`);
@@ -286,16 +393,8 @@ export async function extractProductInfo(url: string, htmlContent: string): Prom
   } catch (error) {
     console.error(`[Gemini] Extração falhou completamente para ${url}:`, error);
     
-    // Fallback mais básico
-    return {
-      name: "Produto Extraído",
-      price: null,
-      originalPrice: null,
-      imageUrl: null,
-      store: extractStoreFromUrl(url),
-      description: `Produto extraído da URL: ${url}`,
-      category: "Geral",
-      brand: null
-    };
+    // Fallback com extração básica da URL
+    const fallbackProduct = await createFallbackProduct(url, htmlContent);
+    return fallbackProduct;
   }
 }
