@@ -79,9 +79,17 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
     }).format(numPrice);
   };
 
-  const getRandomCategory = () => {
-    const categories = ['Eletrônicos', 'Casa e Decoração', 'Roupas e Acessórios', 'Automotivo', 'Esportes e Lazer', 'Games'];
-    return categories[Math.floor(Math.random() * categories.length)];
+  const getCategoryDisplay = (category: string) => {
+    const categoryMap: Record<string, string> = {
+      'Geral': 'Geral',
+      'Casa': 'Casa e Decoração',
+      'Roupas': 'Roupas e Acessórios',
+      'Eletronicos': 'Eletrônicos',
+      'Games': 'Games',
+      'Livros': 'Livros',
+      'Presentes': 'Presentes'
+    };
+    return categoryMap[category] || category;
   };
 
   const isPurchased = isChecked;
@@ -91,7 +99,7 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
       {/* Category Tag */}
       <div className="p-4 pb-2">
         <div className="category-tag text-xs">
-          {getRandomCategory()}
+          {getCategoryDisplay(product.category || 'Geral')}
         </div>
       </div>
 

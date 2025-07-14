@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Filter, SortAsc, Share, Download, History, ShoppingCart } from "lucide-react";
+import { Filter, SortAsc, Share, Download, History, ShoppingCart, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/product-card";
 import { CategoryFilter } from "@/components/category-filter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,10 +15,31 @@ interface ShoppingListProps {
 
 export function ShoppingList({ products, isLoading, onProductUpdated }: ShoppingListProps) {
   const [selectedCategory, setSelectedCategory] = useState("Geral");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "price" | "date">("name");
+  const [showSearch, setShowSearch] = useState(false);
 
-  const filteredProducts = selectedCategory === "Geral" 
-    ? products 
-    : products.filter(product => product.category === selectedCategory);
+  const filteredProducts = products
+    .filter(product => {
+      const matchesCategory = selectedCategory === "Geral" || product.category === selectedCategory;
+      const matchesSearch = searchTerm === "" || 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (product.store && product.store.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()));
+      return matchesCategory && matchesSearch;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "price":
+          const priceA = a.price ? parseFloat(a.price) : 0;
+          const priceB = b.price ? parseFloat(b.price) : 0;
+          return priceB - priceA;
+        case "date":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
 
   if (isLoading) {
     return (
@@ -59,10 +81,18 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="w-12 h-12 neomorphic-button rounded-full flex items-center justify-center">
-              <Filter className="w-5 h-5" />
+            <button 
+              onClick={() => setShowSearch(!showSearch)}
+              className={`w-12 h-12 neomorphic-button rounded-full flex items-center justify-center ${showSearch ? 'neomorphic-button-primary' : ''}`}
+              title="Buscar produtos"
+            >
+              <Search className="w-5 h-5" />
             </button>
-            <button className="w-12 h-12 neomorphic-button rounded-full flex items-center justify-center">
+            <button 
+              onClick={() => setSortBy(sortBy === "name" ? "price" : sortBy === "price" ? "date" : "name")}
+              className="w-12 h-12 neomorphic-button rounded-full flex items-center justify-center"
+              title={`Ordenar por ${sortBy === "name" ? "preço" : sortBy === "price" ? "data" : "nome"}`}
+            >
               <SortAsc className="w-5 h-5" />
             </button>
             <button className="neomorphic-button-primary px-4 py-2 rounded-xl text-sm font-medium">
@@ -70,6 +100,33 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
             </button>
           </div>
         </div>
+
+        {showSearch && (
+          <div className="mb-6 neomorphic-card p-4 rounded-2xl">
+            <div className="flex items-center space-x-3">
+              <Search className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
+              <Input
+                placeholder="Buscar por nome, loja ou descrição..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="neomorphic-input flex-1"
+                style={{ 
+                  backgroundColor: 'var(--c-primary)',
+                  color: 'var(--text-primary)',
+                  border: 'none'
+                }}
+              />
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm("")}
+                  className="w-8 h-8 neomorphic-button rounded-full flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         <CategoryFilter 
           onCategoryChange={setSelectedCategory}

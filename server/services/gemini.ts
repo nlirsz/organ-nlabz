@@ -30,14 +30,18 @@ Por favor, extraia as seguintes informações e responda APENAS com JSON válido
   "brand": "Marca do produto"
 }
 
-Regras específicas para PREÇOS:
+Regras específicas para PREÇOS (MUITO IMPORTANTE):
 - Procure por preços em formato brasileiro: R$ 123,45 ou R$123.45 ou 123,45
-- Procure por classes CSS como: price, preco, valor, amount, cost
-- Procure por textos como: "R$", "BRL", "reais", "por", "de", "à vista"
+- Procure por classes CSS como: price, preco, valor, amount, cost, product-price, current-price
+- Procure por textos como: "R$", "BRL", "reais", "por", "de", "à vista", "preço", "valor"
 - Procure por preços promocionais e preços originais (riscados)
 - Converta vírgula para ponto: R$ 123,45 = 123.45
 - Remove símbolos: R$ 123,45 = 123.45
 - Se encontrar "3x de R$ 50,00", o preço total é 150.00
+- Procure por elementos com id ou class: price, preco, valor, product-price, current-price
+- Analise todo o HTML procurando por números que representam preços
+- Se houver dúvidas sobre qual é o preço correto, escolha o mais provável baseado no contexto
+- SEMPRE retorne um número válido para price se encontrar qualquer indicação de preço
 
 Outras regras:
 - Extraia o nome principal do produto, não texto de categoria ou breadcrumb
@@ -71,10 +75,30 @@ ${htmlContent.substring(0, 12000)}
     
     const productInfo = JSON.parse(cleanText);
     
+    // Processamento mais robusto dos preços
+    let processedPrice = null;
+    let processedOriginalPrice = null;
+    
+    if (productInfo.price) {
+      const priceStr = productInfo.price.toString().replace(/[^\d,.-]/g, '').replace(',', '.');
+      const priceNum = parseFloat(priceStr);
+      if (!isNaN(priceNum) && priceNum > 0) {
+        processedPrice = priceNum;
+      }
+    }
+    
+    if (productInfo.originalPrice) {
+      const originalPriceStr = productInfo.originalPrice.toString().replace(/[^\d,.-]/g, '').replace(',', '.');
+      const originalPriceNum = parseFloat(originalPriceStr);
+      if (!isNaN(originalPriceNum) && originalPriceNum > 0) {
+        processedOriginalPrice = originalPriceNum;
+      }
+    }
+    
     return {
       name: productInfo.name || "Produto Desconhecido",
-      price: productInfo.price ? parseFloat(productInfo.price.toString()) : null,
-      originalPrice: productInfo.originalPrice ? parseFloat(productInfo.originalPrice.toString()) : null,
+      price: processedPrice,
+      originalPrice: processedOriginalPrice,
       imageUrl: productInfo.imageUrl || null,
       store: productInfo.store || null,
       description: productInfo.description || null,

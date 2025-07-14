@@ -50,6 +50,7 @@
   --input: var(--c-primary);
   --ring: var(--primary-action);
   --radius: 0.75rem;
+  --border-color: #d1d5db;
 }
 
 /* === Tema Escuro === */
@@ -60,6 +61,7 @@
   --text-primary: #e0e0e0;
   --text-secondary: #a3b1c6;
   --bg-light: #2a2a2a;
+  --border-color: #333333;
   
   --shadow: 4px 4px 8px var(--c-dark), -4px -4px 8px var(--c-light);
   --shadow-inset: inset 4px 4px 8px var(--c-dark), inset -4px -4px 8px var(--c-light);
@@ -181,6 +183,40 @@
     color: var(--text-secondary);
     box-shadow: var(--shadow-inset-light);
     display: inline-block;
+    transition: all 0.2s ease;
+  }
+
+  .category-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+  }
+
+  .card-entering {
+    animation: slideInUp 0.3s ease-out;
+  }
+
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .pulse-animation {
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
   }
   
   .fade-in {

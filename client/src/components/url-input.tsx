@@ -65,11 +65,15 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
     try {
       const text = await navigator.clipboard.readText();
       setUrl(text);
+      toast({
+        title: "Sucesso",
+        description: "URL colada da área de transferência",
+      });
     } catch {
       // Fallback for browsers that don't support clipboard API
       toast({
-        title: "Note",
-        description: "Please paste the URL manually",
+        title: "Aviso",
+        description: "Cole a URL manualmente usando Ctrl+V",
       });
     }
   };
