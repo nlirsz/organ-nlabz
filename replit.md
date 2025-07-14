@@ -139,4 +139,16 @@ Currency: Brazilian Real (BRL)
 - Improved error handling and fallback systems for price extraction
 - Enhanced tooltip and user feedback systems
 
+## Scraping System Improvements (January 14, 2025)
+- Implemented dual-method scraping approach with HTML analysis and AI search fallback
+- Enhanced Brazilian price format detection (R$ 1.234,56 → 1234.56)
+- Added robust JSON parsing with markdown cleanup for Gemini responses
+- Improved normalizePrice function with intelligent decimal/thousands separator detection
+- Added comprehensive error handling and logging for debugging
+- Reduced HTML content size (200k → 100k characters) for faster processing
+- Optimized Gemini configuration with lower temperature and token limits
+- Fixed price conversion issues that were causing incorrect values (R$ 4.941,00 → 4941.00)
+- Added automatic store name extraction from URLs
+- Enhanced category mapping system for consistent product classification
+
 The application follows a clean architecture pattern with clear separation between frontend, backend, and data layers, making it maintainable and scalable for future enhancements.

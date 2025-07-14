@@ -9,8 +9,9 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 const generationConfig = {
-  temperature: 0.3,
+  temperature: 0.1,
   responseMimeType: "application/json",
+  maxOutputTokens: 1000,
 };
 
 export interface ScrapedProduct {
@@ -28,49 +29,36 @@ function normalizePrice(price: any): number | null {
   if (typeof price === 'number') return price;
   if (typeof price !== 'string') return null;
   
-  console.log(`[normalizePrice] Entrada: "${price}"`);
-  
   // Remove R$ e espaços
   let priceStr = price.replace(/[R$\s]/g, '');
-  console.log(`[normalizePrice] Após remoção R$/espaços: "${priceStr}"`);
   
   // Se tem vírgula, assume formato brasileiro (123.456,78)
   if (priceStr.includes(',')) {
-    console.log(`[normalizePrice] Detectado formato brasileiro com vírgula`);
     // Remove pontos (separadores de milhares) e troca vírgula por ponto
     priceStr = priceStr.replace(/\./g, '').replace(',', '.');
-    console.log(`[normalizePrice] Após conversão brasileiro: "${priceStr}"`);
   }
   // Se só tem ponto, verifica se é separador decimal ou de milhares
   else if (priceStr.includes('.')) {
     const dotCount = (priceStr.match(/\./g) || []).length;
-    console.log(`[normalizePrice] Detectado ${dotCount} ponto(s)`);
     
     if (dotCount > 1) {
       // Remove todos os pontos (são separadores de milhares)
       priceStr = priceStr.replace(/\./g, '');
-      console.log(`[normalizePrice] Múltiplos pontos removidos: "${priceStr}"`);
     }
     // Se tem apenas um ponto, verifica a posição
     else {
       const dotIndex = priceStr.indexOf('.');
       const afterDot = priceStr.substring(dotIndex + 1);
-      console.log(`[normalizePrice] Após ponto: "${afterDot}" (${afterDot.length} dígitos)`);
       
       // Se tem mais de 2 dígitos após o ponto, é separador de milhares
       if (afterDot.length > 2) {
         priceStr = priceStr.replace(/\./g, '');
-        console.log(`[normalizePrice] Ponto como separador de milhares removido: "${priceStr}"`);
       }
       // Se tem 1 ou 2 dígitos após o ponto, é separador decimal - mantém
-      else {
-        console.log(`[normalizePrice] Ponto mantido como separador decimal`);
-      }
     }
   }
   
   const priceNum = parseFloat(priceStr);
-  console.log(`[normalizePrice] Resultado final: ${priceNum}`);
   return isNaN(priceNum) ? null : priceNum;
 }
 
@@ -107,7 +95,7 @@ Retorne um objeto JSON com:
 
 Categorias válidas: Eletrônicos, Roupas e Acessórios, Casa e Decoração, Livros e Mídia, Esportes e Lazer, Ferramentas e Construção, Alimentos e Bebidas, Saúde e Beleza, Automotivo, Pet Shop, Outros
 
-HTML: ${htmlContent.substring(0, 200000)}`;
+HTML: ${htmlContent.substring(0, 100000)}`;
   
   const result = await model.generateContent({ 
     contents: [{ role: "user", parts: [{ text: prompt }] }], 
@@ -117,12 +105,25 @@ HTML: ${htmlContent.substring(0, 200000)}`;
   const responseText = result.response.text();
   console.log(`[Gemini HTML] Resposta bruta: ${responseText.substring(0, 300)}`);
   
-  let jsonData = JSON.parse(responseText);
+  if (!responseText || responseText.trim() === '') {
+    throw new Error('Resposta vazia do Gemini');
+  }
+  
+  // Limpa a resposta removendo markdown se presente
+  const cleanResponse = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  
+  let jsonData;
+  try {
+    jsonData = JSON.parse(cleanResponse);
+  } catch (parseError) {
+    console.error(`[Gemini HTML] Erro ao parsear JSON: ${parseError}`);
+    console.error(`[Gemini HTML] Resposta completa: ${responseText}`);
+    throw new Error(`Falha ao parsear resposta JSON: ${parseError}`);
+  }
   
   if (jsonData && jsonData.price) {
-    console.log(`[Gemini HTML] Preço original: "${jsonData.price}" (tipo: ${typeof jsonData.price})`);
     const normalizedPrice = normalizePrice(jsonData.price);
-    console.log(`[Gemini HTML] Preço normalizado: ${jsonData.price} -> ${normalizedPrice}`);
+    console.log(`[Gemini HTML] Preço: ${jsonData.price} -> R$ ${normalizedPrice}`);
     jsonData.price = normalizedPrice;
   }
   
@@ -152,7 +153,22 @@ async function scrapeBySearching(productUrl: string): Promise<ScrapedProduct> {
     generationConfig 
   });
   
-  let jsonData = JSON.parse(result.response.text());
+  const responseText = result.response.text();
+  console.log(`[Gemini Search] Resposta bruta: ${responseText.substring(0, 300)}`);
+  
+  if (!responseText || responseText.trim() === '') {
+    throw new Error('Resposta vazia do Gemini Search');
+  }
+  
+  const cleanResponse = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  
+  let jsonData;
+  try {
+    jsonData = JSON.parse(cleanResponse);
+  } catch (parseError) {
+    console.error(`[Gemini Search] Erro ao parsear JSON: ${parseError}`);
+    throw new Error(`Falha ao parsear resposta JSON do Search: ${parseError}`);
+  }
 
   if (jsonData && jsonData.price) {
     jsonData.price = normalizePrice(jsonData.price);
