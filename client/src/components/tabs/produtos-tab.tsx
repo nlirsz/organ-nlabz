@@ -21,7 +21,7 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
   const { toggleFavorite } = useFavorites();
 
   const handleSearch = (filters: any) => {
-    let filtered = [...products];
+    let filtered = Array.isArray(products) ? [...products] : [];
 
     // Filtro por texto
     if (filters.query) {

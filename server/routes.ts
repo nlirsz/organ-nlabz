@@ -124,7 +124,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all products for authenticated user
   app.get("/api/products", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      console.log('Buscando produtos para usuário:', req.user.userId);
+      
+      // Verificar se o usuário existe no banco
+      const userExists = await User.findById(req.user.userId);
+      console.log('Usuário existe no banco:', !!userExists);
+      
+      // Verificar quantos produtos existem no total
+      const totalProducts = await Product.countDocuments();
+      console.log('Total de produtos no banco:', totalProducts);
+      
+      // Verificar produtos deste usuário
       const products = await Product.find({ userId: req.user.userId }).sort({ createdAt: -1 });
+      console.log(`Encontrados ${products.length} produtos para o usuário ${req.user.userId}`);
+      
+      // Log dos primeiros produtos para debug
+      if (products.length > 0) {
+        console.log('Primeiro produto encontrado:', {
+          id: products[0]._id,
+          name: products[0].name,
+          userId: products[0].userId
+        });
+      }
+      
       res.json(products);
     } catch (error) {
       console.error("Error fetching products:", error);

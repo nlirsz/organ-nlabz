@@ -12,22 +12,31 @@ interface DashboardTabProps {
 }
 
 export function DashboardTab({ refreshKey }: DashboardTabProps) {
-  const userId = 1; // Default user ID
   const { isOnline } = useOfflineMode();
+  const authToken = localStorage.getItem("authToken");
+  const userId = localStorage.getItem("userId");
 
   const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ["/api/products", userId, refreshKey],
-    queryFn: () => fetch(`/api/products/${userId}`).then(res => res.json()),
-    enabled: isOnline,
+    queryKey: ["/api/products", refreshKey],
+    queryFn: () => fetch("/api/products", {
+      headers: {
+        "x-auth-token": authToken || ""
+      }
+    }).then(res => res.json()),
+    enabled: isOnline && !!authToken,
   });
 
   const { data: stats } = useQuery({
-    queryKey: ["/api/products/stats", userId, refreshKey],
-    queryFn: () => fetch(`/api/products/stats/${userId}`).then(res => res.json()),
-    enabled: isOnline,
+    queryKey: ["/api/products/stats", refreshKey],
+    queryFn: () => fetch(`/api/products/stats/${userId}`, {
+      headers: {
+        "x-auth-token": authToken || ""
+      }
+    }).then(res => res.json()),
+    enabled: isOnline && !!authToken,
   });
 
-  if (!isOnline) {
+  if (!isOnline || !authToken) {
     return (
       <div className="space-y-8">
         <div className="text-center fade-in">
@@ -35,10 +44,10 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
             Dashboard Principal
           </h2>
           <p style={{ color: 'var(--text-secondary)' }}>
-            Modo offline ativo
+            {!authToken ? "Usuário não autenticado" : "Modo offline ativo"}
           </p>
         </div>
-        <OfflineMode />
+        {!isOnline && <OfflineMode />}
       </div>
     );
   }

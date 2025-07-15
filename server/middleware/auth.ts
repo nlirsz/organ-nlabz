@@ -24,6 +24,7 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
 
   // Verifica se não há token
   if (!token) {
+    console.log('Auth middleware: Nenhum token fornecido');
     return res.status(401).json({ msg: 'Nenhum token, autorização negada.' });
   }
 
@@ -31,12 +32,16 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
   try {
     // Decodifica o token usando a chave secreta
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+    console.log('Auth middleware: Token decodificado:', decoded);
 
     // Busca o usuário no banco de dados
     const user = await User.findById(decoded.user.userId);
     if (!user) {
+      console.log('Auth middleware: Usuário não encontrado no banco:', decoded.user.userId);
       return res.status(401).json({ msg: 'Usuário não encontrado.' });
     }
+
+    console.log('Auth middleware: Usuário autenticado:', user.username, 'ID:', user._id.toString());
 
     // Adiciona o usuário completo ao objeto de requisição
     req.user = {
@@ -49,6 +54,7 @@ export async function authenticateToken(req: AuthenticatedRequest, res: Response
     next();
   } catch (err) {
     // Se o token não for válido (expirado, malformado, etc.)
+    console.log('Auth middleware: Token inválido:', err);
     res.status(401).json({ msg: 'Token não é válido.' });
   }
 }
