@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +21,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    
+
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -103,7 +102,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Registrar</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
@@ -133,7 +132,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                 </Button>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="register">
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">

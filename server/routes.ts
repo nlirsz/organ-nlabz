@@ -1,6 +1,6 @@
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage.js";
 import { scrapeProductFromUrl } from "./services/scraper.js";
 import { priceHistoryService } from "./services/priceHistory.js";
 import { notificationService } from "./services/notifications.js";
@@ -8,6 +8,33 @@ import { insertProductSchema, updateProductSchema } from "@shared/schema.js";
 import { z } from "zod";
 import { User } from "./models/User";
 import { generateToken, authenticateToken, type AuthenticatedRequest } from "./middleware/auth";
+import mongoose from "mongoose";
+
+// Esquema do produto para MongoDB
+const productSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  url: String,
+  name: { type: String, required: true },
+  price: String,
+  originalPrice: String,
+  imageUrl: String,
+  store: String,
+  description: String,
+  category: { type: String, default: "Geral" },
+  brand: String,
+  tags: String,
+  priority: { type: String, default: "medium" },
+  notes: String,
+  isPurchased: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const Product = mongoose.model('Product', productSchema);
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -17,17 +44,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { username, password } = req.body;
       
       if (!username || !password) {
-        return res.status(400).json({ error: "Username e password são obrigatórios" });
+        return res.status(400).json({ message: 'Nome de usuário e senha são obrigatórios.' });
       }
-      
+
       if (password.length < 6) {
-        return res.status(400).json({ error: "Password deve ter pelo menos 6 caracteres" });
+        return res.status(400).json({ message: 'A senha deve ter no mínimo 6 caracteres.' });
       }
       
       // Check if user already exists
       const existingUser = await User.findOne({ username });
       if (existingUser) {
-        return res.status(400).json({ error: "Usuário já existe" });
+        return res.status(409).json({ message: 'Usuário já existe.' });
       }
       
       // Create new user
@@ -38,14 +65,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = generateToken(user._id.toString());
       
       res.status(201).json({
-        message: "Usuário criado com sucesso",
+        message: 'Usuário registrado com sucesso!',
         token,
-        userId: user._id,
-        username: user.username
+        userId: user._id.toString()
       });
     } catch (error) {
       console.error("Register error:", error);
-      res.status(500).json({ error: "Erro interno do servidor" });
+      res.status(500).json({ message: 'Erro interno do servidor ao registrar usuário.' });
     }
   });
 
@@ -54,40 +80,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { username, password } = req.body;
       
       if (!username || !password) {
-        return res.status(400).json({ error: "Username e password são obrigatórios" });
+        return res.status(400).json({ message: 'Nome de usuário e senha são obrigatórios.' });
       }
       
       // Find user
       const user = await User.findOne({ username });
       if (!user) {
-        return res.status(401).json({ error: "Credenciais inválidas" });
+        return res.status(401).json({ message: 'Credenciais inválidas (usuário não encontrado).' });
       }
       
       // Check password
       const isMatch = await user.comparePassword(password);
       if (!isMatch) {
-        return res.status(401).json({ error: "Credenciais inválidas" });
+        return res.status(401).json({ message: 'Credenciais inválidas (senha incorreta).' });
       }
       
       // Generate token
       const token = generateToken(user._id.toString());
       
       res.json({
-        message: "Login realizado com sucesso",
+        message: 'Login bem-sucedido.',
         token,
-        userId: user._id,
+        userId: user._id.toString(),
         username: user.username
       });
     } catch (error) {
       console.error("Login error:", error);
-      res.status(500).json({ error: "Erro interno do servidor" });
+      res.status(500).json({ message: 'Erro interno do servidor ao fazer login.' });
     }
   });
 
   app.get("/api/auth/me", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       res.json({
-        userId: req.user._id,
+        userId: req.user.userId,
         username: req.user.username
       });
     } catch (error) {
@@ -95,30 +121,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get all products for a user
+  // Get all products for authenticated user
   app.get("/api/products", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = req.user._id.toString();
-      const products = await storage.getProducts(parseInt(userId));
+      const products = await Product.find({ userId: req.user.userId }).sort({ createdAt: -1 });
       res.json(products);
     } catch (error) {
+      console.error("Error fetching products:", error);
       res.status(500).json({ error: "Failed to fetch products" });
     }
   });
 
-  // Get product stats for a user
-  app.get("/api/products/stats/:userId", async (req, res) => {
+  // Get product stats for authenticated user
+  app.get("/api/products/stats/:userId", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = parseInt(req.params.userId) || 1; // Default to user 1
-      const stats = await storage.getProductStats(userId);
-      res.json(stats);
+      const products = await Product.find({ userId: req.user.userId });
+      
+      const totalItems = products.length;
+      const purchasedItems = products.filter(p => p.isPurchased).length;
+      const estimatedTotal = products.reduce((sum, p) => {
+        const price = p.price ? parseFloat(p.price) : 0;
+        return sum + price;
+      }, 0);
+
+      res.json({
+        totalItems,
+        purchasedItems,
+        estimatedTotal
+      });
     } catch (error) {
+      console.error("Error fetching stats:", error);
       res.status(500).json({ error: "Failed to fetch product stats" });
     }
   });
 
   // Verify URL without adding product
-  app.post("/api/products/verify", async (req, res) => {
+  app.post("/api/products/verify", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const { url } = req.body;
       
@@ -126,7 +164,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Valid URL is required" });
       }
 
-      // Scrape product information without saving
       const scrapedProduct = await scrapeProductFromUrl(url);
       
       res.json({
@@ -139,16 +176,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Verification error:", error);
-      if (error instanceof Error) {
-        res.status(500).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Failed to verify product URL" });
-      }
+      res.status(500).json({ error: "Failed to verify product URL" });
     }
   });
 
   // Add product from URL
-  app.post("/api/products/scrape", async (req, res) => {
+  app.post("/api/products/scrape", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const { url } = req.body;
       
@@ -156,12 +189,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Valid URL is required" });
       }
 
-      // Scrape product information
       const scrapedProduct = await scrapeProductFromUrl(url);
       
-      // Create product in storage
-      const productData = {
-        userId: 1, // Default to user 1
+      const product = new Product({
+        userId: req.user.userId,
         url,
         name: scrapedProduct.name,
         price: scrapedProduct.price?.toString() || null,
@@ -172,37 +203,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category: scrapedProduct.category || "Geral",
         brand: scrapedProduct.brand,
         isPurchased: false
-      };
+      });
 
-      const validatedProduct = insertProductSchema.parse(productData);
-      const product = await storage.createProduct(validatedProduct);
-      
-      // Adiciona preço inicial ao histórico
-      if (product.price) {
-        priceHistoryService.addPriceEntry(product.id, parseFloat(product.price), 'initial');
-      }
+      await product.save();
       
       res.json(product);
     } catch (error) {
       console.error("Scraping error:", error);
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Invalid product data", details: error.errors });
-      } else if (error instanceof Error) {
-        res.status(500).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: "Failed to scrape and add product" });
-      }
+      res.status(500).json({ error: "Failed to scrape and add product" });
     }
   });
 
   // Update product
-  app.put("/api/products/:id", async (req, res) => {
+  app.put("/api/products/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const id = parseInt(req.params.id);
-      const userId = 1; // Default to user 1
-      const validatedData = updateProductSchema.parse(req.body);
-      
-      const product = await storage.updateProduct(id, validatedData, userId);
+      const product = await Product.findOneAndUpdate(
+        { _id: req.params.id, userId: req.user.userId },
+        { ...req.body, updatedAt: new Date() },
+        { new: true }
+      );
       
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
@@ -210,33 +229,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(product);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Invalid product data", details: error.errors });
-      } else {
-        res.status(500).json({ error: "Failed to update product" });
-      }
+      console.error("Update error:", error);
+      res.status(500).json({ error: "Failed to update product" });
     }
   });
 
   // Delete product
-  app.delete("/api/products/:id", async (req, res) => {
+  app.delete("/api/products/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const id = parseInt(req.params.id);
-      const userId = 1; // Default to user 1
-      const deleted = await storage.deleteProduct(id, userId);
+      const product = await Product.findOneAndDelete({
+        _id: req.params.id,
+        userId: req.user.userId
+      });
       
-      if (!deleted) {
+      if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
       
       res.json({ success: true });
     } catch (error) {
+      console.error("Delete error:", error);
       res.status(500).json({ error: "Failed to delete product" });
     }
   });
 
   // APIs para histórico de preços
-  app.get("/api/products/:id/price-history", async (req, res) => {
+  app.get("/api/products/:id/price-history", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const productId = parseInt(req.params.id);
       const history = priceHistoryService.getPriceHistory(productId);
@@ -247,51 +265,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // APIs para notificações
-  app.get("/api/notifications/:userId", async (req, res) => {
+  app.get("/api/notifications/:userId", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = parseInt(req.params.userId) || 1;
-      const notifications = notificationService.getUserNotifications(userId);
+      const notifications = notificationService.getUserNotifications(req.user.userId);
       res.json(notifications);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch notifications" });
     }
   });
 
-  app.post("/api/notifications/:userId/rules", async (req, res) => {
+  app.get("/api/notifications/:userId/unread-count", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = parseInt(req.params.userId) || 1;
-      const { productId, type, threshold } = req.body;
-      
-      notificationService.addRule({
-        userId,
-        productId,
-        type,
-        threshold,
-        active: true
-      });
-      
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to add notification rule" });
-    }
-  });
-
-  app.put("/api/notifications/:userId/:notificationId/read", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId) || 1;
-      const notificationId = req.params.notificationId;
-      
-      notificationService.markAsRead(userId, notificationId);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to mark notification as read" });
-    }
-  });
-
-  app.get("/api/notifications/:userId/unread-count", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId) || 1;
-      const count = notificationService.getUnreadCount(userId);
+      const count = notificationService.getUnreadCount(req.user.userId);
       res.json({ count });
     } catch (error) {
       res.status(500).json({ error: "Failed to get unread count" });

@@ -35,7 +35,7 @@ export default function Home() {
     queryFn: () => 
       fetch("/api/products", {
         headers: {
-          "Authorization": `Bearer ${authToken}`
+          "x-auth-token": authToken
         }
       }).then(res => res.json()),
     enabled: isAuthenticated && !!authToken,
@@ -46,7 +46,7 @@ export default function Home() {
     queryFn: () => 
       fetch(`/api/products/stats/${currentUser?.id}`, {
         headers: {
-          "Authorization": `Bearer ${authToken}`
+          "x-auth-token": authToken
         }
       }).then(res => res.json()),
     enabled: isAuthenticated && !!authToken,
