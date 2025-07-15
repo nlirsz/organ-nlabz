@@ -127,7 +127,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔍 Buscando produtos para usuário:', req.user.userId);
 
       // Verificar conexão com banco
-      const mongoose = await import('mongoose');
       console.log('🔌 Estado da conexão MongoDB:', {
         readyState: mongoose.connection.readyState,
         host: mongoose.connection.host,

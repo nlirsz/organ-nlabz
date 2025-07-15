@@ -45,17 +45,17 @@ export function SmartDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       const authToken = localStorage.getItem("authToken");
       const userId = localStorage.getItem("userId");
-      
+
       console.log('SmartDashboard: Verificando autenticação:', {
         hasToken: !!authToken,
         hasUserId: !!userId,
         tokenLength: authToken?.length,
         userId: userId
       });
-      
+
       if (!authToken || !userId) {
         console.log('SmartDashboard: Token ou userId não encontrado');
         return;
@@ -90,12 +90,12 @@ export function SmartDashboard() {
       if (productsResponse.ok) {
         try {
           products = await productsResponse.json();
-          console.log('SmartDashboard: Produtos carregados:', products.length);
-        } catch (jsonError) {
-          console.error('SmartDashboard: Erro ao fazer parse JSON produtos:', jsonError);
-          const text = await productsResponse.text();
-          console.error('SmartDashboard: Texto da resposta produtos:', text.substring(0, 200));
-        }
+        console.log('SmartDashboard: Produtos carregados:', products);
+          } catch (jsonError) {
+            console.error('SmartDashboard: Erro ao fazer parse JSON produtos:', jsonError);
+            const text = await productsResponse.text();
+            console.error('SmartDashboard: Texto da resposta produtos:', text.substring(0, 200));
+          }
       } else {
         console.error('SmartDashboard: Erro ao carregar produtos:', productsResponse.status);
         try {
