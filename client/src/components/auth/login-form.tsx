@@ -33,13 +33,19 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (data.token && data.userId && data.username) {
+        console.log('Login: Salvando dados de autenticação:', {
+          token: data.token.substring(0, 20) + '...',
+          userId: data.userId,
+          username: data.username
+        });
         localStorage.setItem("authToken", data.token);
         localStorage.setItem("userId", data.userId);
         localStorage.setItem("username", data.username);
         onAuthSuccess(data.token, data.userId, data.username);
       } else {
-        setError(data.error || "Erro ao fazer login");
+        console.error('Login: Resposta inválida:', data);
+        setError("Resposta de login inválida");
       }
     } catch (error) {
       setError("Erro de conexão com o servidor");

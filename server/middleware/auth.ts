@@ -19,12 +19,12 @@ export const generateToken = (userId: string): string => {
   console.log('🔍 Tipo do userId:', typeof userId);
   console.log('🔍 JWT_SECRET exists:', !!process.env.JWT_SECRET);
 
-  const payload = { user: { userId } };
+  const payload = { userId };
   console.log('📝 Payload do token:', payload);
 
   const token = jwt.sign(
     payload,
-    process.env.JWT_SECRET!,
+    JWT_SECRET,
     { expiresIn: '7d' }
   );
 
@@ -48,36 +48,39 @@ export const authenticateToken = async (req: AuthenticatedRequest, res: Response
 
   try {
     console.log('🔍 Auth middleware: Verificando token JWT...');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
     console.log('✅ Auth middleware: Token decodificado com sucesso:', decoded);
 
-    // Identificar qual estrutura de token estamos usando
-    let userId;
-    if (decoded.user && decoded.user.userId) {
-      userId = decoded.user.userId;
-      console.log('📝 Auth middleware: Token format - decoded.user.userId:', userId);
-    } else if (decoded.userId) {
-      userId = decoded.userId;
-      console.log('📝 Auth middleware: Token format - decoded.userId:', decoded.userId);
-    } else {
-      console.log('❌ Auth middleware: Estrutura de token não reconhecida:', Object.keys(decoded));
+    // Usar estrutura simplificada do token
+    const userId = decoded.userId;
+    if (!userId) {
+      console.log('❌ Auth middleware: userId não encontrado no token:', Object.keys(decoded));
       return res.status(401).json({ msg: 'Estrutura de token inválida.' });
     }
+    console.log('📝 Auth middleware: Token userId:', userId);
 
     console.log('🔍 Auth middleware: Buscando usuário no banco com ID:', userId);
 
     // Verificar conexão com MongoDB
     console.log('🔌 Auth middleware: Verificando conexão com MongoDB...');
-    const mongoose = await import('mongoose');
-    console.log('📊 Auth middleware: Estado da conexão:', {
-      readyState: mongoose.connection.readyState,
-      states: {
-        0: 'disconnected',
-        1: 'connected', 
-        2: 'connecting',
-        3: 'disconnecting'
+    try {
+      const mongoose = await import('mongoose');
+      if (mongoose.connection) {
+        console.log('📊 Auth middleware: Estado da conexão:', {
+          readyState: mongoose.connection.readyState,
+          states: {
+            0: 'disconnected',
+            1: 'connected', 
+            2: 'connecting',
+            3: 'disconnecting'
+          }
+        });
+      } else {
+        console.log('⚠️ Auth middleware: Conexão mongoose não inicializada');
       }
-    });
+    } catch (mongooseError) {
+      console.log('❌ Auth middleware: Erro ao verificar conexão:', mongooseError);
+    }
 
     // Buscar estatísticas gerais do banco
     try {
@@ -122,6 +125,7 @@ export const authenticateToken = async (req: AuthenticatedRequest, res: Response
     // Attach user info to request
     req.user = {
       userId: user._id.toString(),
+      _id: user._id.toString(),
       username: user.username
     };
 

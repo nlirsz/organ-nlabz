@@ -49,6 +49,13 @@ export function SmartDashboard() {
       const authToken = localStorage.getItem("authToken");
       const userId = localStorage.getItem("userId");
       
+      console.log('SmartDashboard: Verificando autenticação:', {
+        hasToken: !!authToken,
+        hasUserId: !!userId,
+        tokenLength: authToken?.length,
+        userId: userId
+      });
+      
       if (!authToken || !userId) {
         console.log('SmartDashboard: Token ou userId não encontrado');
         return;
@@ -81,21 +88,41 @@ export function SmartDashboard() {
       let stats = {};
 
       if (productsResponse.ok) {
-        products = await productsResponse.json();
-        console.log('SmartDashboard: Produtos carregados:', products.length);
+        try {
+          products = await productsResponse.json();
+          console.log('SmartDashboard: Produtos carregados:', products.length);
+        } catch (jsonError) {
+          console.error('SmartDashboard: Erro ao fazer parse JSON produtos:', jsonError);
+          const text = await productsResponse.text();
+          console.error('SmartDashboard: Texto da resposta produtos:', text.substring(0, 200));
+        }
       } else {
         console.error('SmartDashboard: Erro ao carregar produtos:', productsResponse.status);
-        const errorText = await productsResponse.text();
-        console.error('SmartDashboard: Texto do erro produtos:', errorText);
+        try {
+          const errorText = await productsResponse.text();
+          console.error('SmartDashboard: Texto do erro produtos:', errorText);
+        } catch (e) {
+          console.error('SmartDashboard: Erro ao ler resposta de erro produtos:', e);
+        }
       }
 
       if (statsResponse.ok) {
-        stats = await statsResponse.json();
-        console.log('SmartDashboard: Stats carregadas:', stats);
+        try {
+          stats = await statsResponse.json();
+          console.log('SmartDashboard: Stats carregadas:', stats);
+        } catch (jsonError) {
+          console.error('SmartDashboard: Erro ao fazer parse JSON stats:', jsonError);
+          const text = await statsResponse.text();
+          console.error('SmartDashboard: Texto da resposta stats:', text.substring(0, 200));
+        }
       } else {
         console.error('SmartDashboard: Erro ao carregar stats:', statsResponse.status);
-        const errorText = await statsResponse.text();
-        console.error('SmartDashboard: Texto do erro stats:', errorText);
+        try {
+          const errorText = await statsResponse.text();
+          console.error('SmartDashboard: Texto do erro stats:', errorText);
+        } catch (e) {
+          console.error('SmartDashboard: Erro ao ler resposta de erro stats:', e);
+        }
       }
 
       // Processa dados para o dashboard
