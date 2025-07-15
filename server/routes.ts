@@ -6,14 +6,100 @@ import { priceHistoryService } from "./services/priceHistory.js";
 import { notificationService } from "./services/notifications.js";
 import { insertProductSchema, updateProductSchema } from "@shared/schema.js";
 import { z } from "zod";
+import { User } from "./models/User";
+import { generateToken, authenticateToken, type AuthenticatedRequest } from "./middleware/auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Get all products for a user
-  app.get("/api/products/:userId", async (req, res) => {
+  // Auth Routes
+  app.post("/api/auth/register", async (req, res) => {
     try {
-      const userId = parseInt(req.params.userId) || 1; // Default to user 1
-      const products = await storage.getProducts(userId);
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username e password são obrigatórios" });
+      }
+      
+      if (password.length < 6) {
+        return res.status(400).json({ error: "Password deve ter pelo menos 6 caracteres" });
+      }
+      
+      // Check if user already exists
+      const existingUser = await User.findOne({ username });
+      if (existingUser) {
+        return res.status(400).json({ error: "Usuário já existe" });
+      }
+      
+      // Create new user
+      const user = new User({ username, password });
+      await user.save();
+      
+      // Generate token
+      const token = generateToken(user._id.toString());
+      
+      res.status(201).json({
+        message: "Usuário criado com sucesso",
+        token,
+        userId: user._id,
+        username: user.username
+      });
+    } catch (error) {
+      console.error("Register error:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username e password são obrigatórios" });
+      }
+      
+      // Find user
+      const user = await User.findOne({ username });
+      if (!user) {
+        return res.status(401).json({ error: "Credenciais inválidas" });
+      }
+      
+      // Check password
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({ error: "Credenciais inválidas" });
+      }
+      
+      // Generate token
+      const token = generateToken(user._id.toString());
+      
+      res.json({
+        message: "Login realizado com sucesso",
+        token,
+        userId: user._id,
+        username: user.username
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  app.get("/api/auth/me", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      res.json({
+        userId: req.user._id,
+        username: req.user.username
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+  
+  // Get all products for a user
+  app.get("/api/products", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user._id.toString();
+      const products = await storage.getProducts(parseInt(userId));
       res.json(products);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch products" });

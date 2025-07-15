@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import mongoose from "mongoose";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +38,22 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Conectar ao MongoDB
+  const MONGODB_URI = process.env.MONGODB_URI;
+  
+  if (MONGODB_URI) {
+    try {
+      await mongoose.connect(MONGODB_URI);
+      log('✅ Conectado ao MongoDB com sucesso!');
+    } catch (error) {
+      log('❌ Erro ao conectar com o MongoDB:', error);
+      process.exit(1);
+    }
+  } else {
+    log('⚠️  MONGODB_URI não encontrada nos secrets');
+    process.exit(1);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
