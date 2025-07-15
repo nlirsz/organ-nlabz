@@ -20,7 +20,7 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showSearch, setShowSearch] = useState(false);
 
-  const filteredProducts = products
+  const filteredProducts = Array.isArray(products) ? products
     .filter(product => {
       const matchesCategory = selectedCategory === "Geral" || product.category === selectedCategory;
       const matchesSearch = searchTerm === "" || 
@@ -44,7 +44,7 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
           result = a.name.localeCompare(b.name);
       }
       return sortOrder === "asc" ? result : -result;
-    });
+    }) : [];
 
   if (isLoading) {
     return (

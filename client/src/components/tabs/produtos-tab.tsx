@@ -135,7 +135,7 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
           </div>
 
           <ShoppingList 
-            products={displayProducts} 
+            products={Array.isArray(displayProducts) ? displayProducts : []} 
             isLoading={isLoading} 
             onProductUpdated={onProductUpdated}
           />

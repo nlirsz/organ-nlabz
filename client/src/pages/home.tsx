@@ -22,7 +22,7 @@ export default function Home() {
     const token = localStorage.getItem("authToken");
     const userId = localStorage.getItem("userId");
     const username = localStorage.getItem("username");
-    
+
     if (token && userId && username) {
       setAuthToken(token);
       setCurrentUser({ id: userId, username });
@@ -144,7 +144,7 @@ export default function Home() {
           )}
           {activeTab === "produtos" && (
             <ProdutosTab 
-              products={products} 
+              products={products || []} 
               isLoading={isLoading} 
               onProductUpdated={handleProductUpdated}
             />
