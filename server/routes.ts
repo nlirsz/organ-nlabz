@@ -123,32 +123,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all products for authenticated user
   app.get("/api/products", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      console.log('Buscando produtos para usuário:', req.user.userId);
+      console.log('=== PRODUCTS FETCH DEBUG ===');
+      console.log('🔍 Buscando produtos para usuário:', req.user.userId);
+
+      // Verificar conexão com banco
+      const mongoose = await import('mongoose');
+      console.log('🔌 Estado da conexão MongoDB:', {
+        readyState: mongoose.connection.readyState,
+        host: mongoose.connection.host,
+        port: mongoose.connection.port,
+        name: mongoose.connection.name
+      });
 
       // Verificar se o usuário existe no banco
       const userExists = await User.findById(req.user.userId);
-      console.log('Usuário existe no banco:', !!userExists);
-
-      // Verificar quantos produtos existem no total
-      const totalProducts = await Product.countDocuments();
-      console.log('Total de produtos no banco:', totalProducts);
-
-      // Verificar produtos deste usuário
-      const products = await Product.find({ userId: req.user.userId }).sort({ createdAt: -1 });
-      console.log(`Encontrados ${products.length} produtos para o usuário ${req.user.userId}`);
-
-      // Log dos primeiros produtos para debug
-      if (products.length > 0) {
-        console.log('Primeiro produto encontrado:', {
-          id: products[0]._id,
-          name: products[0].name,
-          userId: products[0].userId
+      console.log('👤 Usuário existe no banco:', !!userExists);
+      if (userExists) {
+        console.log('👤 Dados do usuário:', {
+          id: userExists._id,
+          username: userExists.username
         });
       }
 
+      // Verificar quantos produtos existem no total
+      const totalProducts = await Product.countDocuments();
+      console.log('📦 Total de produtos no banco:', totalProducts);
+
+      // Verificar se há produtos com esse userId específico
+      const productsWithUserId = await Product.countDocuments({ userId: req.user.userId });
+      console.log('📦 Produtos com userId específico:', productsWithUserId);
+
+      // Verificar diferentes tipos de busca
+      const allProductsForUser = await Product.find({ userId: req.user.userId });
+      const allProductsForUserString = await Product.find({ userId: req.user.userId.toString() });
+      
+      console.log('🔍 Resultados de busca:', {
+        byObjectId: allProductsForUser.length,
+        byString: allProductsForUserString.length
+      });
+
+      // Buscar alguns produtos aleatórios para comparar userId
+      const sampleProducts = await Product.find({}).limit(3);
+      console.log('📋 Amostras de produtos para comparação de userId:', sampleProducts.map(p => ({
+        id: p._id,
+        name: p.name,
+        userId: p.userId,
+        userIdType: typeof p.userId,
+        matches: p.userId.toString() === req.user.userId
+      })));
+
+      // Verificar produtos deste usuário
+      const products = await Product.find({ userId: req.user.userId }).sort({ createdAt: -1 });
+      console.log(`✅ Encontrados ${products.length} produtos para o usuário ${req.user.userId}`);
+
+      // Log dos primeiros produtos para debug
+      if (products.length > 0) {
+        console.log('📝 Primeiro produto encontrado:', {
+          id: products[0]._id,
+          name: products[0].name,
+          userId: products[0].userId,
+          price: products[0].price,
+          category: products[0].category
+        });
+      } else {
+        console.log('⚠️ Nenhum produto encontrado para este usuário');
+      }
+
+      console.log('=== PRODUCTS FETCH DEBUG END ===\n');
       res.json(products);
     } catch (error) {
-      console.error("Error fetching products:", error);
+      console.error("❌ Error fetching products:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       res.status(500).json({ error: "Failed to fetch products" });
     }
   });

@@ -46,14 +46,57 @@ export function SmartDashboard() {
     try {
       setLoading(true);
       
-      // Simula carregamento de dados do dashboard
+      const authToken = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("userId");
+      
+      if (!authToken || !userId) {
+        console.log('SmartDashboard: Token ou userId não encontrado');
+        return;
+      }
+
+      console.log('SmartDashboard: Carregando dados...', { userId });
+
+      // Carrega dados do dashboard com autenticação
       const [productsResponse, statsResponse] = await Promise.all([
-        fetch('/api/products/1'),
-        fetch('/api/products/stats/1')
+        fetch('/api/products', {
+          headers: {
+            "x-auth-token": authToken
+          }
+        }),
+        fetch(`/api/products/stats/${userId}`, {
+          headers: {
+            "x-auth-token": authToken
+          }
+        })
       ]);
 
-      const products = await productsResponse.json();
-      const stats = await statsResponse.json();
+      console.log('SmartDashboard: Respostas recebidas:', {
+        productsOk: productsResponse.ok,
+        productsStatus: productsResponse.status,
+        statsOk: statsResponse.ok,
+        statsStatus: statsResponse.status
+      });
+
+      let products = [];
+      let stats = {};
+
+      if (productsResponse.ok) {
+        products = await productsResponse.json();
+        console.log('SmartDashboard: Produtos carregados:', products.length);
+      } else {
+        console.error('SmartDashboard: Erro ao carregar produtos:', productsResponse.status);
+        const errorText = await productsResponse.text();
+        console.error('SmartDashboard: Texto do erro produtos:', errorText);
+      }
+
+      if (statsResponse.ok) {
+        stats = await statsResponse.json();
+        console.log('SmartDashboard: Stats carregadas:', stats);
+      } else {
+        console.error('SmartDashboard: Erro ao carregar stats:', statsResponse.status);
+        const errorText = await statsResponse.text();
+        console.error('SmartDashboard: Texto do erro stats:', errorText);
+      }
 
       // Processa dados para o dashboard
       const processedData = processDashboardData(products, stats);
