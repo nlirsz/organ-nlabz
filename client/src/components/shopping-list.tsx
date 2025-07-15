@@ -43,7 +43,7 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
           result = a.name.localeCompare(b.name);
       }
       return sortOrder === "asc" ? result : -result;
-    };
+    });
 
   if (isLoading) {
     return (

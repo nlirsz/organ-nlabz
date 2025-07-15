@@ -123,8 +123,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all products for authenticated user
   app.get("/api/products", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      console.log('=== PRODUCTS FETCH DEBUG ===');
       console.log('🔍 Buscando produtos para usuário:', req.user.userId);
+
+      // Verificar se mongoose está disponível
+      if (!mongoose || !mongoose.connection) {
+        console.error('❌ Mongoose não está disponível');
+        return res.status(500).json({ error: "Database connection not available" });
+      }
 
       // Verificar conexão com banco
       console.log('🔌 Estado da conexão MongoDB:', {
@@ -155,7 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar diferentes tipos de busca
       const allProductsForUser = await Product.find({ userId: req.user.userId });
       const allProductsForUserString = await Product.find({ userId: req.user.userId.toString() });
-      
+
       console.log('🔍 Resultados de busca:', {
         byObjectId: allProductsForUser.length,
         byString: allProductsForUserString.length
