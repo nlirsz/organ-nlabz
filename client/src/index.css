@@ -111,7 +111,6 @@
   }
 
   .neomorphic-card:hover {
-    transform: translateY(-2px);
     box-shadow: 5px 5px 10px var(--c-dark), -5px -5px 10px var(--c-light);
   }
 
@@ -194,12 +193,10 @@
 
   .neomorphic-button:hover {
     color: var(--primary-action);
-    transform: translateY(-1px);
   }
 
   .neomorphic-button:active {
     box-shadow: var(--shadow-inset);
-    transform: translateY(0);
   }
 
   .neomorphic-button-primary {
@@ -241,7 +238,6 @@
   }
 
   .category-tag:hover {
-    transform: translateY(-1px);
     box-shadow: var(--shadow);
   }
 
@@ -252,11 +248,9 @@
   @keyframes slideInUp {
     from {
       opacity: 0;
-      transform: translateY(20px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
     }
   }
 
@@ -295,11 +289,9 @@
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: translateY(10px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
     }
   }
 
@@ -310,11 +302,11 @@
   @keyframes cardFadeIn {
     from {
       opacity: 0;
-      transform: translateY(15px) scale(0.98);
+      transform: scale(0.98);
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: scale(1);
     }
   }
 
@@ -327,7 +319,6 @@
 
   /* Hover effects para cards de produtos */
   .product-card-hover:hover {
-    transform: translateY(-3px);
     box-shadow: 6px 6px 12px var(--c-dark), -6px -6px 12px var(--c-light);
   }
 
@@ -484,7 +475,6 @@
   }
 
   .product-card:not(.history-card) .card-actions button:hover {
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 }
