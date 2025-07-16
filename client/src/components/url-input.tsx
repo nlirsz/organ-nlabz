@@ -19,11 +19,8 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
 
   const addProductMutation = useMutation({
     mutationFn: async (url: string) => {
-      const response = await apiRequest("/api/products/scrape", {
-        method: "POST",
-        body: JSON.stringify({ url }),
-      });
-      return response;
+      const response = await apiRequest("POST", "/api/products/scrape", { url });
+      return response.json();
     },
     onSuccess: (data) => {
       if (data.needsManualInput) {

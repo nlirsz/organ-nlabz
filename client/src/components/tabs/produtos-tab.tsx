@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Filter, SortAsc, Package, Edit, Check, Trash2, Star } from "lucide-react";
 import { CategoryFilter } from "@/components/category-filter";
@@ -9,12 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
 
 interface ProdutosTabProps {
-  products: Product[];
-  isLoading: boolean;
-  onProductUpdated: () => void;
+  refreshKey: number;
 }
 
-export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosTabProps) {
+export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [sortBy, setSortBy] = useState("name");
@@ -25,10 +23,15 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
   const { toast } = useToast();
   const authToken = localStorage.getItem("authToken");
 
+  const { data: products = [], isLoading } = useQuery<Product[]>({
+    queryKey: ["/api/products", refreshKey],
+    enabled: !!authToken,
+  });
+
   const purchaseProductMutation = useMutation({
     mutationFn: async (productId: number) => {
       const response = await fetch(`/api/products/${productId}`, {
-        method: "PATCH",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           "x-auth-token": authToken || ""
@@ -42,7 +45,6 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
-      onProductUpdated();
       toast({
         title: "Sucesso",
         description: "Produto marcado como comprado!",
@@ -72,7 +74,6 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
-      onProductUpdated();
       toast({
         title: "Sucesso",
         description: "Produto removido da lista",
@@ -329,7 +330,7 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
           onClose={() => setEditingProduct(null)}
           onProductUpdated={() => {
             setEditingProduct(null);
-            onProductUpdated();
+            queryClient.invalidateQueries({ queryKey: ["/api/products"] });
           }}
         />
       )}
