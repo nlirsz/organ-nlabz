@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ShoppingList } from "@/components/shopping-list";
 import { AdvancedSearch } from '@/components/advanced-search';
 import { FavoritesSystem, useFavorites } from '@/components/favorites-system';
@@ -16,12 +16,22 @@ interface ProdutosTabProps {
 
 export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosTabProps) {
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [filteredProducts, setFilteredProducts] = useState(products);
   const [activeView, setActiveView] = useState('all');
   const { toggleFavorite } = useFavorites();
 
   // Filtrar apenas produtos não comprados
   const availableProducts = Array.isArray(products) ? products.filter(p => !p.isPurchased) : [];
+  const [filteredProducts, setFilteredProducts] = useState(availableProducts);
+
+  // Sincronizar filteredProducts quando availableProducts mudar
+  useEffect(() => {
+    if (selectedCategory) {
+      const filtered = availableProducts.filter(p => p.category === selectedCategory);
+      setFilteredProducts(filtered);
+    } else {
+      setFilteredProducts(availableProducts);
+    }
+  }, [availableProducts, selectedCategory]);
 
   const handleSearch = (filters: any) => {
     let filtered = [...availableProducts];
@@ -91,7 +101,7 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
     setFilteredProducts(filtered);
   };
 
-  const displayProducts = filteredProducts.length > 0 ? filteredProducts : availableProducts;
+  const displayProducts = filteredProducts;
 
   return (
     <div className="space-y-6 fade-in">
