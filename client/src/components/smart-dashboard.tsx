@@ -142,39 +142,58 @@ export function SmartDashboard() {
     const purchasedValue = purchasedProducts.reduce((sum, p) => sum + (parseFloat(p.price) || 0), 0);
     const pendingValue = totalValue - purchasedValue;
 
-    // Dados por categoria
-    const categoriesData = [
-      { name: 'Eletrônicos', value: 35, color: '#3b82f6' },
-      { name: 'Roupas', value: 25, color: '#10b981' },
-      { name: 'Casa', value: 20, color: '#f59e0b' },
-      { name: 'Livros', value: 10, color: '#8b5cf6' },
-      { name: 'Outros', value: 10, color: '#ef4444' }
-    ];
+    // Dados reais por categoria baseados nos produtos do usuário
+    const categoryCounts = products.reduce((acc, product) => {
+      const category = product.category || 'Outros';
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    }, {});
 
-    // Tendência mensal
+    const categoriesData = Object.entries(categoryCounts).map(([name, count]) => ({
+      name,
+      value: count as number,
+      color: getCategoryColor(name)
+    }));
+
+    // Se não há produtos, mostrar categorias vazias
+    if (totalProducts === 0) {
+      categoriesData.push(
+        { name: 'Nenhum produto ainda', value: 1, color: '#e5e7eb' }
+      );
+    }
+
+    // Tendência mensal - dados simulados para demonstração
     const monthlyTrend = [
-      { month: 'Jan', spending: 1200, products: 5 },
-      { month: 'Fev', spending: 800, products: 3 },
-      { month: 'Mar', spending: 1500, products: 7 },
-      { month: 'Abr', spending: 2000, products: 8 },
-      { month: 'Mai', spending: 1800, products: 6 },
-      { month: 'Jun', spending: 2200, products: 9 }
+      { month: 'Jan', spending: Math.floor(totalValue * 0.1), products: Math.floor(totalProducts * 0.1) },
+      { month: 'Fev', spending: Math.floor(totalValue * 0.15), products: Math.floor(totalProducts * 0.15) },
+      { month: 'Mar', spending: Math.floor(totalValue * 0.2), products: Math.floor(totalProducts * 0.2) },
+      { month: 'Abr', spending: Math.floor(totalValue * 0.25), products: Math.floor(totalProducts * 0.25) },
+      { month: 'Mai', spending: Math.floor(totalValue * 0.15), products: Math.floor(totalProducts * 0.15) },
+      { month: 'Jun', spending: Math.floor(totalValue * 0.15), products: Math.floor(totalProducts * 0.15) }
     ];
 
-    // Lojas principais
-    const topStores = [
-      { name: 'Amazon', count: 12, value: 2500 },
-      { name: 'Mercado Livre', count: 8, value: 1200 },
-      { name: 'Americanas', count: 5, value: 800 },
-      { name: 'Outros', count: 3, value: 500 }
-    ];
+    // Lojas principais baseadas nos produtos reais
+    const storeCounts = products.reduce((acc, product) => {
+      const store = product.store || 'Loja desconhecida';
+      acc[store] = (acc[store] || 0) + 1;
+      return acc;
+    }, {});
 
-    // Atividade recente
-    const recentActivity = [
-      { type: 'added', product: 'Smartphone XYZ', timestamp: Date.now() - 3600000 },
-      { type: 'purchased', product: 'Livro ABC', timestamp: Date.now() - 7200000 },
-      { type: 'price_drop', product: 'Headphone DEF', timestamp: Date.now() - 10800000 }
-    ];
+    const topStores = Object.entries(storeCounts).map(([name, count]) => ({
+      name,
+      count: count as number,
+      value: Math.floor(totalValue * (count as number) / totalProducts) || 0
+    }));
+
+    // Atividade recente baseada nos produtos reais
+    const recentActivity = products
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 3)
+      .map(product => ({
+        type: product.isPurchased ? 'purchased' : 'added',
+        product: product.name,
+        timestamp: new Date(product.createdAt).getTime()
+      }));
 
     // Alertas de preço
     const priceAlerts = [
@@ -203,6 +222,20 @@ export function SmartDashboard() {
       priceAlerts,
       recommendations
     };
+  };
+
+  const getCategoryColor = (category: string) => {
+    const colors = {
+      'Eletronicos': '#3b82f6',
+      'Roupas': '#10b981', 
+      'Casa': '#f59e0b',
+      'Livros': '#8b5cf6',
+      'Games': '#ef4444',
+      'Presentes': '#ec4899',
+      'Geral': '#6b7280',
+      'Outros': '#9ca3af'
+    };
+    return colors[category] || '#9ca3af';
   };
 
   const formatCurrency = (value: number) => {

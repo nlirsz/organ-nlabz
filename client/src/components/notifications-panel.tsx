@@ -36,7 +36,18 @@ export function NotificationsPanel() {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('/api/notifications/1');
+      const authToken = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("userId");
+      
+      if (!authToken || !userId) {
+        return;
+      }
+
+      const response = await fetch(`/api/notifications/${userId}`, {
+        headers: {
+          "x-auth-token": authToken
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setNotifications(data);
@@ -48,7 +59,18 @@ export function NotificationsPanel() {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await fetch('/api/notifications/1/unread-count');
+      const authToken = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("userId");
+      
+      if (!authToken || !userId) {
+        return;
+      }
+
+      const response = await fetch(`/api/notifications/${userId}/unread-count`, {
+        headers: {
+          "x-auth-token": authToken
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setUnreadCount(data.count);
@@ -60,8 +82,18 @@ export function NotificationsPanel() {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const response = await fetch(`/api/notifications/1/${notificationId}/read`, {
-        method: 'PUT'
+      const authToken = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("userId");
+      
+      if (!authToken || !userId) {
+        return;
+      }
+
+      const response = await fetch(`/api/notifications/${userId}/${notificationId}/read`, {
+        method: 'PUT',
+        headers: {
+          "x-auth-token": authToken
+        }
       });
       if (response.ok) {
         setNotifications(prev => 
