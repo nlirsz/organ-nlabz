@@ -5,43 +5,11 @@ import { priceHistoryService } from "./services/priceHistory.js";
 import { notificationService } from "./services/notifications.js";
 import { insertProductSchema, updateProductSchema } from "@shared/schema.js";
 import { z } from "zod";
-import { User } from "./models/User";
+import { storage } from "./storage";
 import { generateToken, authenticateToken, type AuthenticatedRequest } from "./middleware/auth";
-import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
-// Esquema do produto para MongoDB
-const productSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  url: String,
-  urlOrigin: String,
-  name: { type: String, required: true },
-  price: String,
-  originalPrice: String,
-  image: String, // Campo 'image' como no banco
-  imageUrl: String, // Manter compatibilidade
-  store: String,
-  description: String,
-  category: { type: String, default: "Geral" },
-  brand: String,
-  tags: [String], // Array de strings
-  priority: { type: String, default: "Baixa" },
-  notes: String,
-  status: { type: String, default: "pendente" }, // Campo 'status' do banco
-  isPurchased: { type: Boolean, default: false },
-  purchasedAt: Date,
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-  __v: { type: Number, default: 0 }
-}, {
-  // Permitir campos adicionais que possam existir no banco
-  strict: false
-});
 
-const Product = mongoose.model('Product', productSchema);
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
@@ -59,22 +27,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user already exists
-      const existingUser = await User.findOne({ username });
+      const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(409).json({ message: 'Usuário já existe.' });
       }
 
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       // Create new user
-      const user = new User({ username, password });
-      await user.save();
+      const user = await storage.createUser({ username, password: hashedPassword });
 
       // Generate token
-      const token = generateToken(user._id.toString());
+      const token = generateToken(user.id.toString());
 
       res.status(201).json({
         message: 'Usuário registrado com sucesso!',
         token,
-        userId: user._id.toString()
+        userId: user.id.toString()
       });
     } catch (error) {
       console.error("Register error:", error);
@@ -91,24 +61,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Find user
-      const user = await User.findOne({ username });
+      const user = await storage.getUserByUsername(username);
       if (!user) {
         return res.status(401).json({ message: 'Credenciais inválidas (usuário não encontrado).' });
       }
 
       // Check password
-      const isMatch = await user.comparePassword(password);
+      const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
         return res.status(401).json({ message: 'Credenciais inválidas (senha incorreta).' });
       }
 
       // Generate token
-      const token = generateToken(user._id.toString());
+      const token = generateToken(user.id.toString());
 
       res.json({
         message: 'Login bem-sucedido.',
         token,
-        userId: user._id.toString(),
+        userId: user.id.toString(),
         username: user.username
       });
     } catch (error) {
@@ -131,135 +101,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all products for authenticated user
   app.get("/api/products", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      console.log('🔍 Buscando produtos para usuário:', req.user.userId);
-
-      // Verificar se mongoose está disponível
-      if (!mongoose || !mongoose.connection) {
-        console.error('❌ Mongoose não está disponível');
-        return res.status(500).json({ error: "Database connection not available" });
-      }
-
-      // Verificar conexão com banco
-      console.log('🔌 Estado da conexão MongoDB:', {
-        readyState: mongoose.connection.readyState,
-        host: mongoose.connection.host,
-        port: mongoose.connection.port,
-        name: mongoose.connection.name
-      });
-
-      // Verificar se o usuário existe no banco
-      const userExists = await User.findById(req.user.userId);
-      console.log('👤 Usuário existe no banco:', !!userExists);
-      if (userExists) {
-        console.log('👤 Dados do usuário:', {
-          id: userExists._id,
-          username: userExists.username
-        });
-      }
-
-      // Verificar quantos produtos existem no total
-      const totalProducts = await Product.countDocuments();
-      console.log('📦 Total de produtos no banco:', totalProducts);
-
-      // Verificar se há produtos com esse userId específico
-      const productsWithUserId = await Product.countDocuments({ userId: req.user.userId });
-      console.log('📦 Produtos com userId específico:', productsWithUserId);
-
-      // Verificar diferentes tipos de busca
-      const allProductsForUser = await Product.find({ userId: req.user.userId });
-      const allProductsForUserString = await Product.find({ userId: req.user.userId.toString() });
-
-      console.log('🔍 Resultados de busca:', {
-        byObjectId: allProductsForUser.length,
-        byString: allProductsForUserString.length
-      });
-
-      // Buscar alguns produtos aleatórios para comparar userId
-      const sampleProducts = await Product.find({}).limit(3);
-      console.log('📋 Amostras de produtos para comparação de userId:', sampleProducts.map(p => ({
-        id: p._id,
-        name: p.name,
-        userId: p.userId,
-        userIdType: typeof p.userId,
-        matches: p.userId.toString() === req.user.userId
-      })));
-
-      // Converter userId para ObjectId corretamente
-      let products = [];
-      
-      try {
-        // Garantir que estamos usando ObjectId do mongoose
-        const ObjectId = mongoose.Types.ObjectId;
-        const userObjectId = new ObjectId(req.user.userId);
-        
-        console.log('🔍 Convertendo userId para ObjectId:', {
-          original: req.user.userId,
-          converted: userObjectId,
-          type: typeof userObjectId
-        });
-        
-        // Buscar produtos usando ObjectId
-        products = await Product.find({ userId: userObjectId }).sort({ createdAt: -1 });
-        console.log(`🔍 Busca por ObjectId convertido: ${products.length} produtos`);
-        
-        // Se não encontrou, tentar busca alternativa
-        if (products.length === 0) {
-          console.log('🔍 Tentando busca alternativa...');
-          
-          // Buscar usando string
-          const productsByString = await Product.find({ userId: req.user.userId }).sort({ createdAt: -1 });
-          console.log(`🔍 Busca por string: ${productsByString.length} produtos`);
-          
-          if (productsByString.length > 0) {
-            products = productsByString;
-          }
-        }
-        
-      } catch (error) {
-        console.log('❌ Erro na conversão/busca:', error.message);
-        
-        // Fallback: buscar sem conversão
-        try {
-          products = await Product.find({ userId: req.user.userId }).sort({ createdAt: -1 });
-          console.log(`🔍 Busca fallback: ${products.length} produtos`);
-        } catch (fallbackError) {
-          console.log('❌ Erro no fallback:', fallbackError.message);
-        }
-      }
-
-      console.log(`✅ Total encontrado: ${products.length} produtos para o usuário ${req.user.userId}`);
-
-      // Log dos primeiros produtos para debug
-      if (products.length > 0) {
-        console.log('📝 Primeiro produto encontrado:', {
-          id: products[0]._id,
-          name: products[0].name,
-          userId: products[0].userId,
-          userIdType: typeof products[0].userId,
-          price: products[0].price,
-          category: products[0].category
-        });
-      } else {
-        console.log('⚠️ Nenhum produto encontrado para este usuário');
-      }
-
-      // Mapear os produtos para o formato esperado pelo frontend
-      const mappedProducts = products.map(product => ({
-        ...product.toObject(),
-        // Garantir compatibilidade com ambos os campos de imagem
-        imageUrl: product.image || product.imageUrl,
-        // Mapear status para isPurchased se necessário
-        isPurchased: product.status === 'comprado' || product.isPurchased
-      }));
-      
-      console.log('=== PRODUCTS FETCH DEBUG END ===\n');
-      res.json(mappedProducts);
+      const userId = parseInt(req.user.userId);
+      const products = await storage.getProducts(userId);
+      res.json(products);
     } catch (error) {
-      console.error("❌ Error fetching products:", {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
+      console.error("Error fetching products:", error);
       res.status(500).json({ error: "Failed to fetch products" });
     }
   });
@@ -267,84 +113,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get product stats for authenticated user
   app.get("/api/products/stats/:userId", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      console.log('=== STATS FETCH DEBUG ===');
-      console.log('🔍 Buscando estatísticas para usuário:', req.user.userId);
-      console.log('🔍 Parâmetro userId da URL:', req.params.userId);
-      console.log('🔍 Comparação userId:', {
-        fromToken: req.user.userId,
-        fromParams: req.params.userId,
-        matches: req.user.userId === req.params.userId
-      });
-
-      // Usar a mesma lógica de busca que a rota de produtos
-      let products = [];
-      
-      // Usar a mesma lógica de busca que na rota de produtos
-      try {
-        const ObjectId = mongoose.Types.ObjectId;
-        const userObjectId = new ObjectId(req.user.userId);
-        
-        console.log('🔍 Stats - Convertendo userId para ObjectId:', {
-          original: req.user.userId,
-          converted: userObjectId,
-          type: typeof userObjectId
-        });
-        
-        products = await Product.find({ userId: userObjectId });
-        console.log(`🔍 Stats - Busca por ObjectId convertido: ${products.length} produtos`);
-        
-        if (products.length === 0) {
-          const productsByString = await Product.find({ userId: req.user.userId });
-          console.log(`🔍 Stats - Busca por string: ${productsByString.length} produtos`);
-          
-          if (productsByString.length > 0) {
-            products = productsByString;
-          }
-        }
-        
-      } catch (error) {
-        console.log('❌ Stats - Erro na conversão/busca:', error.message);
-        
-        try {
-          products = await Product.find({ userId: req.user.userId });
-          console.log(`🔍 Stats - Busca fallback: ${products.length} produtos`);
-        } catch (fallbackError) {
-          console.log('❌ Stats - Erro no fallback:', fallbackError.message);
-        }
-      }
-
-      console.log('📊 Produtos encontrados para estatísticas:', products.length);
-
-      if (products.length > 0) {
-        console.log('📝 Tipos de produtos encontrados:', {
-          total: products.length,
-          purchased: products.filter(p => p.isPurchased).length,
-          withPrice: products.filter(p => p.price).length
-        });
-      }
-
-      const totalItems = products.length;
-      const purchasedItems = products.filter(p => p.status === 'comprado' || p.isPurchased).length;
-      const estimatedTotal = products.reduce((sum, p) => {
-        const price = p.price ? parseFloat(p.price.toString().replace(',', '.')) : 0;
-        return sum + price;
-      }, 0);
-
-      const stats = {
-        totalItems,
-        purchasedItems,
-        estimatedTotal
-      };
-
-      console.log('✅ Estatísticas calculadas:', stats);
-      console.log('=== STATS FETCH DEBUG END ===\n');
+      const userId = parseInt(req.user.userId);
+      const stats = await storage.getProductStats(userId);
       res.json(stats);
     } catch (error) {
-      console.error("❌ Error fetching stats:", {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
+      console.error("Error fetching stats:", error);
       res.status(500).json({ error: "Failed to fetch product stats" });
     }
   });
@@ -385,34 +158,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const scrapedProduct = await scrapeProductFromUrl(url);
 
-      // Garantir que userId seja um ObjectId válido
-      const ObjectId = mongoose.Types.ObjectId;
-      const userObjectId = new ObjectId(req.user.userId);
-      
-      console.log('📝 Criando produto com userId:', {
-        original: req.user.userId,
-        converted: userObjectId,
-        type: typeof userObjectId
-      });
-
-      const product = new Product({
-        userId: userObjectId,
+      const productData = {
+        userId: parseInt(req.user.userId),
         url,
         name: scrapedProduct.name,
         price: scrapedProduct.price?.toString() || null,
         originalPrice: scrapedProduct.originalPrice?.toString() || null,
         imageUrl: scrapedProduct.imageUrl,
-        image: scrapedProduct.imageUrl, // Também salvar no campo 'image'
         store: scrapedProduct.store,
         description: scrapedProduct.description,
         category: scrapedProduct.category || "Geral",
         brand: scrapedProduct.brand,
-        isPurchased: false,
-        status: "disponivel"
-      });
+        isPurchased: false
+      };
 
-      await product.save();
-
+      const product = await storage.createProduct(productData);
       res.json(product);
     } catch (error) {
       console.error("Scraping error:", error);
@@ -423,14 +183,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update product
   app.put("/api/products/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const ObjectId = mongoose.Types.ObjectId;
-      const userObjectId = new ObjectId(req.user.userId);
+      const productId = parseInt(req.params.id);
+      const userId = parseInt(req.user.userId);
       
-      const product = await Product.findOneAndUpdate(
-        { _id: req.params.id, userId: userObjectId },
-        { ...req.body, updatedAt: new Date() },
-        { new: true }
-      );
+      const product = await storage.updateProduct(productId, req.body, userId);
 
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
@@ -446,15 +202,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete product
   app.delete("/api/products/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const ObjectId = mongoose.Types.ObjectId;
-      const userObjectId = new ObjectId(req.user.userId);
+      const productId = parseInt(req.params.id);
+      const userId = parseInt(req.user.userId);
       
-      const product = await Product.findOneAndDelete({
-        _id: req.params.id,
-        userId: userObjectId
-      });
+      const success = await storage.deleteProduct(productId, userId);
 
-      if (!product) {
+      if (!success) {
         return res.status(404).json({ error: "Product not found" });
       }
 
@@ -479,7 +232,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // APIs para notificações
   app.get("/api/notifications/:userId", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const notifications = notificationService.getUserNotifications(req.user.userId);
+      const userId = parseInt(req.user.userId);
+      const notifications = notificationService.getUserNotifications(userId);
       res.json(notifications);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch notifications" });
@@ -488,7 +242,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/notifications/:userId/unread-count", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const count = notificationService.getUnreadCount(req.user.userId);
+      const userId = parseInt(req.user.userId);
+      const count = notificationService.getUnreadCount(userId);
       res.json({ count });
     } catch (error) {
       res.status(500).json({ error: "Failed to get unread count" });
