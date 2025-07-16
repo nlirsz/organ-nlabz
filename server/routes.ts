@@ -184,36 +184,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         matches: p.userId.toString() === req.user.userId
       })));
 
-      // Tentar diferentes formatos de userId para buscar produtos
+      // Converter userId para ObjectId corretamente
       let products = [];
       
-      // Primeiro, tentar com ObjectId
       try {
-        products = await Product.find({ userId: req.user.userId }).sort({ createdAt: -1 });
-        console.log(`🔍 Busca por ObjectId: ${products.length} produtos`);
-      } catch (error) {
-        console.log('❌ Erro na busca por ObjectId:', error.message);
-      }
-      
-      // Se não encontrou, tentar com string
-      if (products.length === 0) {
-        try {
-          products = await Product.find({ userId: req.user.userId.toString() }).sort({ createdAt: -1 });
-          console.log(`🔍 Busca por string: ${products.length} produtos`);
-        } catch (error) {
-          console.log('❌ Erro na busca por string:', error.message);
+        // Garantir que estamos usando ObjectId do mongoose
+        const ObjectId = mongoose.Types.ObjectId;
+        const userObjectId = new ObjectId(req.user.userId);
+        
+        console.log('🔍 Convertendo userId para ObjectId:', {
+          original: req.user.userId,
+          converted: userObjectId,
+          type: typeof userObjectId
+        });
+        
+        // Buscar produtos usando ObjectId
+        products = await Product.find({ userId: userObjectId }).sort({ createdAt: -1 });
+        console.log(`🔍 Busca por ObjectId convertido: ${products.length} produtos`);
+        
+        // Se não encontrou, tentar busca alternativa
+        if (products.length === 0) {
+          console.log('🔍 Tentando busca alternativa...');
+          
+          // Buscar usando string
+          const productsByString = await Product.find({ userId: req.user.userId }).sort({ createdAt: -1 });
+          console.log(`🔍 Busca por string: ${productsByString.length} produtos`);
+          
+          if (productsByString.length > 0) {
+            products = productsByString;
+          }
         }
-      }
-      
-      // Se ainda não encontrou, tentar busca mais ampla
-      if (products.length === 0) {
+        
+      } catch (error) {
+        console.log('❌ Erro na conversão/busca:', error.message);
+        
+        // Fallback: buscar sem conversão
         try {
-          const mongoose = await import('mongoose');
-          const objectId = new mongoose.Types.ObjectId(req.user.userId);
-          products = await Product.find({ userId: objectId }).sort({ createdAt: -1 });
-          console.log(`🔍 Busca por novo ObjectId: ${products.length} produtos`);
-        } catch (error) {
-          console.log('❌ Erro na busca por novo ObjectId:', error.message);
+          products = await Product.find({ userId: req.user.userId }).sort({ createdAt: -1 });
+          console.log(`🔍 Busca fallback: ${products.length} produtos`);
+        } catch (fallbackError) {
+          console.log('❌ Erro no fallback:', fallbackError.message);
         }
       }
 
@@ -269,31 +279,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Usar a mesma lógica de busca que a rota de produtos
       let products = [];
       
-      // Tentar diferentes formatos de userId
+      // Usar a mesma lógica de busca que na rota de produtos
       try {
-        products = await Product.find({ userId: req.user.userId });
-        console.log(`🔍 Stats - Busca por ObjectId: ${products.length} produtos`);
-      } catch (error) {
-        console.log('❌ Stats - Erro na busca por ObjectId:', error.message);
-      }
-      
-      if (products.length === 0) {
-        try {
-          products = await Product.find({ userId: req.user.userId.toString() });
-          console.log(`🔍 Stats - Busca por string: ${products.length} produtos`);
-        } catch (error) {
-          console.log('❌ Stats - Erro na busca por string:', error.message);
+        const ObjectId = mongoose.Types.ObjectId;
+        const userObjectId = new ObjectId(req.user.userId);
+        
+        console.log('🔍 Stats - Convertendo userId para ObjectId:', {
+          original: req.user.userId,
+          converted: userObjectId,
+          type: typeof userObjectId
+        });
+        
+        products = await Product.find({ userId: userObjectId });
+        console.log(`🔍 Stats - Busca por ObjectId convertido: ${products.length} produtos`);
+        
+        if (products.length === 0) {
+          const productsByString = await Product.find({ userId: req.user.userId });
+          console.log(`🔍 Stats - Busca por string: ${productsByString.length} produtos`);
+          
+          if (productsByString.length > 0) {
+            products = productsByString;
+          }
         }
-      }
-      
-      if (products.length === 0) {
+        
+      } catch (error) {
+        console.log('❌ Stats - Erro na conversão/busca:', error.message);
+        
         try {
-          const mongoose = await import('mongoose');
-          const objectId = new mongoose.Types.ObjectId(req.user.userId);
-          products = await Product.find({ userId: objectId });
-          console.log(`🔍 Stats - Busca por novo ObjectId: ${products.length} produtos`);
-        } catch (error) {
-          console.log('❌ Stats - Erro na busca por novo ObjectId:', error.message);
+          products = await Product.find({ userId: req.user.userId });
+          console.log(`🔍 Stats - Busca fallback: ${products.length} produtos`);
+        } catch (fallbackError) {
+          console.log('❌ Stats - Erro no fallback:', fallbackError.message);
         }
       }
 
@@ -369,18 +385,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const scrapedProduct = await scrapeProductFromUrl(url);
 
+      // Garantir que userId seja um ObjectId válido
+      const ObjectId = mongoose.Types.ObjectId;
+      const userObjectId = new ObjectId(req.user.userId);
+      
+      console.log('📝 Criando produto com userId:', {
+        original: req.user.userId,
+        converted: userObjectId,
+        type: typeof userObjectId
+      });
+
       const product = new Product({
-        userId: req.user.userId,
+        userId: userObjectId,
         url,
         name: scrapedProduct.name,
         price: scrapedProduct.price?.toString() || null,
         originalPrice: scrapedProduct.originalPrice?.toString() || null,
         imageUrl: scrapedProduct.imageUrl,
+        image: scrapedProduct.imageUrl, // Também salvar no campo 'image'
         store: scrapedProduct.store,
         description: scrapedProduct.description,
         category: scrapedProduct.category || "Geral",
         brand: scrapedProduct.brand,
-        isPurchased: false
+        isPurchased: false,
+        status: "disponivel"
       });
 
       await product.save();
@@ -395,8 +423,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update product
   app.put("/api/products/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      const ObjectId = mongoose.Types.ObjectId;
+      const userObjectId = new ObjectId(req.user.userId);
+      
       const product = await Product.findOneAndUpdate(
-        { _id: req.params.id, userId: req.user.userId },
+        { _id: req.params.id, userId: userObjectId },
         { ...req.body, updatedAt: new Date() },
         { new: true }
       );
@@ -415,9 +446,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete product
   app.delete("/api/products/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
+      const ObjectId = mongoose.Types.ObjectId;
+      const userObjectId = new ObjectId(req.user.userId);
+      
       const product = await Product.findOneAndDelete({
         _id: req.params.id,
-        userId: req.user.userId
+        userId: userObjectId
       });
 
       if (!product) {
