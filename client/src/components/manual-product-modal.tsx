@@ -58,12 +58,12 @@ export function ManualProductModal({ isOpen, onClose, initialUrl = "", initialDa
       body: JSON.stringify(data),
     }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
       toast({
         title: "Produto adicionado!",
         description: "Produto foi adicionado manualmente com sucesso.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/products/stats'] });
       onProductAdded?.();
       onClose();
       resetForm();
@@ -93,7 +93,7 @@ export function ManualProductModal({ isOpen, onClose, initialUrl = "", initialDa
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.url.trim()) {
       toast({
         title: "URL obrigatória",

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ManualProductModal } from "./manual-product-modal";
+import { queryClient } from "@/lib/queryClient";
 
 interface UrlInputProps {
   onProductAdded: () => void;
@@ -19,20 +20,14 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
 
   const addProductMutation = useMutation({
     mutationFn: async (url: string) => {
-      const response = await fetch("/api/products/scrape", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-auth-token": localStorage.getItem("authToken") || ""
-        },
-        body: JSON.stringify({ url }),
-      });
-      if (!response.ok) {
-        throw new Error("Falha ao adicionar produto");
-      }
+      const response = await apiRequest("POST", "/api/products/scrape", { url });
       return response.json();
     },
     onSuccess: (data) => {
+      // Invalidate queries to refresh the products tab
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
+
       if (data.needsManualInput) {
         // Se o scraping foi limitado, mostra aviso e oferece opção manual
         toast({
@@ -62,7 +57,7 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
     },
     onError: (error: any) => {
       console.error("Erro ao adicionar produto:", error);
-      
+
       // Se o erro permite retry manual, oferece a opção
       if (error.canRetryWithManual) {
         toast({
@@ -167,28 +162,22 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
               type="submit"
               disabled={addProductMutation.isPending}
               className="flex-1 neomorphic-button-primary flex items-center justify-center gap-2"
+              title="Adicionar produto via URL"
             >
               {addProductMutation.isPending ? (
-                <>
-                  <Wand2 className="w-4 h-4 animate-spin" />
-                  Analisando...
-                </>
+                <Wand2 className="w-4 h-4 animate-spin" />
               ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  Adicionar à Lista
-                </>
+                <Plus className="w-4 h-4" />
               )}
             </button>
-            
+
             <button
               type="button"
               onClick={() => setShowManualModal(true)}
-              className="neomorphic-button flex items-center gap-2"
+              className="neomorphic-button flex items-center justify-center"
               title="Adicionar produto manualmente"
             >
               <Edit className="w-4 h-4" />
-              Manual
             </button>
           </div>
 
