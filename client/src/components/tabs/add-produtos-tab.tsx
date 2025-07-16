@@ -31,7 +31,7 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
         <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
           Como adicionar produtos:
         </h3>
-        
+
         <div className="space-y-4">
           <div className="flex items-start space-x-3">
             <div className="w-8 h-8 neomorphic-card rounded-full flex items-center justify-center flex-shrink-0">
@@ -46,7 +46,7 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-start space-x-3">
             <div className="w-8 h-8 neomorphic-card rounded-full flex items-center justify-center flex-shrink-0">
               <Search className="w-4 h-4" style={{ color: 'var(--primary-action)' }} />
@@ -60,7 +60,7 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-start space-x-3">
             <div className="w-8 h-8 neomorphic-card rounded-full flex items-center justify-center flex-shrink-0">
               <ShoppingCart className="w-4 h-4" style={{ color: 'var(--primary-action)' }} />
@@ -82,7 +82,7 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
         <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
           Lojas Compatíveis:
         </h3>
-        
+
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
             "Mercado Livre",
@@ -108,4 +108,86 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
       </div>
     </div>
   );
+}
+```
+
+```typescript
+// UrlInput Component
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button"
+interface UrlInputProps {
+    onProductAdded: () => void;
+}
+
+export function UrlInput({ onProductAdded }: UrlInputProps) {
+    const [url, setUrl] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [message, setMessage] = useState("");
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!url.trim()) return;
+
+        const authToken = localStorage.getItem("authToken");
+        if (!authToken) {
+            setMessage("Token de autenticação não encontrado. Faça login novamente.");
+            return;
+        }
+
+        setIsLoading(true);
+        setMessage("");
+
+        try {
+            const response = await fetch("/api/products/scrape", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-auth-token": authToken,
+                },
+                body: JSON.stringify({ url: url.trim() }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setMessage("Produto adicionado com sucesso!");
+                setUrl("");
+                onProductAdded();
+            } else {
+                setMessage(data.error || data.msg || "Erro ao adicionar produto");
+            }
+        } catch (error) {
+            setMessage("Erro de conexão com o servidor");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
+    return (
+        <form onSubmit={handleSubmit} className="flex items-center space-x-4">
+            <input
+                type="url"
+                placeholder="Cole o link do produto"
+                className="flex-1 p-4 neomorphic-card rounded-xl"
+                style={{ color: 'var(--text-primary)' }}
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                disabled={isLoading}
+            />
+            <Button
+                type="submit"
+                className="neomorphic-card transition-all duration-300"
+                style={{ backgroundColor: 'var(--primary-action)', color: 'white', fontWeight: 'bold' }}
+                disabled={isLoading}
+            >
+                {isLoading ? "Adicionando..." : "Adicionar"}
+            </Button>
+            {message && (
+                <div className="absolute bottom-0 left-0 w-full p-4 text-center" style={{ color: 'var(--text-secondary)' }}>
+                    {message}
+                </div>
+            )}
+        </form>
+    );
 }

@@ -45,6 +45,53 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
       return sortOrder === "asc" ? result : -result;
     });
 
+  const handleTogglePurchased = async (productId: string, currentStatus: boolean) => {
+    const authToken = localStorage.getItem("authToken");
+    if (!authToken) return;
+
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": authToken,
+        },
+        body: JSON.stringify({
+          status: currentStatus ? "disponivel" : "comprado",
+          purchasedAt: currentStatus ? null : new Date().toISOString(),
+        }),
+      });
+
+      if (response.ok) {
+        onProductUpdated();
+      }
+    } catch (error) {
+      console.error("Error updating product:", error);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Tem certeza que deseja excluir este produto?")) return;
+
+    const authToken = localStorage.getItem("authToken");
+    if (!authToken) return;
+
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "DELETE",
+        headers: {
+          "x-auth-token": authToken,
+        },
+      });
+
+      if (response.ok) {
+        onProductUpdated();
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error);
+    }
+  };
+
   if (isLoading) {
     return (
       <section className="neomorphic-card p-8">
