@@ -131,11 +131,34 @@ async function scrapeByAnalyzingHtml(productUrl: string): Promise<ScrapedProduct
   const domain = new URL(productUrl).hostname;
   const isKnownSite = getKnownSiteConfig(domain);
   
-  const prompt = `Analise esta página de e-commerce brasileiro para extrair informações de produto.
+  const prompt = `Analise esta página de e-commerce para extrair informações de produto.
 
 URL: ${productUrl}
 Domínio: ${domain}
 ${isKnownSite ? `Site conhecido: ${isKnownSite.name} - ${isKnownSite.hints}` : ''}
+
+${domain.includes('zara.com') ? `
+⚠️ INSTRUÇÕES CRÍTICAS PARA ZARA:
+
+NOME DO PRODUTO:
+- Procure por: <h1>, title, meta[property="og:title"]
+- Limpe: remove promoções, códigos, medidas extras
+- Exemplo: "SUNRISE ON THE RED SAND DUNES INTENSE EDP 100 ML (3.38 FL. OZ.)"
+
+PREÇO (OBRIGATÓRIO):
+- Procure primeiro pelo preço em EUR (€)
+- Elementos possíveis: .money-amount, .price, [data-qa-anchor*="price"]
+- JSON-LD: @type="Product" → "offers" → "price"
+- Meta: meta[property="product:price:amount"]
+- CONVERSÃO: EUR → BRL (multiplique por 6.2)
+- Exemplo: "89,95 €" = 89.95 * 6.2 = 557.69
+
+IMAGEM (OBRIGATÓRIA):
+- PRIORIDADE 1: meta[property="og:image"]
+- PRIORIDADE 2: meta[name="twitter:image"] 
+- PRIORIDADE 3: img[src*="static.zara.net"] com maior resolução
+- Deve ser URL completa e acessível
+` : ''}
 
 INSTRUÇÕES ESPECÍFICAS PARA PREÇOS:
 ${getSpecificPriceInstructions(domain)}
@@ -202,13 +225,15 @@ function getSpecificPriceInstructions(domain: string): string {
     return '- Procure por classes: .price-current, .product-price, .price-reduced\n- Ignore preços de parcelamento';
   }
   if (domain.includes('zara.com')) {
-    return `- PRIORIDADE 1: Procure por [data-qa-anchor="product.price.current"] ou classes .money-amount, .price
-- PRIORIDADE 2: meta[property="product:price:amount"] 
-- PRIORIDADE 3: JSON-LD com @type="Product" e "offers"
-- PRIORIDADE 4: span ou div com texto que contenha "€" seguido de números
-- Para preços em EUR, converta para BRL (EUR * 6.2)
-- Ignore preços de frete ou taxas adicionais
-- Se encontrar "89,95 €", converta para reais: 89.95 * 6.2 = 557.69`;
+    return `- PRIORIDADE 1: Encontre o preço em EUR primeiro
+- Procure por elementos com texto que contenha "€" seguido de números
+- Exemplos: "89,95 €", "89.95 €", "€89.95"
+- Classes possíveis: .money-amount, .price, [data-qa-anchor="product.price.current"]
+- JSON-LD: procure por @type="Product" e "offers" com "price" e "priceCurrency"
+- Meta tags: meta[property="product:price:amount"] e meta[property="product:price:currency"]
+- CONVERSÃO OBRIGATÓRIA: Para EUR → BRL, multiplique por 6.2
+- Exemplo: se encontrar "89,95 €", retorne: 89.95 * 6.2 = 557.69
+- Ignore valores de frete, taxas, ou preços muito baixos (< 10 EUR)`;
   }
   if (domain.includes('mercadolivre.com')) {
     return '- Procure por: .price-tag-fraction, .price-tag-cents\n- Combine fração + centavos';
@@ -224,13 +249,15 @@ function getSpecificImageInstructions(domain: string): string {
     return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: img[data-qa="product-image"]';
   }
   if (domain.includes('zara.com')) {
-    return `- PRIORIDADE 1: meta[property="og:image"] com URL completa
-- PRIORIDADE 2: picture source[media] com maior resolução
-- PRIORIDADE 3: .media__wrapper img ou .product-detail-images img  
-- PRIORIDADE 4: img[src*="zara.com/assets"] com maior resolução
-- PRIORIDADE 5: img dentro de .product-detail-view
-- URL deve ter https:// e domínio válido da Zara
-- Prefira imagens com width=2048 ou similares`;
+    return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
+- PRIORIDADE 2: meta[name="twitter:image"]
+- PRIORIDADE 3: JSON-LD procure por "image" dentro de @type="Product"
+- PRIORIDADE 4: picture source com maior resolução (procure por width=2048 ou similar)
+- PRIORIDADE 5: img[src*="static.zara.net"] com maior resolução
+- PRIORIDADE 6: img dentro de .product-detail-view ou .media__wrapper
+- IMPORTANTE: URL deve começar com https:// e ser acessível
+- IMPORTANTE: Prefira URLs que contenham "static.zara.net" e evite URLs com "placeholder"
+- TESTE: Se a URL contém "?v=" ou parâmetros, mantenha-os`;
   }
   if (domain.includes('dafiti.com') || domain.includes('netshoes.com')) {
     return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: .product-image img';
@@ -380,11 +407,16 @@ function extractProductNameFromUrl(pathname: string, domain: string): string {
     // Exemplo: /sunrise-on-the-red-sand-dunes-intense-edp-100-ml--3-38-fl--oz--p20220319.html
     const cleanPath = pathname.replace(/--p\d+\.html.*$/, ''); // Remove código do produto
     const cleanPath2 = cleanPath.replace(/^\/[^\/]*\/[^\/]*\//, ''); // Remove idioma/país
-    const segments = cleanPath2.split('-').filter(s => s.length > 1);
     
-    if (segments.length > 3) {
+    // Remove medidas e códigos técnicos comuns
+    const cleanPath3 = cleanPath2.replace(/--\d+-\d+.*$/, ''); // Remove --3-38-fl--oz
+    const cleanPath4 = cleanPath3.replace(/-\d+\s*ml/gi, ''); // Remove -100-ml
+    
+    const segments = cleanPath4.split('-').filter(s => s.length > 1);
+    
+    if (segments.length > 0) {
       return segments
-        .slice(0, 8) // Máximo 8 palavras para nome completo
+        .slice(0, 10) // Aumenta para capturar nome completo
         .map(s => s.charAt(0).toUpperCase() + s.slice(1))
         .join(' ');
     }
