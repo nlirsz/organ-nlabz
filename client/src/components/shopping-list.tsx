@@ -164,7 +164,7 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
             <ProductCard
               key={product.id}
               product={product}
-              onUpdate={onProductUpdated}
+              onProductUpdated={onProductUpdated}
             />
           ))}
         </div>
