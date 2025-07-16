@@ -93,7 +93,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center p-2">
+              <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center p-2 bg-[#121212]">
                 <img 
                   src="/assets/logo.png" 
                   alt="orgaN Logo" 
