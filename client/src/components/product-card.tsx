@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PriceHistoryChart } from "@/components/price-history-chart";
+import { EditProductModal } from "@/components/edit-product-modal";
 import { useFavorites } from "@/components/favorites-system";
 import type { Product } from "@shared/schema";
 
@@ -15,6 +16,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
   const [isChecked, setIsChecked] = useState(product.isPurchased);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -208,6 +210,7 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
         </a>
 
         <button
+          onClick={() => setIsEditModalOpen(true)}
           className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
           title="Editar produto"
         >
@@ -251,6 +254,13 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
           <Trash2 className="w-5 h-5" style={{ color: 'var(--delete-color)' }} />
         </button>
       </div>
+
+      <EditProductModal
+        product={product}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onProductUpdated={onProductUpdated}
+      />
     </div>
   );
 }
