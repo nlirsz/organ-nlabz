@@ -7,11 +7,18 @@ interface HistoricoTabProps {
 }
 
 export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
-  const userId = 1; // Default user ID
+  const authToken = localStorage.getItem("authToken");
+  const userId = localStorage.getItem("userId");
 
   const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ["/api/products", userId, refreshKey],
-    queryFn: () => fetch(`/api/products/${userId}`).then(res => res.json()),
+    queryKey: ["/api/products", refreshKey],
+    queryFn: () => 
+      fetch("/api/products", {
+        headers: {
+          "x-auth-token": authToken || ""
+        }
+      }).then(res => res.json()),
+    enabled: !!authToken && !!userId,
   });
 
   const purchasedProducts = products.filter(p => p.isPurchased).sort((a, b) => 
