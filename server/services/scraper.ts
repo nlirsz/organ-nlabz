@@ -1,3 +1,4 @@
+
 import { extractProductInfo, type ScrapedProduct } from "./gemini.js";
 import { scrapingCache } from './cache';
 import { priceHistoryService } from './priceHistory';
@@ -11,7 +12,7 @@ const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 const model = genAI?.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const generationConfig = {
-  temperature: 0.3,
+  temperature: 0.2,
   responseMimeType: "application/json",
 };
 
@@ -20,7 +21,7 @@ function normalizePrice(price: any): number | null {
   if (typeof price !== 'string') return null;
   
   // Remove símbolos de moeda e espaços
-  let priceStr = price.replace(/[R$\s]/g, '');
+  let priceStr = price.replace(/[R$€£¥\s]/g, '');
   
   // Para preços brasileiros (R$ 1.234,56), converte para formato americano
   if (priceStr.includes(',')) {
@@ -151,9 +152,9 @@ REGRAS GERAIS:
 - "category": Eletrônicos, Roupas, Casa, Livros, Games, Automotivo, Esportes, Outros
 - "brand": Marca do produto
 
-HTML (primeiros 150k caracteres):
+HTML (primeiros 100k caracteres):
 \`\`\`html
-${htmlContent.substring(0, 150000)}
+${htmlContent.substring(0, 100000)}
 \`\`\`
 
 Retorne JSON válido:`;
@@ -179,6 +180,14 @@ function getKnownSiteConfig(domain: string) {
     'magazineluiza.com.br': { 
       name: 'Magazine Luiza', 
       hints: 'Preço em [data-testid="price-value"], imagem em meta og:image' 
+    },
+    'dafiti.com.br': {
+      name: 'Dafiti',
+      hints: 'Preço em .price-value, imagem em meta og:image'
+    },
+    'netshoes.com.br': {
+      name: 'Netshoes',
+      hints: 'Preço em .price, imagem principal'
     }
   };
   
@@ -193,10 +202,19 @@ function getSpecificPriceInstructions(domain: string): string {
     return '- Procure por classes: .price-current, .product-price, .price-reduced\n- Ignore preços de parcelamento';
   }
   if (domain.includes('zara.com')) {
-    return '- PRIORIDADE 1: Procure por [data-qa-anchor="product.price.current"] ou classes .money-amount, .price\n- PRIORIDADE 2: meta[property="product:price:amount"]\n- PRIORIDADE 3: JSON-LD com @type="Product" e "offers"\n- Converta EUR para BRL se necessário (EUR * 6.2)\n- Ignore preços de frete';
+    return `- PRIORIDADE 1: Procure por [data-qa-anchor="product.price.current"] ou classes .money-amount, .price
+- PRIORIDADE 2: meta[property="product:price:amount"] 
+- PRIORIDADE 3: JSON-LD com @type="Product" e "offers"
+- PRIORIDADE 4: span ou div com texto que contenha "€" seguido de números
+- Para preços em EUR, converta para BRL (EUR * 6.2)
+- Ignore preços de frete ou taxas adicionais
+- Se encontrar "89,95 €", converta para reais: 89.95 * 6.2 = 557.69`;
   }
   if (domain.includes('mercadolivre.com')) {
     return '- Procure por: .price-tag-fraction, .price-tag-cents\n- Combine fração + centavos';
+  }
+  if (domain.includes('dafiti.com') || domain.includes('netshoes.com')) {
+    return '- Procure por: .price, .price-value, .product-price\n- Ignore preços parcelados';
   }
   return '- Procure elementos com classes: price, valor, preco, cost\n- Ignore preços de frete e parcelamento';
 }
@@ -206,23 +224,48 @@ function getSpecificImageInstructions(domain: string): string {
     return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: img[data-qa="product-image"]';
   }
   if (domain.includes('zara.com')) {
-    return '- PRIORIDADE 1: meta[property="og:image"] com URL completa\n- PRIORIDADE 2: picture source[media] com maior resolução\n- PRIORIDADE 3: .media__wrapper img ou .product-detail-images img\n- PRIORIDADE 4: img[src*="zara.com/assets"]\n- URL deve ter https:// e domínio válido';
+    return `- PRIORIDADE 1: meta[property="og:image"] com URL completa
+- PRIORIDADE 2: picture source[media] com maior resolução
+- PRIORIDADE 3: .media__wrapper img ou .product-detail-images img  
+- PRIORIDADE 4: img[src*="zara.com/assets"] com maior resolução
+- PRIORIDADE 5: img dentro de .product-detail-view
+- URL deve ter https:// e domínio válido da Zara
+- Prefira imagens com width=2048 ou similares`;
+  }
+  if (domain.includes('dafiti.com') || domain.includes('netshoes.com')) {
+    return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: .product-image img';
   }
   return '- PRIORIDADE 1: meta[property="og:image"]\n- PRIORIDADE 2: img dentro de divs de produto com maior resolução';
 }
   
+  if (!model) {
+    throw new Error('Modelo Gemini não disponível');
+  }
+
   const result = await model.generateContent({ 
     contents: [{ role: "user", parts: [{ text: prompt }] }], 
     generationConfig 
   });
   
-  let jsonData = JSON.parse(result.response.text());
+  let responseText = result.response.text();
+  
+  // Limpa markdown se presente
+  if (responseText.includes('```')) {
+    responseText = responseText.replace(/```json\s*|\s*```/g, '');
+  }
+  
+  let jsonData = JSON.parse(responseText);
   
   if (jsonData && jsonData.price) {
     jsonData.price = normalizePrice(jsonData.price);
   }
   if (jsonData && jsonData.originalPrice) {
     jsonData.originalPrice = normalizePrice(jsonData.originalPrice);
+  }
+  
+  // Corrige store se vazio
+  if (!jsonData.store) {
+    jsonData.store = getStoreNameFromDomain(domain);
   }
   
   return jsonData;
@@ -232,19 +275,44 @@ function getSpecificImageInstructions(domain: string): string {
 async function scrapeBySearching(productUrl: string): Promise<ScrapedProduct> {
   console.log(`[Gemini Search Mode] Iniciando para: ${productUrl}`);
 
-  const prompt = 'Encontre informações sobre o produto na URL: "' + productUrl + '".' +
-    ' Retorne um objeto JSON com: "name", "price", "originalPrice", "imageUrl", "brand", "category", "description", "store".' +
-    ' - Para "imageUrl", encontre uma URL de imagem pública e de alta resolução.' +
-    ' - "price" deve ser um número (sem R$, sem pontos de milhares, use ponto para decimal).' +
-    ' - "store" deve ser o nome da loja.' +
-    ' - "category" deve ser uma destas: Eletronicos, Roupas, Casa, Livros, Games, Presentes, Geral.';
+  if (!model) {
+    throw new Error('Modelo Gemini não disponível');
+  }
+
+  const prompt = `Encontre informações detalhadas sobre o produto na URL: "${productUrl}".
+
+INSTRUÇÕES ESPECÍFICAS:
+- Use suas ferramentas de busca para encontrar dados atualizados
+- Para preços em moedas estrangeiras, converta para BRL
+- Foque no produto específico, não em categorias ou listas
+
+Retorne um objeto JSON com:
+{
+  "name": "Nome exato do produto",
+  "price": 3899.99,
+  "originalPrice": null,
+  "imageUrl": "https://images.site.com/produto-hd.jpg",
+  "store": "Nome da Loja",
+  "description": "Descrição técnica",
+  "category": "Categoria específica",
+  "brand": "Marca do produto"
+}
+
+Categorias válidas: Eletrônicos, Roupas, Casa, Livros, Games, Automotivo, Esportes, Outros`;
   
   const result = await model.generateContent({ 
     contents: [{ role: "user", parts: [{ text: prompt }] }], 
     generationConfig 
   });
   
-  let jsonData = JSON.parse(result.response.text());
+  let responseText = result.response.text();
+  
+  // Limpa markdown se presente
+  if (responseText.includes('```')) {
+    responseText = responseText.replace(/```json\s*|\s*```/g, '');
+  }
+  
+  let jsonData = JSON.parse(responseText);
 
   if (jsonData && jsonData.price) {
     jsonData.price = normalizePrice(jsonData.price);
@@ -291,7 +359,9 @@ function getStoreNameFromDomain(domain: string): string {
     'submarino.com.br': 'Submarino',
     'amazon.com.br': 'Amazon Brasil',
     'netshoes.com.br': 'Netshoes',
-    'dafiti.com.br': 'Dafiti'
+    'dafiti.com.br': 'Dafiti',
+    'homenge.com.br': 'Homenge',
+    'cockpitextremeracing.com.br': 'Extreme SimRacing'
   };
   
   for (const [key, name] of Object.entries(storeMap)) {
@@ -314,7 +384,7 @@ function extractProductNameFromUrl(pathname: string, domain: string): string {
     
     if (segments.length > 3) {
       return segments
-        .slice(0, 6) // Máximo 6 palavras para nome completo
+        .slice(0, 8) // Máximo 8 palavras para nome completo
         .map(s => s.charAt(0).toUpperCase() + s.slice(1))
         .join(' ');
     }
@@ -335,7 +405,7 @@ function extractProductNameFromUrl(pathname: string, domain: string): string {
   
   if (descriptiveSegments.length > 0) {
     return descriptiveSegments
-      .slice(0, 3) // Máximo 3 palavras
+      .slice(0, 4) // Máximo 4 palavras
       .map(s => s.charAt(0).toUpperCase() + s.slice(1))
       .join(' ');
   }
@@ -349,6 +419,7 @@ function guessCategory(pathname: string, domain: string): string {
   const categoryMap = [
     { keywords: ['tenis', 'sapato', 'calcado', 'shoes', 'sneaker'], category: 'Roupas' },
     { keywords: ['roupa', 'camisa', 'calca', 'vestido', 'clothing'], category: 'Roupas' },
+    { keywords: ['perfume', 'fragrance', 'cologne', 'edp', 'edt'], category: 'Outros' },
     { keywords: ['eletronic', 'celular', 'notebook', 'tv', 'smartphone'], category: 'Eletrônicos' },
     { keywords: ['game', 'console', 'playstation', 'xbox', 'nintendo'], category: 'Games' },
     { keywords: ['casa', 'decoracao', 'movel', 'furniture', 'home'], category: 'Casa' },
@@ -364,8 +435,9 @@ function guessCategory(pathname: string, domain: string): string {
   }
   
   // Categoria por domínio
-  if (domain.includes('nike.com') || domain.includes('adidas.com')) return 'Roupas';
+  if (domain.includes('nike.com') || domain.includes('adidas.com') || domain.includes('dafiti.com')) return 'Roupas';
   if (domain.includes('americanas.com') || domain.includes('submarino.com')) return 'Eletrônicos';
+  if (domain.includes('zara.com')) return 'Roupas';
   
   return 'Outros';
 }
