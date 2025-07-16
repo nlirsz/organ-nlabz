@@ -56,7 +56,7 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
     // Ordenação
     filtered.sort((a, b) => {
       let aValue: any, bValue: any;
-      
+
       switch (filters.sortBy) {
         case 'price':
           aValue = parseFloat(a.price || '0');

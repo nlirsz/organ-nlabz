@@ -51,6 +51,10 @@
   --ring: var(--primary-action);
   --radius: 0.75rem;
   --border-color: #d1d5db;
+  --popover: var(--c-primary);
+  --popover-foreground: var(--text-primary);
+  --accent: var(--c-primary);
+  --accent-foreground: var(--text-primary);
 }
 
 /* === Tema Escuro === */
@@ -76,6 +80,10 @@
   --muted-foreground: var(--text-secondary);
   --border: var(--c-light);
   --input: var(--c-primary);
+  --popover: var(--c-primary);
+  --popover-foreground: var(--text-primary);
+  --accent: var(--c-primary);
+  --accent-foreground: var(--text-primary);
 }
 
 @layer base {
@@ -120,6 +128,52 @@
   .neomorphic-input:focus {
     outline: none;
     box-shadow: var(--shadow-inset);
+  }
+
+  /* Select component fixes */
+  [data-radix-select-content] {
+    background: var(--c-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow) !important;
+  }
+
+  [data-radix-select-item] {
+    background: transparent !important;
+    color: var(--text-primary) !important;
+  }
+
+  [data-radix-select-item]:hover {
+    background: var(--c-light) !important;
+  }
+
+  [data-radix-select-trigger] {
+    background: var(--c-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+  }
+
+  /* Form field fixes */
+  input[type="text"],
+  input[type="number"],
+  input[type="url"],
+  textarea,
+  select {
+    background: var(--c-primary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+
+  /* Dialog and modal fixes */
+  [data-radix-dialog-content] {
+    background: var(--c-primary) !important;
+    color: var(--text-primary) !important;
+  }
+
+  /* Popover fixes */
+  [data-radix-popover-content] {
+    background: var(--c-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
   }
 
   .neomorphic-button {
