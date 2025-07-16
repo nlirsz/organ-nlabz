@@ -20,8 +20,11 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
   const [activeView, setActiveView] = useState('all');
   const { toggleFavorite } = useFavorites();
 
+  // Filtrar apenas produtos não comprados
+  const availableProducts = Array.isArray(products) ? products.filter(p => !p.isPurchased) : [];
+
   const handleSearch = (filters: any) => {
-    let filtered = Array.isArray(products) ? [...products] : [];
+    let filtered = [...availableProducts];
 
     // Filtro por texto
     if (filters.query) {
@@ -48,14 +51,6 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
         const price = parseFloat(p.price || '0');
         return price >= filters.minPrice && price <= filters.maxPrice;
       });
-    }
-
-    // Filtro por status de compra
-    if (filters.onlyPurchased) {
-      filtered = filtered.filter(p => p.isPurchased);
-    }
-    if (filters.onlyUnpurchased) {
-      filtered = filtered.filter(p => !p.isPurchased);
     }
 
     // Ordenação
@@ -86,17 +81,17 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
   };
 
   const handleReset = () => {
-    setFilteredProducts(products);
+    setFilteredProducts(availableProducts);
     setSelectedCategory('');
   };
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
-    const filtered = category ? products.filter(p => p.category === category) : products;
+    const filtered = category ? availableProducts.filter(p => p.category === category) : availableProducts;
     setFilteredProducts(filtered);
   };
 
-  const displayProducts = filteredProducts.length > 0 ? filteredProducts : products;
+  const displayProducts = filteredProducts.length > 0 ? filteredProducts : availableProducts;
 
   return (
     <div className="space-y-6 fade-in">
@@ -160,7 +155,7 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
 
         <TabsContent value="favorites" className="space-y-6">
           <FavoritesSystem
-            products={products}
+            products={availableProducts}
             onFavoriteToggle={toggleFavorite}
           />
         </TabsContent>
