@@ -93,8 +93,12 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center">
-                <ShoppingCart className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
+              <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center p-2">
+                <img 
+                  src="/assets/logo.png" 
+                  alt="orgaN Logo" 
+                  className="w-full h-full object-contain"
+                />
               </div>
               <h1 className="text-2xl font-bold" style={{ 
                 fontFamily: 'Almarai, sans-serif',
