@@ -300,40 +300,46 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
               </div>
 
               {/* Card Actions */}
-              <div className="flex items-center justify-between border-t pt-4" 
+              <div className="flex items-center justify-between gap-2 border-t pt-4" 
                    style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                 <button
                   onClick={() => window.open(product.url, '_blank')}
-                  className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
+                  className="flex-1 neomorphic-button px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm"
                   title="Ver produto"
                 >
-                  👁️
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  Ver
                 </button>
                 
                 <button
                   onClick={() => setEditingProduct(product)}
-                  className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
+                  className="flex-1 neomorphic-button px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm"
                   title="Editar produto"
                 >
-                  <Edit className="w-5 h-5" style={{ color: 'var(--edit-color)' }} />
+                  <Edit className="w-4 h-4" style={{ color: 'var(--edit-color)' }} />
+                  Editar
                 </button>
                 
                 <button
                   onClick={() => handlePurchase(product.id, product.name)}
                   disabled={purchaseProductMutation.isPending}
-                  className="w-10 h-10 neomorphic-button-primary rounded-full flex items-center justify-center"
+                  className="flex-1 neomorphic-button-primary px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm"
                   title="Marcar como comprado"
                 >
-                  <Check className="w-5 h-5" style={{ color: 'white' }} />
+                  <Check className="w-4 h-4" style={{ color: 'white' }} />
+                  Comprar
                 </button>
                 
                 <button
                   onClick={() => handleDelete(product.id, product.name)}
                   disabled={deleteProductMutation.isPending}
-                  className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
+                  className="neomorphic-button p-2 rounded-lg flex items-center justify-center"
                   title="Remover da lista"
                 >
-                  <Trash2 className="w-5 h-5" style={{ color: 'var(--error-color)' }} />
+                  <Trash2 className="w-4 h-4" style={{ color: 'var(--error-color)' }} />
                 </button>
               </div>
             </div>

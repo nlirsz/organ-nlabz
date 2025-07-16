@@ -48,23 +48,35 @@ async function scrapeByAnalyzingHtml(productUrl: string, htmlContent: string): P
 URL: ${productUrl}
 HTML: ${htmlContent.substring(0, 20000)}
 
-REGRAS IMPORTANTES:
-- Para "imageUrl": Procure na ordem: meta[property="og:image"], meta[name="twitter:image"], .product-image img, .main-image img, ou primeira imagem relevante do produto
-- Para "price": Extraia apenas números, converta vírgulas para pontos (ex: "R$ 1.299,99" vira 299.99)
-- Para "name": Use o título mais limpo possível, remova textos promocionais
-- Para "store": Extraia do domínio ou nome da loja na página
-- Para "category": Escolha a mais específica dentre: Eletrônicos, Roupas e Acessórios, Casa e Decoração, Livros e Mídia, Esportes e Lazer, Ferramentas e Construção, Alimentos e Bebidas, Saúde e Beleza, Automotivo, Pet Shop, Outros
+REGRAS CRÍTICAS PARA PREÇO:
+- Procure pelo preço PRINCIPAL do produto individual (não combo, não frete, não total)
+- Ignore preços de parcelamento, juros ou valores promocionais pequenos
+- Se há desconto, "price" deve ser o valor COM desconto, "originalPrice" o valor original
+- Formato: números com ponto decimal (ex: 1299.99, não 1.299,99)
+- PRIORIZE: preços em destaque, com classes como "price", "valor", "preco-principal"
 
-Retorne um JSON válido com estas propriedades:
+REGRAS PARA IMAGEM:
+- PRIORIDADE 1: meta[property="og:image"] com URL completa
+- PRIORIDADE 2: meta[name="twitter:image"] 
+- PRIORIDADE 3: img com classes como "product-image", "main-image", "zoom"
+- PRIORIDADE 4: primeira img dentro de divs de produto
+- URL deve ser completa e acessível (https://)
+
+REGRAS GERAIS:
+- "name": Título limpo, sem promoções ou texto desnecessário
+- "store": Nome da loja extraído da página ou domínio
+- "category": Eletrônicos, Roupas, Casa, Livros, Games, Automotivo, Esportes, Outros
+
+Retorne JSON válido:
 {
-  "name": "Nome limpo do produto",
-  "price": 299.99,
-  "originalPrice": null,
-  "imageUrl": "https://exemplo.com/imagem.jpg",
+  "name": "Nome do produto",
+  "price": 3899.99,
+  "originalPrice": 4999.99,
+  "imageUrl": "https://images.exemplo.com/produto.jpg",
   "store": "Nome da Loja",
-  "description": "Descrição concisa",
-  "category": "Categoria mais específica",
-  "brand": "Marca se identificada"
+  "description": "Descrição",
+  "category": "Categoria",
+  "brand": "Marca"
 }
 `;
   const result = await model.generateContent({
@@ -89,11 +101,32 @@ Retorne um JSON válido com estas propriedades:
 }
 async function scrapeBySearching(productUrl: string): Promise<ScrapedProduct> {
   console.log(`[Gemini Search Mode] Starting for: ${productUrl}`);
-  const prompt = `Use your search tools to find product details for the URL: "${productUrl}".
-Return JSON with: "name", "price", "image", "brand", "category", "description", "store".
-For "image", find a public, high-resolution image URL.
-"price" should be a number or text with numeric value.
-Categories: Eletrônicos, Roupas e Acessórios, Casa e Decoração, Livros e Mídia, Esportes e Lazer, Ferramentas e Construção, Alimentos e Bebidas, Saúde e Beleza, Automotivo, Pet Shop, Outros`;
+  const prompt = `Busque informações precisas sobre o produto nesta URL: "${productUrl}".
+
+FOQUE NO PREÇO CORRETO:
+- Encontre o preço de venda atual do produto individual
+- Ignore preços de frete, parcelamento ou valores promocionais
+- Se há desconto, retorne o preço atual e o original
+- Formato numérico: 3899.99 (não texto)
+
+FOQUE NA IMAGEM:
+- Encontre uma URL de imagem de alta qualidade do produto
+- Prefira imagens oficiais do produto, não logos da loja
+- URL deve ser acessível publicamente
+
+Retorne JSON com:
+{
+  "name": "Nome exato do produto",
+  "price": 3899.99,
+  "originalPrice": null,
+  "imageUrl": "https://images.site.com/produto-hd.jpg",
+  "store": "Nome da Loja",
+  "description": "Descrição técnica",
+  "category": "Categoria específica",
+  "brand": "Marca do produto"
+}
+
+Categorias: Eletrônicos, Roupas, Casa, Livros, Games, Automotivo, Esportes, Outros`;
   const result = await model.generateContent({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig
