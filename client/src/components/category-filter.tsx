@@ -31,12 +31,12 @@ export function CategoryFilter({ onCategoryChange, selectedCategory }: CategoryF
       {defaultCategories.map((category) => {
         const Icon = category.icon;
         const isSelected = selectedCategory === category.name;
-        
+
         return (
           <Button
             key={category.name}
             variant={isSelected ? "default" : "outline"}
-            onClick={() => onCategoryChange(category.name)}
+            onClick={() => onCategoryChange(category.name === 'Geral' ? 'Geral' : category.name)}
             className="neomorphic-button px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
             style={{
               backgroundColor: isSelected ? category.color : 'transparent',

@@ -26,8 +26,14 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
   // Sincronizar filteredProducts quando availableProducts mudar
   useEffect(() => {
     if (selectedCategory) {
-      const filtered = availableProducts.filter(p => p.category === selectedCategory);
-      setFilteredProducts(filtered);
+      // Se a categoria selecionada for "Geral", mostra todos os produtos
+      if (selectedCategory === 'Geral') {
+        setFilteredProducts(availableProducts);
+      } else {
+        // Para outras categorias, filtra apenas os produtos dessa categoria específica
+        const filtered = availableProducts.filter(p => p.category === selectedCategory);
+        setFilteredProducts(filtered);
+      }
     } else {
       setFilteredProducts(availableProducts);
     }
@@ -97,8 +103,18 @@ export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosT
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
-    const filtered = category ? availableProducts.filter(p => p.category === category) : availableProducts;
-    setFilteredProducts(filtered);
+    
+    if (!category) {
+      // Se nenhuma categoria foi selecionada, mostra todos
+      setFilteredProducts(availableProducts);
+    } else if (category === 'Geral') {
+      // Se "Geral" foi selecionada, mostra todos os produtos
+      setFilteredProducts(availableProducts);
+    } else {
+      // Para outras categorias, filtra apenas os produtos dessa categoria específica
+      const filtered = availableProducts.filter(p => p.category === category);
+      setFilteredProducts(filtered);
+    }
   };
 
   const displayProducts = filteredProducts;
