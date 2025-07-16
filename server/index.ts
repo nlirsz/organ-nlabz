@@ -1,7 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import mongoose from "mongoose";
+import { db } from "./db";
+import { users } from "@shared/schema";
 
 const app = express();
 app.use(express.json());
@@ -38,19 +39,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Conectar ao MongoDB
-  const MONGODB_URI = process.env.MONGODB_URI;
-  
-  if (MONGODB_URI) {
-    try {
-      await mongoose.connect(MONGODB_URI);
-      log('✅ Conectado ao MongoDB com sucesso!');
-    } catch (error) {
-      log('❌ Erro ao conectar com o MongoDB:', error);
-      process.exit(1);
-    }
-  } else {
-    log('⚠️  MONGODB_URI não encontrada nos secrets');
+  // Verificar conexão com PostgreSQL
+  try {
+    // Test the database connection
+    await db.select().from(users).limit(1);
+    log('✅ Conectado ao PostgreSQL com sucesso!');
+  } catch (error) {
+    log('❌ Erro ao conectar com o PostgreSQL:', error);
     process.exit(1);
   }
 
