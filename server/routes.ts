@@ -147,6 +147,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add product manually
+  app.post("/api/products", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { name, price, url, imageUrl, store, description, category, brand, isPurchased } = req.body;
+
+      if (!name || typeof name !== 'string') {
+        return res.status(400).json({ error: "Product name is required" });
+      }
+
+      const productData = {
+        userId: parseInt(req.user.userId),
+        url: url || `https://manual.product/${Date.now()}`,
+        name,
+        price: price?.toString() || null,
+        originalPrice: null,
+        imageUrl: imageUrl || null,
+        store: store || "Adicionado Manualmente",
+        description: description || null,
+        category: category || "Outros",
+        brand: brand || null,
+        isPurchased: isPurchased || false,
+      };
+
+      const productId = await storage.addProduct(productData);
+      res.json({ id: productId, ...productData });
+    } catch (error) {
+      console.error("Manual product creation error:", error);
+      res.status(500).json({ error: "Failed to add product manually" });
+    }
+  });
+
   // Add product from URL
   app.post("/api/products/scrape", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {

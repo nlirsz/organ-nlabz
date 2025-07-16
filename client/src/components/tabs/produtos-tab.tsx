@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { ShoppingList } from "@/components/shopping-list";
-import { AdvancedSearch } from '@/components/advanced-search';
-import { FavoritesSystem, useFavorites } from '@/components/favorites-system';
-import { CategoryFilter } from '@/components/category-filter';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heart, Search, Filter, Package } from 'lucide-react';
+
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Search, Filter, SortAsc, Package, Edit, Check, Trash2, Star } from "lucide-react";
+import { CategoryFilter } from "@/components/category-filter";
+import { AdvancedSearch } from "@/components/advanced-search";
+import { EditProductModal } from "@/components/edit-product-modal";
+import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
 
 interface ProdutosTabProps {
@@ -15,177 +15,324 @@ interface ProdutosTabProps {
 }
 
 export function ProdutosTab({ products, isLoading, onProductUpdated }: ProdutosTabProps) {
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [activeView, setActiveView] = useState('all');
-  const { toggleFavorite } = useFavorites();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Todos");
+  const [sortBy, setSortBy] = useState("name");
+  const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  // Filtrar apenas produtos não comprados
-  const availableProducts = Array.isArray(products) ? products.filter(p => !p.isPurchased) : [];
-  const [filteredProducts, setFilteredProducts] = useState(availableProducts);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const authToken = localStorage.getItem("authToken");
 
-  // Sincronizar filteredProducts quando availableProducts mudar
-  useEffect(() => {
-    if (selectedCategory) {
-      // Se a categoria selecionada for "Geral", mostra todos os produtos
-      if (selectedCategory === 'Geral') {
-        setFilteredProducts(availableProducts);
-      } else {
-        // Para outras categorias, filtra apenas os produtos dessa categoria específica
-        const filtered = availableProducts.filter(p => p.category === selectedCategory);
-        setFilteredProducts(filtered);
-      }
-    } else {
-      setFilteredProducts(availableProducts);
-    }
-  }, [availableProducts, selectedCategory]);
-
-  const handleSearch = (filters: any) => {
-    let filtered = [...availableProducts];
-
-    // Filtro por texto
-    if (filters.query) {
-      filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(filters.query.toLowerCase()) ||
-        p.store?.toLowerCase().includes(filters.query.toLowerCase()) ||
-        p.description?.toLowerCase().includes(filters.query.toLowerCase())
-      );
-    }
-
-    // Filtro por categoria
-    if (filters.category) {
-      filtered = filtered.filter(p => p.category === filters.category);
-    }
-
-    // Filtro por loja
-    if (filters.store) {
-      filtered = filtered.filter(p => p.store === filters.store);
-    }
-
-    // Filtro por preço
-    if (filters.minPrice > 0 || filters.maxPrice < 10000) {
-      filtered = filtered.filter(p => {
-        const price = parseFloat(p.price || '0');
-        return price >= filters.minPrice && price <= filters.maxPrice;
+  const purchaseProductMutation = useMutation({
+    mutationFn: async (productId: number) => {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": authToken || ""
+        },
+        body: JSON.stringify({ isPurchased: true }),
       });
+      if (!response.ok) {
+        throw new Error("Falha ao marcar produto como comprado");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
+      onProductUpdated();
+      toast({
+        title: "Sucesso",
+        description: "Produto marcado como comprado!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao marcar produto como comprado",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (productId: number) => {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "DELETE",
+        headers: {
+          "x-auth-token": authToken || ""
+        }
+      });
+      if (!response.ok) {
+        throw new Error("Falha ao excluir produto");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
+      onProductUpdated();
+      toast({
+        title: "Sucesso",
+        description: "Produto removido da lista",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao excluir produto",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePurchase = (productId: number, productName: string) => {
+    if (window.confirm(`Marcar "${productName}" como comprado?`)) {
+      purchaseProductMutation.mutate(productId);
     }
+  };
 
-    // Ordenação
-    filtered.sort((a, b) => {
-      let aValue: any, bValue: any;
+  const handleDelete = (productId: number, productName: string) => {
+    if (window.confirm(`Tem certeza que deseja remover "${productName}" da lista?`)) {
+      deleteProductMutation.mutate(productId);
+    }
+  };
 
-      switch (filters.sortBy) {
-        case 'price':
-          aValue = parseFloat(a.price || '0');
-          bValue = parseFloat(b.price || '0');
-          break;
-        case 'date':
-          aValue = new Date(a.createdAt || 0).getTime();
-          bValue = new Date(b.createdAt || 0).getTime();
-          break;
+  const filteredProducts = products
+    .filter(p => !p.isPurchased)
+    .filter(p => {
+      if (selectedCategory === "Todos") return true;
+      return p.category === selectedCategory;
+    })
+    .filter(p => {
+      if (!searchTerm) return true;
+      return p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             p.store?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             p.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "price":
+          const priceA = a.price ? parseFloat(a.price) : 0;
+          const priceB = b.price ? parseFloat(b.price) : 0;
+          return priceA - priceB;
+        case "date":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         default:
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
+          return 0;
       }
-
-      if (filters.sortOrder === 'desc') {
-        return bValue > aValue ? 1 : -1;
-      }
-      return aValue > bValue ? 1 : -1;
     });
 
-    setFilteredProducts(filtered);
-  };
-
-  const handleReset = () => {
-    setFilteredProducts(availableProducts);
-    setSelectedCategory('');
-  };
-
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
-    
-    if (!category) {
-      // Se nenhuma categoria foi selecionada, mostra todos
-      setFilteredProducts(availableProducts);
-    } else if (category === 'Geral') {
-      // Se "Geral" foi selecionada, mostra todos os produtos
-      setFilteredProducts(availableProducts);
-    } else {
-      // Para outras categorias, filtra apenas os produtos dessa categoria específica
-      const filtered = availableProducts.filter(p => p.category === category);
-      setFilteredProducts(filtered);
-    }
-  };
-
-  const displayProducts = filteredProducts;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="pulse-animation">
+          <Package className="w-12 h-12" style={{ color: 'var(--text-secondary)' }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 fade-in">
-      <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Todos os Produtos
-          </TabsTrigger>
-          <TabsTrigger value="search" className="flex items-center gap-2">
-            <Search className="h-4 w-4" />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            Lista de Compras
+          </h2>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            {filteredProducts.length} produto{filteredProducts.length !== 1 ? 's' : ''} pendente{filteredProducts.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="neomorphic-card p-6 rounded-2xl space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
+            <input
+              type="text"
+              placeholder="Buscar produtos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="neomorphic-input w-full pl-10"
+            />
+          </div>
+          <button
+            onClick={() => setIsAdvancedSearchOpen(true)}
+            className="neomorphic-button whitespace-nowrap"
+          >
+            <Filter className="w-4 h-4" />
             Busca Avançada
-          </TabsTrigger>
-          <TabsTrigger value="favorites" className="flex items-center gap-2">
-            <Heart className="h-4 w-4" />
-            Favoritos
-          </TabsTrigger>
-        </TabsList>
+          </button>
+        </div>
 
-        <TabsContent value="all" className="space-y-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-start">
-            <div className="flex-1">
-              <CategoryFilter
-                onCategoryChange={handleCategoryChange}
-                selectedCategory={selectedCategory}
-              />
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setActiveView('search')}
-              className="flex items-center gap-2"
+        <CategoryFilter
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+        />
+
+        <div className="flex flex-wrap gap-2">
+          {[
+            { value: "name", label: "Nome", icon: SortAsc },
+            { value: "price", label: "Preço", icon: SortAsc },
+            { value: "date", label: "Data", icon: SortAsc },
+          ].map(({ value, label, icon: Icon }) => (
+            <button
+              key={value}
+              onClick={() => setSortBy(value)}
+              className={`neomorphic-button text-sm ${
+                sortBy === value ? 'neomorphic-button-primary' : ''
+              }`}
             >
-              <Filter className="h-4 w-4" />
-              Filtros Avançados
-            </Button>
-          </div>
+              <Icon className="w-4 h-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          <ShoppingList 
-            products={Array.isArray(displayProducts) ? displayProducts : []} 
-            isLoading={isLoading} 
-            onProductUpdated={onProductUpdated}
-          />
-        </TabsContent>
+      {/* Products Grid */}
+      {filteredProducts.length === 0 ? (
+        <div className="neomorphic-card p-12 rounded-2xl text-center">
+          <Package className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--text-secondary)' }} />
+          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+            Nenhum produto encontrado
+          </h3>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            {products.length === 0 
+              ? "Adicione alguns produtos à sua lista para começar!"
+              : "Tente ajustar os filtros para encontrar o que procura."
+            }
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredProducts.map((product) => (
+            <div
+              key={product.id}
+              className="product-card neomorphic-card p-0 rounded-2xl overflow-hidden card-entering"
+            >
+              <div className="card-image-container">
+                {product.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="w-full h-full object-cover rounded-lg"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.parentElement?.classList.add('image-placeholder');
+                    }}
+                  />
+                ) : (
+                  <div className="image-placeholder w-full h-full rounded-lg">
+                    <Package className="w-12 h-12" style={{ color: 'var(--text-secondary)' }} />
+                  </div>
+                )}
+              </div>
 
-        <TabsContent value="search" className="space-y-6">
-          <AdvancedSearch
-            onSearch={handleSearch}
-            onReset={handleReset}
-          />
+              <div className="card-content">
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="card-title font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    {product.name}
+                  </h3>
+                  {product.category && (
+                    <span className="category-tag ml-2">
+                      {product.category}
+                    </span>
+                  )}
+                </div>
 
-          <div className="text-sm text-gray-600">
-            Mostrando {filteredProducts.length} de {products.length} produtos
-          </div>
+                {product.store && (
+                  <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    📍 {product.store}
+                  </p>
+                )}
 
-          <ShoppingList 
-            products={filteredProducts} 
-            isLoading={isLoading} 
-            onProductUpdated={onProductUpdated}
-          />
-        </TabsContent>
+                {product.description && (
+                  <p className="text-sm line-clamp-2 mb-3" style={{ color: 'var(--text-secondary)' }}>
+                    {product.description}
+                  </p>
+                )}
 
-        <TabsContent value="favorites" className="space-y-6">
-          <FavoritesSystem
-            products={availableProducts}
-            onFavoriteToggle={toggleFavorite}
-          />
-        </TabsContent>
-      </Tabs>
+                <div className="flex items-center justify-between">
+                  <div className="card-price font-bold">
+                    {product.price ? 
+                      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(product.price))
+                      : 'Preço não informado'
+                    }
+                  </div>
+                  {product.originalPrice && parseFloat(product.originalPrice) > parseFloat(product.price || '0') && (
+                    <span className="text-sm line-through" style={{ color: 'var(--text-secondary)' }}>
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(product.originalPrice))}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="card-actions">
+                <button
+                  onClick={() => window.open(product.url, '_blank')}
+                  className="neomorphic-button w-full mb-2"
+                  title="Ver produto"
+                >
+                  👁️
+                </button>
+                
+                <button
+                  onClick={() => setEditingProduct(product)}
+                  className="neomorphic-button w-full mb-2"
+                  title="Editar produto"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                
+                <button
+                  onClick={() => handlePurchase(product.id, product.name)}
+                  disabled={purchaseProductMutation.isPending}
+                  className="neomorphic-button-primary w-full mb-2"
+                  title="Marcar como comprado"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+                
+                <button
+                  onClick={() => handleDelete(product.id, product.name)}
+                  disabled={deleteProductMutation.isPending}
+                  className="neomorphic-button w-full"
+                  title="Remover da lista"
+                >
+                  <Trash2 className="w-4 h-4" style={{ color: 'var(--error-color)' }} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modals */}
+      <AdvancedSearch
+        isOpen={isAdvancedSearchOpen}
+        onClose={() => setIsAdvancedSearchOpen(false)}
+        onSearch={(term) => setSearchTerm(term)}
+      />
+
+      {editingProduct && (
+        <EditProductModal
+          product={editingProduct}
+          isOpen={!!editingProduct}
+          onClose={() => setEditingProduct(null)}
+          onProductUpdated={() => {
+            setEditingProduct(null);
+            onProductUpdated();
+          }}
+        />
+      )}
     </div>
   );
 }

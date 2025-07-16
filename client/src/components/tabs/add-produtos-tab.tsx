@@ -1,11 +1,269 @@
+
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UrlInput } from "@/components/url-input";
-import { Plus, Link, Search, ShoppingCart } from "lucide-react";
+import { Plus, Link, Search, ShoppingCart, Edit, ArrowLeft } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddProdutosTabProps {
   onProductAdded: () => void;
 }
 
 export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
+  const [isManualMode, setIsManualMode] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    price: "",
+    url: "",
+    imageUrl: "",
+    category: "Outros",
+    brand: "",
+    description: "",
+    store: ""
+  });
+
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const authToken = localStorage.getItem("authToken");
+
+  const addProductMutation = useMutation({
+    mutationFn: async (productData: any) => {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": authToken || ""
+        },
+        body: JSON.stringify(productData),
+      });
+      if (!response.ok) {
+        throw new Error("Falha ao adicionar produto");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
+      onProductAdded();
+      toast({
+        title: "Sucesso",
+        description: "Produto adicionado à lista!",
+      });
+      // Reset form
+      setFormData({
+        name: "",
+        price: "",
+        url: "",
+        imageUrl: "",
+        category: "Outros",
+        brand: "",
+        description: "",
+        store: ""
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao adicionar produto",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome do produto é obrigatório",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const productData = {
+      name: formData.name,
+      price: formData.price || null,
+      url: formData.url || `https://example.com/product/${Date.now()}`,
+      imageUrl: formData.imageUrl || null,
+      store: formData.store || "Adicionado Manualmente",
+      description: formData.description || null,
+      category: formData.category,
+      brand: formData.brand || null,
+      isPurchased: false,
+    };
+
+    addProductMutation.mutate(productData);
+  };
+
+  if (isManualMode) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <button
+            onClick={() => setIsManualMode(false)}
+            className="neomorphic-button mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </button>
+          <div className="w-16 h-16 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-4">
+            <Edit className="w-8 h-8" style={{ color: 'var(--primary-action)' }} />
+          </div>
+          <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+            Adicionar Produto Manualmente
+          </h2>
+          <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
+            Preencha os campos abaixo para adicionar um produto à sua lista
+          </p>
+        </div>
+
+        {/* Manual Form */}
+        <form onSubmit={handleSubmit} className="neomorphic-card p-6 rounded-2xl space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                Nome do Produto *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="neomorphic-input w-full"
+                placeholder="Ex: iPhone 15 Pro Max"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                Preço (R$)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => handleInputChange('price', e.target.value)}
+                className="neomorphic-input w-full"
+                placeholder="0,00"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                Loja
+              </label>
+              <input
+                type="text"
+                value={formData.store}
+                onChange={(e) => handleInputChange('store', e.target.value)}
+                className="neomorphic-input w-full"
+                placeholder="Ex: Amazon, Magazine Luiza"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                Categoria
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) => handleInputChange('category', e.target.value)}
+                className="neomorphic-input w-full"
+              >
+                <option value="Outros">Outros</option>
+                <option value="Eletrônicos">Eletrônicos</option>
+                <option value="Roupas e Acessórios">Roupas e Acessórios</option>
+                <option value="Casa e Decoração">Casa e Decoração</option>
+                <option value="Livros e Mídia">Livros e Mídia</option>
+                <option value="Esportes e Lazer">Esportes e Lazer</option>
+                <option value="Ferramentas e Construção">Ferramentas e Construção</option>
+                <option value="Alimentos e Bebidas">Alimentos e Bebidas</option>
+                <option value="Saúde e Beleza">Saúde e Beleza</option>
+                <option value="Automotivo">Automotivo</option>
+                <option value="Pet Shop">Pet Shop</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                Marca
+              </label>
+              <input
+                type="text"
+                value={formData.brand}
+                onChange={(e) => handleInputChange('brand', e.target.value)}
+                className="neomorphic-input w-full"
+                placeholder="Ex: Apple, Samsung"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                URL do Produto
+              </label>
+              <input
+                type="url"
+                value={formData.url}
+                onChange={(e) => handleInputChange('url', e.target.value)}
+                className="neomorphic-input w-full"
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                URL da Imagem
+              </label>
+              <input
+                type="url"
+                value={formData.imageUrl}
+                onChange={(e) => handleInputChange('imageUrl', e.target.value)}
+                className="neomorphic-input w-full"
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                Descrição
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                className="neomorphic-input w-full"
+                rows={3}
+                placeholder="Descrição do produto..."
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4 pt-4">
+            <button
+              type="button"
+              onClick={() => setIsManualMode(false)}
+              className="neomorphic-button flex-1"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={addProductMutation.isPending}
+              className="neomorphic-button-primary flex-1"
+            >
+              {addProductMutation.isPending ? "Adicionando..." : "Adicionar Produto"}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       {/* Header */}
@@ -17,13 +275,40 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
           Adicionar Produtos
         </h2>
         <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
-          Cole o link do produto e deixe nossa IA extrair todas as informações automaticamente
+          Escolha como deseja adicionar produtos à sua lista
         </p>
       </div>
 
-      {/* URL Input */}
-      <div className="fade-in">
-        <UrlInput onProductAdded={onProductAdded} />
+      {/* Mode Selection */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="neomorphic-card p-6 rounded-2xl text-center">
+          <Link className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--primary-action)' }} />
+          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+            Por URL (Automático)
+          </h3>
+          <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+            Cole o link do produto e nossa IA extrai todas as informações automaticamente
+          </p>
+          <div className="fade-in">
+            <UrlInput onProductAdded={onProductAdded} />
+          </div>
+        </div>
+
+        <div className="neomorphic-card p-6 rounded-2xl text-center">
+          <Edit className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--primary-action)' }} />
+          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+            Manual
+          </h3>
+          <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+            Preencha os dados do produto manualmente
+          </p>
+          <button
+            onClick={() => setIsManualMode(true)}
+            className="neomorphic-button-primary w-full"
+          >
+            Adicionar Manualmente
+          </button>
+        </div>
       </div>
 
       {/* Instructions */}
