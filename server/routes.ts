@@ -17,20 +17,28 @@ const productSchema = new mongoose.Schema({
     required: true
   },
   url: String,
+  urlOrigin: String,
   name: { type: String, required: true },
   price: String,
   originalPrice: String,
-  imageUrl: String,
+  image: String, // Campo 'image' como no banco
+  imageUrl: String, // Manter compatibilidade
   store: String,
   description: String,
   category: { type: String, default: "Geral" },
   brand: String,
-  tags: String,
-  priority: { type: String, default: "medium" },
+  tags: [String], // Array de strings
+  priority: { type: String, default: "Baixa" },
   notes: String,
+  status: { type: String, default: "pendente" }, // Campo 'status' do banco
   isPurchased: { type: Boolean, default: false },
+  purchasedAt: Date,
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
+  __v: { type: Number, default: 0 }
+}, {
+  // Permitir campos adicionais que possam existir no banco
+  strict: false
 });
 
 const Product = mongoose.model('Product', productSchema);
@@ -176,9 +184,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         matches: p.userId.toString() === req.user.userId
       })));
 
-      // Verificar produtos deste usuário
-      const products = await Product.find({ userId: req.user.userId }).sort({ createdAt: -1 });
-      console.log(`✅ Encontrados ${products.length} produtos para o usuário ${req.user.userId}`);
+      // Tentar diferentes formatos de userId para buscar produtos
+      let products = [];
+      
+      // Primeiro, tentar com ObjectId
+      try {
+        products = await Product.find({ userId: req.user.userId }).sort({ createdAt: -1 });
+        console.log(`🔍 Busca por ObjectId: ${products.length} produtos`);
+      } catch (error) {
+        console.log('❌ Erro na busca por ObjectId:', error.message);
+      }
+      
+      // Se não encontrou, tentar com string
+      if (products.length === 0) {
+        try {
+          products = await Product.find({ userId: req.user.userId.toString() }).sort({ createdAt: -1 });
+          console.log(`🔍 Busca por string: ${products.length} produtos`);
+        } catch (error) {
+          console.log('❌ Erro na busca por string:', error.message);
+        }
+      }
+      
+      // Se ainda não encontrou, tentar busca mais ampla
+      if (products.length === 0) {
+        try {
+          const mongoose = await import('mongoose');
+          const objectId = new mongoose.Types.ObjectId(req.user.userId);
+          products = await Product.find({ userId: objectId }).sort({ createdAt: -1 });
+          console.log(`🔍 Busca por novo ObjectId: ${products.length} produtos`);
+        } catch (error) {
+          console.log('❌ Erro na busca por novo ObjectId:', error.message);
+        }
+      }
+
+      console.log(`✅ Total encontrado: ${products.length} produtos para o usuário ${req.user.userId}`);
 
       // Log dos primeiros produtos para debug
       if (products.length > 0) {
@@ -186,6 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: products[0]._id,
           name: products[0].name,
           userId: products[0].userId,
+          userIdType: typeof products[0].userId,
           price: products[0].price,
           category: products[0].category
         });
@@ -193,8 +233,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('⚠️ Nenhum produto encontrado para este usuário');
       }
 
+      // Mapear os produtos para o formato esperado pelo frontend
+      const mappedProducts = products.map(product => ({
+        ...product.toObject(),
+        // Garantir compatibilidade com ambos os campos de imagem
+        imageUrl: product.image || product.imageUrl,
+        // Mapear status para isPurchased se necessário
+        isPurchased: product.status === 'comprado' || product.isPurchased
+      }));
+      
       console.log('=== PRODUCTS FETCH DEBUG END ===\n');
-      res.json(products);
+      res.json(mappedProducts);
     } catch (error) {
       console.error("❌ Error fetching products:", {
         name: error.name,
@@ -217,7 +266,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         matches: req.user.userId === req.params.userId
       });
 
-      const products = await Product.find({ userId: req.user.userId });
+      // Usar a mesma lógica de busca que a rota de produtos
+      let products = [];
+      
+      // Tentar diferentes formatos de userId
+      try {
+        products = await Product.find({ userId: req.user.userId });
+        console.log(`🔍 Stats - Busca por ObjectId: ${products.length} produtos`);
+      } catch (error) {
+        console.log('❌ Stats - Erro na busca por ObjectId:', error.message);
+      }
+      
+      if (products.length === 0) {
+        try {
+          products = await Product.find({ userId: req.user.userId.toString() });
+          console.log(`🔍 Stats - Busca por string: ${products.length} produtos`);
+        } catch (error) {
+          console.log('❌ Stats - Erro na busca por string:', error.message);
+        }
+      }
+      
+      if (products.length === 0) {
+        try {
+          const mongoose = await import('mongoose');
+          const objectId = new mongoose.Types.ObjectId(req.user.userId);
+          products = await Product.find({ userId: objectId });
+          console.log(`🔍 Stats - Busca por novo ObjectId: ${products.length} produtos`);
+        } catch (error) {
+          console.log('❌ Stats - Erro na busca por novo ObjectId:', error.message);
+        }
+      }
+
       console.log('📊 Produtos encontrados para estatísticas:', products.length);
 
       if (products.length > 0) {
@@ -229,9 +308,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const totalItems = products.length;
-      const purchasedItems = products.filter(p => p.isPurchased).length;
+      const purchasedItems = products.filter(p => p.status === 'comprado' || p.isPurchased).length;
       const estimatedTotal = products.reduce((sum, p) => {
-        const price = p.price ? parseFloat(p.price) : 0;
+        const price = p.price ? parseFloat(p.price.toString().replace(',', '.')) : 0;
         return sum + price;
       }, 0);
 
