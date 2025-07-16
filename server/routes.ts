@@ -204,10 +204,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const product = await storage.createProduct(productData);
-      res.json(product);
+      
+      // Retorna o produto com informação se foi scraping bem-sucedido
+      res.json({
+        ...product,
+        scrapingSuccess: scrapedProduct.name !== `Produto de ${scrapedProduct.store}`,
+        needsManualInput: !scrapedProduct.price || scrapedProduct.name === `Produto de ${scrapedProduct.store}`
+      });
     } catch (error) {
       console.error("Scraping error:", error);
-      res.status(500).json({ error: "Failed to scrape and add product" });
+      res.status(500).json({ 
+        error: "Failed to scrape and add product",
+        canRetryWithManual: true 
+      });
+    }
+  });
+
+  // Add product manually
+  app.post("/api/products/manual", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { url, name, price, originalPrice, imageUrl, store, description, category, brand } = req.body;
+
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: "Valid URL is required" });
+      }
+
+      if (!name || typeof name !== 'string') {
+        return res.status(400).json({ error: "Product name is required" });
+      }
+
+      const productData = {
+        userId: parseInt(req.user.userId),
+        url,
+        name,
+        price: price?.toString() || null,
+        originalPrice: originalPrice?.toString() || null,
+        imageUrl: imageUrl || null,
+        store: store || "Loja Manual",
+        description: description || `Produto adicionado manualmente: ${name}`,
+        category: category || "Geral",
+        brand: brand || null,
+        isPurchased: false
+      };
+
+      const product = await storage.createProduct(productData);
+      res.json(product);
+    } catch (error) {
+      console.error("Manual product creation error:", error);
+      res.status(500).json({ error: "Failed to create manual product" });
     }
   });
 

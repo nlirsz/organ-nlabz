@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Link, Plus, Wand2, Clipboard } from "lucide-react";
+import { Link, Plus, Wand2, Clipboard, Edit, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { ManualProductModal } from "./manual-product-modal";
 
 interface UrlInputProps {
   onProductAdded: () => void;
@@ -12,27 +13,66 @@ interface UrlInputProps {
 
 export function UrlInput({ onProductAdded }: UrlInputProps) {
   const [url, setUrl] = useState("");
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [failedScrapingData, setFailedScrapingData] = useState<any>(null);
   const { toast } = useToast();
 
   const addProductMutation = useMutation({
     mutationFn: async (url: string) => {
-      const response = await apiRequest("POST", "/api/products/scrape", { url });
-      return response.json();
+      const response = await apiRequest("/api/products/scrape", {
+        method: "POST",
+        body: JSON.stringify({ url }),
+      });
+      return response;
     },
     onSuccess: (data) => {
-      toast({
-        title: "Sucesso",
-        description: `${data.name} foi adicionado à sua lista de compras!`,
-      });
+      if (data.needsManualInput) {
+        // Se o scraping foi limitado, mostra aviso e oferece opção manual
+        toast({
+          title: "Produto adicionado parcialmente",
+          description: "Algumas informações não foram encontradas. Você pode completar manualmente.",
+          duration: 5000,
+        });
+        setFailedScrapingData({
+          name: data.name,
+          price: data.price,
+          store: data.store,
+          imageUrl: data.imageUrl,
+          description: data.description,
+          category: data.category,
+          brand: data.brand,
+        });
+        setShowManualModal(true);
+      } else {
+        // Scraping bem-sucedido
+        toast({
+          title: "Sucesso",
+          description: `${data.name} foi adicionado à sua lista de compras!`,
+        });
+      }
       setUrl("");
       onProductAdded();
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Falha ao adicionar produto. Verifique a URL e tente novamente.",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      console.error("Erro ao adicionar produto:", error);
+      
+      // Se o erro permite retry manual, oferece a opção
+      if (error.canRetryWithManual) {
+        toast({
+          title: "Falha no scraping",
+          description: "Não foi possível extrair informações automaticamente. Tente adicionar manualmente.",
+          variant: "destructive",
+          duration: 5000,
+        });
+        setFailedScrapingData({ url });
+        setShowManualModal(true);
+      } else {
+        toast({
+          title: "Erro",
+          description: error.message || "Falha ao adicionar produto. Verifique a URL e tente novamente.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -78,60 +118,90 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
     }
   };
 
-  return (
-    <section className="neomorphic-card p-8">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="relative">
-          <input
-            type="url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="Cole a URL para adicionar à lista..."
-            className="w-full neomorphic-input text-base"
-            style={{ 
-              color: 'var(--text-primary)',
-              fontFamily: 'Inter, sans-serif'
-            }}
-            disabled={addProductMutation.isPending}
-          />
-          <button
-            type="button"
-            onClick={handlePaste}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 w-8 h-8 neomorphic-button rounded-full flex items-center justify-center"
-          >
-            <Clipboard className="w-4 h-4" />
-          </button>
-        </div>
+  const handleModalClose = () => {
+    setShowManualModal(false);
+    setFailedScrapingData(null);
+  };
 
-        <button
-          type="submit"
-          disabled={addProductMutation.isPending}
-          className="w-full neomorphic-button-primary py-4 text-lg font-semibold rounded-2xl"
-        >
-          {addProductMutation.isPending ? (
-            <div className="flex items-center justify-center space-x-3">
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-              <span>Verificar URL</span>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center space-x-2">
-              <Wand2 className="w-5 h-5" />
-              <span>Adicionar Produto</span>
+  const handleManualProductAdded = () => {
+    setShowManualModal(false);
+    setFailedScrapingData(null);
+    onProductAdded();
+  };
+
+  return (
+    <>
+      <section className="neomorphic-card p-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="relative">
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="Cole a URL para adicionar à lista..."
+              className="w-full neomorphic-input text-base"
+              style={{ 
+                color: 'var(--text-primary)',
+                fontFamily: 'Inter, sans-serif'
+              }}
+              disabled={addProductMutation.isPending}
+            />
+            <button
+              type="button"
+              onClick={handlePaste}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 w-8 h-8 neomorphic-button rounded-full flex items-center justify-center"
+            >
+              <Clipboard className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              type="submit"
+              disabled={addProductMutation.isPending}
+              className="flex-1 neomorphic-button-primary flex items-center justify-center gap-2"
+            >
+              {addProductMutation.isPending ? (
+                <>
+                  <Wand2 className="w-4 h-4 animate-spin" />
+                  Analisando...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Adicionar à Lista
+                </>
+              )}
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => setShowManualModal(true)}
+              className="neomorphic-button flex items-center gap-2"
+              title="Adicionar produto manualmente"
+            >
+              <Edit className="w-4 h-4" />
+              Manual
+            </button>
+          </div>
+
+          {addProductMutation.isPending && (
+            <div className="text-center">
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Extraindo informações do produto...
+              </p>
             </div>
           )}
-        </button>
-      </form>
+        </form>
+      </section>
 
-      {addProductMutation.isPending && (
-        <div className="mt-6 p-6 neomorphic-card rounded-2xl">
-          <div className="flex items-center space-x-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-t-transparent" style={{ borderColor: 'var(--primary-action)' }} />
-            <span className="font-medium" style={{ color: 'var(--primary-action)' }}>
-              Extraindo informações do produto...
-            </span>
-          </div>
-        </div>
-      )}
-    </section>
+      <ManualProductModal
+        isOpen={showManualModal}
+        onClose={handleModalClose}
+        initialUrl={failedScrapingData?.url || url}
+        initialData={failedScrapingData || {}}
+        onProductAdded={handleManualProductAdded}
+      />
+    </>
   );
 }
