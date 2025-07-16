@@ -204,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const product = await storage.createProduct(productData);
-      
+
       // Retorna o produto com informação se foi scraping bem-sucedido
       res.json({
         ...product,
@@ -260,7 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const productId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);
-      
+
       const product = await storage.updateProduct(productId, req.body, userId);
 
       if (!product) {
@@ -279,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const productId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);
-      
+
       const success = await storage.deleteProduct(productId, userId);
 
       if (!success) {

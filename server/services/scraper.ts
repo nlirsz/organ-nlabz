@@ -8,7 +8,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
-const model = genAI?.getGenerativeModel({ model: "gemini-2.0-flash-experimental" });
+const model = genAI?.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const generationConfig = {
   temperature: 0.3,
@@ -193,7 +193,7 @@ function getSpecificPriceInstructions(domain: string): string {
     return '- Procure por classes: .price-current, .product-price, .price-reduced\n- Ignore preços de parcelamento';
   }
   if (domain.includes('zara.com')) {
-    return '- Procure por classes: .price__amount, .money-amount\n- Preço pode estar em EUR, converta para BRL se necessário';
+    return '- PRIORIDADE 1: Procure por [data-qa-anchor="product.price.current"] ou classes .money-amount, .price\n- PRIORIDADE 2: meta[property="product:price:amount"]\n- PRIORIDADE 3: JSON-LD com @type="Product" e "offers"\n- Converta EUR para BRL se necessário (EUR * 6.2)\n- Ignore preços de frete';
   }
   if (domain.includes('mercadolivre.com')) {
     return '- Procure por: .price-tag-fraction, .price-tag-cents\n- Combine fração + centavos';
@@ -206,7 +206,7 @@ function getSpecificImageInstructions(domain: string): string {
     return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: img[data-qa="product-image"]';
   }
   if (domain.includes('zara.com')) {
-    return '- PRIORIDADE: .media-image img src\n- Alternativa: meta[property="og:image"]';
+    return '- PRIORIDADE 1: meta[property="og:image"] com URL completa\n- PRIORIDADE 2: picture source[media] com maior resolução\n- PRIORIDADE 3: .media__wrapper img ou .product-detail-images img\n- PRIORIDADE 4: img[src*="zara.com/assets"]\n- URL deve ter https:// e domínio válido';
   }
   return '- PRIORIDADE 1: meta[property="og:image"]\n- PRIORIDADE 2: img dentro de divs de produto com maior resolução';
 }
@@ -304,6 +304,22 @@ function getStoreNameFromDomain(domain: string): string {
 }
 
 function extractProductNameFromUrl(pathname: string, domain: string): string {
+  // Lógica específica para Zara
+  if (domain.includes('zara.com')) {
+    // Extrai o nome do produto da URL da Zara
+    // Exemplo: /sunrise-on-the-red-sand-dunes-intense-edp-100-ml--3-38-fl--oz--p20220319.html
+    const cleanPath = pathname.replace(/--p\d+\.html.*$/, ''); // Remove código do produto
+    const cleanPath2 = cleanPath.replace(/^\/[^\/]*\/[^\/]*\//, ''); // Remove idioma/país
+    const segments = cleanPath2.split('-').filter(s => s.length > 1);
+    
+    if (segments.length > 3) {
+      return segments
+        .slice(0, 6) // Máximo 6 palavras para nome completo
+        .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+        .join(' ');
+    }
+  }
+  
   // Remove extensões e divide por separadores
   const cleanPath = pathname.replace(/\.[^/.]+$/, '');
   const segments = cleanPath.split(/[\/\-_]/).filter(s => s.length > 2);

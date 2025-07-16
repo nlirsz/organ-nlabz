@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2, Edit, ExternalLink, Check, RotateCcw, ShoppingCart, Heart, TrendingUp } from "lucide-react";
+import { Trash2, Edit, ExternalLink, Check, RotateCcw, ShoppingCart, Heart, TrendingUp, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,15 +12,17 @@ import type { Product } from "@shared/schema";
 interface ProductCardProps {
   product: Product;
   onProductUpdated: () => void;
+  onReScrape?: (id: number) => void;
 }
 
-export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
+export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCardProps) {
   const [isChecked, setIsChecked] = useState(product.isPurchased);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const [isReScrapingLoading, setIsReScrapingLoading] = useState(false);
 
   const updateProductMutation = useMutation({
     mutationFn: async (updates: Partial<Product>) => {
@@ -101,6 +103,17 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
 
   const isPurchased = isChecked;
 
+  const handleReScrape = async () => {
+    if (!onReScrape || isReScrapingLoading) return;
+
+    setIsReScrapingLoading(true);
+    try {
+      await onReScrape(product.id);
+    } finally {
+      setIsReScrapingLoading(false);
+    }
+  };
+
   return (
     <div className={`neomorphic-card p-6 ${isPurchased ? 'opacity-75' : ''}`}>
       {/* Header with Category */}
@@ -141,7 +154,7 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
               <ShoppingCart className="w-16 h-16 text-gray-400" />
             </div>
           )}
-          
+
           {/* Purchase Status Overlay */}
           {isPurchased && (
             <div className="absolute inset-0 bg-black bg-opacity-30 rounded-xl flex items-center justify-center">
@@ -159,7 +172,7 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
             style={{ color: 'var(--text-primary)' }}>
           {product.name}
         </h3>
-        
+
         <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
           {product.store || 'Loja Online'}
         </p>
@@ -169,7 +182,7 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
                 style={{ color: isPurchased ? 'var(--text-secondary)' : 'var(--primary-action)' }}>
             {formatPrice(product.price)}
           </span>
-          
+
           {isPurchased && (
             <span className="text-xs px-2 py-1 rounded-full bg-green-500 text-white">
               COMPRADO
@@ -210,6 +223,20 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
           <ExternalLink className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
         </a>
 
+        {onReScrape && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleReScrape();
+            }}
+            disabled={isReScrapingLoading}
+            className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
+            title="Atualizar dados do produto"
+          >
+            <RefreshCw className={`w-5 h-5 ${isReScrapingLoading ? "animate-spin" : ""}`} style={{ color: 'var(--primary-action)' }} />
+          </button>
+        )}
+
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -249,7 +276,7 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
               {product.name}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Product Image */}
             <div className="space-y-4">
@@ -266,7 +293,7 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
                   <ShoppingCart className="w-20 h-20" style={{ color: 'var(--text-secondary)' }} />
                 </div>
               )}
-              
+
               {/* Product Actions */}
               <div className="flex gap-2">
                 <a
@@ -399,7 +426,7 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
                     </>
                   )}
                 </button>
-                
+
                 {isPurchased && (
                   <div className="category-tag" style={{ 
                     backgroundColor: 'var(--success-color)', 

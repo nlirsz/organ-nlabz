@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Filter, SortAsc, Package, Edit, Check, Trash2, Star } from "lucide-react";
@@ -88,6 +87,36 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
     },
   });
 
+  const addToFavoritesMutation = useMutation({
+    mutationFn: async (product: Product) => {
+      return apiRequest(`/api/favorites`, 'POST', { productId: product.id });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+    },
+  });
+
+  const reScrapeMutation = useMutation({
+    mutationFn: async (productId: number) => {
+      return apiRequest(`/api/products/${productId}/re-scrape`, 'POST');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast({
+        title: "Produto atualizado",
+        description: "Os dados do produto foram atualizados com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao atualizar",
+        description: error.message || "Não foi possível atualizar o produto",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handlePurchase = (productId: number, productName: string) => {
     if (window.confirm(`Marcar "${productName}" como comprado?`)) {
       purchaseProductMutation.mutate(productId);
@@ -107,7 +136,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
       // Normalize category names for comparison
       const productCategory = p.category?.toLowerCase() || 'geral';
       const filterCategory = selectedCategory.toLowerCase();
-      
+
       // Handle different category name variations
       const categoryMap: Record<string, string[]> = {
         'eletrônicos': ['eletronicos', 'eletrônicos', 'electronics'],
@@ -118,11 +147,11 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
         'games': ['games', 'jogos', 'gaming'],
         'presentes': ['presentes', 'gifts'],
       };
-      
+
       if (categoryMap[filterCategory]) {
         return categoryMap[filterCategory].includes(productCategory);
       }
-      
+
       return productCategory === filterCategory;
     })
     .filter(p => {
@@ -312,7 +341,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 </button>
-                
+
                 <button
                   onClick={() => setEditingProduct(product)}
                   className="flex-1 neomorphic-button px-3 py-2 rounded-lg flex items-center justify-center text-sm"
@@ -320,7 +349,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
                 >
                   <Edit className="w-4 h-4" style={{ color: 'var(--edit-color)' }} />
                 </button>
-                
+
                 <button
                   onClick={() => handlePurchase(product.id, product.name)}
                   disabled={purchaseProductMutation.isPending}
@@ -329,7 +358,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
                 >
                   <Check className="w-4 h-4" style={{ color: 'white' }} />
                 </button>
-                
+
                 <button
                   onClick={() => handleDelete(product.id, product.name)}
                   disabled={deleteProductMutation.isPending}
