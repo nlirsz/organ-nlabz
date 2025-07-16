@@ -154,10 +154,13 @@ PREÇO (OBRIGATÓRIO):
 - Exemplo: "89,95 €" = 89.95 * 6.2 = 557.69
 
 IMAGEM (OBRIGATÓRIA):
-- PRIORIDADE 1: meta[property="og:image"]
-- PRIORIDADE 2: meta[name="twitter:image"] 
-- PRIORIDADE 3: img[src*="static.zara.net"] com maior resolução
-- Deve ser URL completa e acessível
+- PRIORIDADE 1: meta[property="og:image"] - verificar se URL é válida
+- PRIORIDADE 2: meta[name="twitter:image"]
+- PRIORIDADE 3: img[src*="static.zara.net/assets/public"] (URLs modernas)
+- PRIORIDADE 4: img[src*="static.zara.net"] mas evite URLs com "/photos///"
+- VALIDAÇÃO: Rejeite URLs que contenham "/photos///" (barras triplas)
+- VALIDAÇÃO: Prefira URLs com "/assets/public/" e parâmetros "&w=1500"
+- Deve ser URL completa, acessível e sem barras duplas/triplas
 ` : ''}
 
 INSTRUÇÕES ESPECÍFICAS PARA PREÇOS:
@@ -253,11 +256,12 @@ function getSpecificImageInstructions(domain: string): string {
 - PRIORIDADE 2: meta[name="twitter:image"]
 - PRIORIDADE 3: JSON-LD procure por "image" dentro de @type="Product"
 - PRIORIDADE 4: picture source com maior resolução (procure por width=2048 ou similar)
-- PRIORIDADE 5: img[src*="static.zara.net"] com maior resolução
-- PRIORIDADE 6: img dentro de .product-detail-view ou .media__wrapper
+- PRIORIDADE 5: img[src*="static.zara.net/assets/public"] (prefira URLs com /assets/public/)
+- PRIORIDADE 6: img[src*="static.zara.net"] que NÃO contenha "/photos///" (evite URLs com barras triplas)
 - IMPORTANTE: URL deve começar com https:// e ser acessível
-- IMPORTANTE: Prefira URLs que contenham "static.zara.net" e evite URLs com "placeholder"
-- TESTE: Se a URL contém "?v=" ou parâmetros, mantenha-os`;
+- IMPORTANTE: Evite URLs que contenham "/photos///" ou barras duplas/triplas
+- IMPORTANTE: Prefira URLs que contenham "/assets/public/" e parâmetros como "&w=1500"
+- TESTE: Valide se a URL não contém "/photos///" que indica URL quebrada`;
   }
   if (domain.includes('dafiti.com') || domain.includes('netshoes.com')) {
     return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: .product-image img';
