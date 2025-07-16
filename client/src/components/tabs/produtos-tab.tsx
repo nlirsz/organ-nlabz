@@ -24,7 +24,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
   const authToken = localStorage.getItem("authToken");
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
-    queryKey: ["/api/products", refreshKey],
+    queryKey: ["/api/products"],
     enabled: !!authToken,
   });
 
@@ -103,8 +103,27 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
   const filteredProducts = products
     .filter(p => !p.isPurchased)
     .filter(p => {
-      if (selectedCategory === "Todos") return true;
-      return p.category === selectedCategory;
+      if (selectedCategory === "Todos" || selectedCategory === "Geral") return true;
+      // Normalize category names for comparison
+      const productCategory = p.category?.toLowerCase() || 'geral';
+      const filterCategory = selectedCategory.toLowerCase();
+      
+      // Handle different category name variations
+      const categoryMap: Record<string, string[]> = {
+        'eletrônicos': ['eletronicos', 'eletrônicos', 'electronics'],
+        'eletronicos': ['eletronicos', 'eletrônicos', 'electronics'],
+        'roupas': ['roupas', 'roupas e acessórios', 'clothing'],
+        'casa': ['casa', 'casa e decoração', 'home'],
+        'livros': ['livros', 'livros e mídia', 'books'],
+        'games': ['games', 'jogos', 'gaming'],
+        'presentes': ['presentes', 'gifts'],
+      };
+      
+      if (categoryMap[filterCategory]) {
+        return categoryMap[filterCategory].includes(productCategory);
+      }
+      
+      return productCategory === filterCategory;
     })
     .filter(p => {
       if (!searchTerm) return true;
@@ -213,33 +232,37 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="product-grid">
           {filteredProducts.map((product) => (
             <div
               key={product.id}
-              className="product-card neomorphic-card p-0 rounded-2xl overflow-hidden card-entering"
+              className="neomorphic-card p-6 rounded-2xl card-entering product-card-hover"
             >
-              <div className="card-image-container">
-                {product.imageUrl ? (
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="w-full h-full object-cover rounded-lg"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.parentElement?.classList.add('image-placeholder');
-                    }}
-                  />
-                ) : (
-                  <div className="image-placeholder w-full h-full rounded-lg">
-                    <Package className="w-12 h-12" style={{ color: 'var(--text-secondary)' }} />
-                  </div>
-                )}
+              {/* Product Image */}
+              <div className="mb-4">
+                <div className="relative">
+                  {product.imageUrl ? (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="w-full h-48 object-cover rounded-xl"
+                      style={{ backgroundColor: 'var(--c-light)' }}
+                      onError={(e) => {
+                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTAwQzEwNS41MjMgMTAwIDExMCA5NS41MjI4IDExMCA5MEM1MTAgODQuNDc3MiAxMDUuNTIzIDgwIDEwMCA4MEM5NC40NzcyIDgwIDkwIDg0LjQ3NzIgOTAgOTBDOTAgOTUuNTIyOCA5NC40NzcyIDEwMCAxMDAgMTAwWiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNMTM1IDEyMEgxMTVWMTEwSDEzNVYxMjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik05NSAxMjBINzVWMTEwSDk1VjEyMFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-48 rounded-xl image-placeholder flex items-center justify-center">
+                      <Package className="w-16 h-16" style={{ color: 'var(--text-secondary)' }} />
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="card-content">
+              {/* Product Info */}
+              <div className="mb-4">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="card-title font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  <h3 className="font-semibold text-lg line-clamp-2" style={{ color: 'var(--text-primary)' }}>
                     {product.name}
                   </h3>
                   {product.category && (
@@ -262,7 +285,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
                 )}
 
                 <div className="flex items-center justify-between">
-                  <div className="card-price font-bold">
+                  <div className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
                     {product.price ? 
                       new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(product.price))
                       : 'Preço não informado'
@@ -276,10 +299,12 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
                 </div>
               </div>
 
-              <div className="card-actions">
+              {/* Card Actions */}
+              <div className="flex items-center justify-between border-t pt-4" 
+                   style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
                 <button
                   onClick={() => window.open(product.url, '_blank')}
-                  className="neomorphic-button w-full mb-2"
+                  className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
                   title="Ver produto"
                 >
                   👁️
@@ -287,28 +312,28 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
                 
                 <button
                   onClick={() => setEditingProduct(product)}
-                  className="neomorphic-button w-full mb-2"
+                  className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
                   title="Editar produto"
                 >
-                  <Edit className="w-4 h-4" />
+                  <Edit className="w-5 h-5" style={{ color: 'var(--edit-color)' }} />
                 </button>
                 
                 <button
                   onClick={() => handlePurchase(product.id, product.name)}
                   disabled={purchaseProductMutation.isPending}
-                  className="neomorphic-button-primary w-full mb-2"
+                  className="w-10 h-10 neomorphic-button-primary rounded-full flex items-center justify-center"
                   title="Marcar como comprado"
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className="w-5 h-5" style={{ color: 'white' }} />
                 </button>
                 
                 <button
                   onClick={() => handleDelete(product.id, product.name)}
                   disabled={deleteProductMutation.isPending}
-                  className="neomorphic-button w-full"
+                  className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
                   title="Remover da lista"
                 >
-                  <Trash2 className="w-4 h-4" style={{ color: 'var(--error-color)' }} />
+                  <Trash2 className="w-5 h-5" style={{ color: 'var(--error-color)' }} />
                 </button>
               </div>
             </div>

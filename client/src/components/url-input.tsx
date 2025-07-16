@@ -19,7 +19,17 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
 
   const addProductMutation = useMutation({
     mutationFn: async (url: string) => {
-      const response = await apiRequest("POST", "/api/products/scrape", { url });
+      const response = await fetch("/api/products/scrape", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": localStorage.getItem("authToken") || ""
+        },
+        body: JSON.stringify({ url }),
+      });
+      if (!response.ok) {
+        throw new Error("Falha ao adicionar produto");
+      }
       return response.json();
     },
     onSuccess: (data) => {

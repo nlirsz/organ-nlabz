@@ -22,10 +22,10 @@ export interface ScrapedProduct {
 function normalizePrice(price: any): number | null {
   if (typeof price === 'number') return price;
   if (typeof price !== 'string') return null;
-  
+
   // Remove símbolos de moeda e espaços
   let priceStr = price.replace(/[R$\s]/g, '');
-  
+
   // Para preços brasileiros (R$ 1.234,56), converte para formato americano
   if (priceStr.includes(',')) {
     // Se tem vírgula, assume formato brasileiro
@@ -37,45 +37,36 @@ function normalizePrice(price: any): number | null {
       priceStr = `${integerPart}.${decimalPart}`;
     }
   }
-  
+
   const priceNum = parseFloat(priceStr);
   return isNaN(priceNum) ? null : priceNum;
 }
 async function scrapeByAnalyzingHtml(productUrl: string, htmlContent: string): Promise<ScrapedProduct> {
   console.log(`[Gemini HTML Mode] Starting for: ${productUrl}`);
-  const prompt = `Analyze the following HTML to extract Brazilian product information.
+  const prompt = `Analise esta página de produto brasileira e extraia informações estruturadas.
 
-REQUIRED - return JSON with:
+URL: ${productUrl}
+HTML: ${htmlContent.substring(0, 20000)}
+
+REGRAS IMPORTANTES:
+- Para "imageUrl": Procure na ordem: meta[property="og:image"], meta[name="twitter:image"], .product-image img, .main-image img, ou primeira imagem relevante do produto
+- Para "price": Extraia apenas números, converta vírgulas para pontos (ex: "R$ 1.299,99" vira 299.99)
+- Para "name": Use o título mais limpo possível, remova textos promocionais
+- Para "store": Extraia do domínio ou nome da loja na página
+- Para "category": Escolha a mais específica dentre: Eletrônicos, Roupas e Acessórios, Casa e Decoração, Livros e Mídia, Esportes e Lazer, Ferramentas e Construção, Alimentos e Bebidas, Saúde e Beleza, Automotivo, Pet Shop, Outros
+
+Retorne um JSON válido com estas propriedades:
 {
-  "name": "Product name",
-  "price": "1234.56",
-  "image": "Image URL",
-  "category": "Category",
-  "store": "Store name",
-  "description": "Product description",
-  "brand": "Brand name"
+  "name": "Nome limpo do produto",
+  "price": 299.99,
+  "originalPrice": null,
+  "imageUrl": "https://exemplo.com/imagem.jpg",
+  "store": "Nome da Loja",
+  "description": "Descrição concisa",
+  "category": "Categoria mais específica",
+  "brand": "Marca se identificada"
 }
-
-PRICE RULES:
-- Look for R$ with numbers: R$ 1.234,56 or R$1234,56
-- CSS classes: price, preco, valor, product-price, sale-price
-- Meta tags: og:price, product:price
-- Return format: "1234.56" (dot decimal)
-- Prioritize main product price, avoid combo/bundle prices
-
-NAME RULES:
-- Look for: <title>, <h1>, .product-name, .product-title
-- Clean extra text, keep only the product name
-
-IMAGE RULES:
-- Look for: og:image, product:image, .product-image src
-- Full image URL
-
-CATEGORIES: Eletrônicos, Roupas e Acessórios, Casa e Decoração, Livros e Mídia, Esportes e Lazer, Ferramentas e Construção, Alimentos e Bebidas, Saúde e Beleza, Automotivo, Pet Shop, Outros
-
-HTML: \`\`\`html
-${htmlContent.substring(0, 100000)}
-\`\`\``;
+`;
   const result = await model.generateContent({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig
