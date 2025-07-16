@@ -34,6 +34,10 @@ class InMemoryCache {
     this.cache.clear();
   }
 
+  delete(key: string): void {
+    this.cache.delete(key);
+  }
+
   size(): number {
     return this.cache.size;
   }

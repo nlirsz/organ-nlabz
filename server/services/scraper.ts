@@ -18,7 +18,22 @@ const generationConfig = {
 function normalizePrice(price: any): number | null {
   if (typeof price === 'number') return price;
   if (typeof price !== 'string') return null;
-  const priceStr = price.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+  
+  // Remove símbolos de moeda e espaços
+  let priceStr = price.replace(/[R$\s]/g, '');
+  
+  // Para preços brasileiros (R$ 1.234,56), converte para formato americano
+  if (priceStr.includes(',')) {
+    // Se tem vírgula, assume formato brasileiro
+    const parts = priceStr.split(',');
+    if (parts.length === 2) {
+      // Remove pontos como separadores de milhares
+      const integerPart = parts[0].replace(/\./g, '');
+      const decimalPart = parts[1];
+      priceStr = `${integerPart}.${decimalPart}`;
+    }
+  }
+  
   const priceNum = parseFloat(priceStr);
   return isNaN(priceNum) ? null : priceNum;
 }

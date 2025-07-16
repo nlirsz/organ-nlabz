@@ -102,12 +102,12 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
   const isPurchased = isChecked;
 
   return (
-    <div className={`neomorphic-card p-0 overflow-hidden card-entering ${isPurchased ? 'opacity-75' : ''}`}>
-      {/* Header with Category and Favorite */}
-      <div className="p-4 pb-2 flex items-center justify-between">
-        <div className="category-tag text-xs">
+    <div className={`neomorphic-card p-6 ${isPurchased ? 'opacity-75' : ''}`}>
+      {/* Header with Category */}
+      <div className="flex items-center justify-between mb-4">
+        <span className="category-tag text-xs">
           {getCategoryDisplay(product.category || 'Geral')}
-        </div>
+        </span>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -124,31 +124,28 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
       </div>
 
       {/* Product Image */}
-      <div 
-        className="px-4 pb-4 cursor-pointer" 
-        onClick={() => setIsDetailsModalOpen(true)}
-      >
+      <div className="mb-4">
         <div className="relative">
           {product.imageUrl ? (
             <img
               src={product.imageUrl}
               alt={product.name}
-              className="w-full h-48 object-cover rounded-xl neomorphic-card"
+              className="w-full h-48 object-cover rounded-xl"
               style={{ backgroundColor: 'var(--c-light)' }}
               onError={(e) => {
                 e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTAwQzEwNS41MjMgMTAwIDExMCA5NS41MjI4IDExMCA5MEM1MTAgODQuNDc3MiAxMDUuNTIzIDgwIDEwMCA4MEM5NC40NzcyIDgwIDkwIDg0LjQ3NzIgOTAgOTBDOTAgOTUuNTIyOCA5NC40NzcyIDEwMCAxMDAgMTAwWiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNMTM1IDEyMEgxMTVWMTEwSDEzNVYxMjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik05NSAxMjBINzVWMTEwSDk1VjEyMFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
               }}
             />
           ) : (
-            <div className="w-full h-48 rounded-xl neomorphic-card flex items-center justify-center" style={{ backgroundColor: 'var(--c-light)' }}>
-              <ShoppingCart className="w-16 h-16" style={{ color: 'var(--text-secondary)' }} />
+            <div className="w-full h-48 rounded-xl bg-gray-100 flex items-center justify-center">
+              <ShoppingCart className="w-16 h-16 text-gray-400" />
             </div>
           )}
           
           {/* Purchase Status Overlay */}
           {isPurchased && (
             <div className="absolute inset-0 bg-black bg-opacity-30 rounded-xl flex items-center justify-center">
-              <div className="bg-white rounded-full p-3" style={{ backgroundColor: 'var(--success-color)' }}>
+              <div className="bg-green-500 rounded-full p-3">
                 <Check className="w-8 h-8 text-white" />
               </div>
             </div>
@@ -157,15 +154,9 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
       </div>
 
       {/* Product Info */}
-      <div 
-        className="px-4 pb-4 cursor-pointer" 
-        onClick={() => setIsDetailsModalOpen(true)}
-      >
-        <h3 className={`font-semibold text-base mb-2 line-clamp-2 ${isPurchased ? 'line-through opacity-60' : ''}`} 
-            style={{ 
-              color: 'var(--text-primary)',
-              fontFamily: 'Inter, sans-serif'
-            }}>
+      <div className="mb-4">
+        <h3 className={`font-semibold text-lg mb-2 ${isPurchased ? 'line-through opacity-60' : ''}`} 
+            style={{ color: 'var(--text-primary)' }}>
           {product.name}
         </h3>
         
@@ -173,36 +164,22 @@ export function ProductCard({ product, onProductUpdated }: ProductCardProps) {
           {product.store || 'Loja Online'}
         </p>
 
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <span className={`text-xl font-bold ${isPurchased ? 'line-through opacity-60' : ''}`} 
-                  style={{ 
-                    color: isPurchased ? 'var(--text-secondary)' : 'var(--primary-action)',
-                    fontFamily: 'Space Grotesk, sans-serif'
-                  }}>
-              {formatPrice(product.price)}
-            </span>
-            {product.originalPrice && product.originalPrice !== product.price && (
-              <span className="text-sm ml-2 line-through" style={{ color: 'var(--text-secondary)' }}>
-                {formatPrice(product.originalPrice)}
-              </span>
-            )}
-          </div>
+        <div className="flex items-center justify-between">
+          <span className={`text-xl font-bold ${isPurchased ? 'line-through opacity-60' : ''}`} 
+                style={{ color: isPurchased ? 'var(--text-secondary)' : 'var(--primary-action)' }}>
+            {formatPrice(product.price)}
+          </span>
           
           {isPurchased && (
-            <div className="category-tag text-xs" style={{ 
-              backgroundColor: 'var(--success-color)', 
-              color: 'white',
-              boxShadow: 'none'
-            }}>
+            <span className="text-xs px-2 py-1 rounded-full bg-green-500 text-white">
               COMPRADO
-            </div>
+            </span>
           )}
         </div>
       </div>
 
       {/* Card Actions */}
-      <div className="px-4 pb-4 flex items-center justify-between border-t" 
+      <div className="flex items-center justify-between border-t pt-4" 
            style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
         <button
           onClick={(e) => {
