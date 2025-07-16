@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { History, CheckCircle, Calendar, Store } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { History, CheckCircle, Calendar, Store, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
 
 interface HistoricoTabProps {
@@ -9,6 +10,8 @@ interface HistoricoTabProps {
 export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
   const authToken = localStorage.getItem("authToken");
   const userId = localStorage.getItem("userId");
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/products", refreshKey],
@@ -26,6 +29,41 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
   );
 
   const totalSpent = purchasedProducts.reduce((sum, p) => sum + (p.price ? parseFloat(p.price) : 0), 0);
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (productId: number) => {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "DELETE",
+        headers: {
+          "x-auth-token": authToken || ""
+        }
+      });
+      if (!response.ok) {
+        throw new Error("Falha ao excluir produto");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
+      toast({
+        title: "Sucesso",
+        description: "Produto removido do histórico",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao excluir produto",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDelete = (productId: number, productName: string) => {
+    if (window.confirm(`Tem certeza que deseja remover "${productName}" do histórico?`)) {
+      deleteProductMutation.mutate(productId);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -124,13 +162,24 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                   </div>
                 </div>
                 
-                <div className="text-right">
-                  <p className="font-bold text-lg" style={{ color: 'var(--primary-action)' }}>
-                    {product.price ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(product.price)) : 'N/A'}
-                  </p>
-                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                    Comprado
-                  </span>
+                <div className="flex items-center space-x-3">
+                  <div className="text-right">
+                    <p className="font-bold text-lg" style={{ color: 'var(--primary-action)' }}>
+                      {product.price ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(product.price)) : 'N/A'}
+                    </p>
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                      Comprado
+                    </span>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleDelete(product.id, product.name)}
+                    disabled={deleteProductMutation.isPending}
+                    className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center hover:text-red-500 transition-colors"
+                    title="Remover do histórico"
+                  >
+                    <Trash2 className="w-5 h-5" style={{ color: 'var(--error-color)' }} />
+                  </button>
                 </div>
               </div>
             ))}
