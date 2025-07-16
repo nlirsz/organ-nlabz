@@ -53,10 +53,10 @@ export function ManualProductModal({ isOpen, onClose, initialUrl = "", initialDa
   const queryClient = useQueryClient();
 
   const createManualProduct = useMutation({
-    mutationFn: (data: typeof formData) => apiRequest('/api/products/manual', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    mutationFn: async (data: typeof formData) => {
+      const response = await apiRequest('POST', '/api/products/manual', data);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });

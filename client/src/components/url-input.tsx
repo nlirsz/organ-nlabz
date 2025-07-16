@@ -128,6 +128,9 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
   const handleManualProductAdded = () => {
     setShowManualModal(false);
     setFailedScrapingData(null);
+    setUrl("");
+    queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
     onProductAdded();
   };
 
