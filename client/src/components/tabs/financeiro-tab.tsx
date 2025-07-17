@@ -16,20 +16,38 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
 
   const { data: installments = [] } = useQuery({
     queryKey: ["/api/installments", refreshKey],
-    queryFn: () => fetch(`/api/installments`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    }).then(res => res.json()),
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return [];
+      
+      const res = await fetch(`/api/installments`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!res.ok) return [];
+      return res.json();
+    },
   });
 
   const { data: payments = [] } = useQuery({
     queryKey: ["/api/payments", refreshKey], 
-    queryFn: () => fetch(`/api/payments`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    }).then(res => res.json()),
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return [];
+      
+      const res = await fetch(`/api/payments`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!res.ok) return [];
+      return res.json();
+    },
   });
 
   const purchasedProducts = products.filter(p => p.isPurchased);
@@ -64,7 +82,7 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
     .slice(0, 5);
 
   // Processa timeline de parcelas
-  const installmentTimeline = installments.reduce((timeline, item) => {
+  const installmentTimeline = (Array.isArray(installments) ? installments : []).reduce((timeline, item) => {
     const installment = item.installment;
     const payment = item.payment;
     const product = item.product;

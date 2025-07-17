@@ -157,11 +157,11 @@ export class DatabaseStorage implements IStorage {
     // Cria as parcelas
     const installmentsData = [];
     const firstDueDate = new Date(payment.firstDueDate);
-    
+
     for (let i = 0; i < payment.installments; i++) {
       const dueDate = new Date(firstDueDate);
       dueDate.setMonth(dueDate.getMonth() + i);
-      
+
       installmentsData.push({
         paymentId: createdPayment.id,
         installmentNumber: i + 1,
