@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { DollarSign, TrendingUp, ShoppingBag, Calendar, PieChart } from "lucide-react";
+import { DollarSign, TrendingUp, ShoppingBag, Calendar, PieChart, Clock, CheckCircle } from "lucide-react";
 import type { Product } from "@shared/schema";
 
 interface FinanceiroTabProps {
@@ -12,6 +12,24 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/products", userId, refreshKey],
     queryFn: () => fetch(`/api/products/${userId}`).then(res => res.json()),
+  });
+
+  const { data: installments = [] } = useQuery({
+    queryKey: ["/api/installments", refreshKey],
+    queryFn: () => fetch(`/api/installments`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    }).then(res => res.json()),
+  });
+
+  const { data: payments = [] } = useQuery({
+    queryKey: ["/api/payments", refreshKey], 
+    queryFn: () => fetch(`/api/payments`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    }).then(res => res.json()),
   });
 
   const purchasedProducts = products.filter(p => p.isPurchased);
@@ -44,6 +62,45 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
   const topStores = Object.entries(spendingByStore)
     .sort(([,a], [,b]) => b - a)
     .slice(0, 5);
+
+  // Processa timeline de parcelas
+  const installmentTimeline = installments.reduce((timeline, item) => {
+    const installment = item.installment;
+    const payment = item.payment;
+    const product = item.product;
+    
+    const dueDate = new Date(installment.dueDate);
+    const monthYear = dueDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    
+    if (!timeline[monthYear]) {
+      timeline[monthYear] = [];
+    }
+    
+    timeline[monthYear].push({
+      id: installment.id,
+      installmentNumber: installment.installmentNumber,
+      dueDate: installment.dueDate,
+      value: installment.value,
+      isPaid: installment.isPaid,
+      productName: product.name,
+      productImage: product.imageUrl,
+      store: product.store,
+      totalInstallments: payment.installments,
+      paymentMethod: payment.paymentMethod,
+      bank: payment.bank
+    });
+    
+    return timeline;
+  }, {});
+
+  // Ordena por data e agrupa os próximos 12 meses
+  const sortedTimeline = Object.entries(installmentTimeline)
+    .sort(([a], [b]) => {
+      const dateA = new Date(a + " 01");
+      const dateB = new Date(b + " 01");
+      return dateA.getTime() - dateB.getTime();
+    })
+    .slice(0, 12);
 
   return (
     <div className="space-y-8">
@@ -174,6 +231,111 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Timeline de Parcelas */}
+      <div className="neomorphic-card p-6 rounded-2xl">
+        <h3 className="text-xl font-semibold mb-6 flex items-center gap-3" style={{ color: 'var(--text-primary)' }}>
+          <Calendar className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
+          Cronograma de Parcelas
+        </h3>
+        
+        {sortedTimeline.length === 0 ? (
+          <div className="text-center py-8">
+            <Clock className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--text-secondary)' }} />
+            <p style={{ color: 'var(--text-secondary)' }}>
+              Nenhuma parcela cadastrada ainda
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {sortedTimeline.map(([monthYear, monthInstallments]) => {
+              const monthTotal = monthInstallments.reduce((sum, inst) => sum + inst.value, 0);
+              const paidCount = monthInstallments.filter(inst => inst.isPaid).length;
+              
+              return (
+                <div key={monthYear} className="space-y-4">
+                  <div className="flex items-center justify-between p-4 neomorphic-card rounded-xl">
+                    <div>
+                      <h4 className="font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>
+                        {monthYear}
+                      </h4>
+                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        {monthInstallments.length} parcela(s) • {paidCount} paga(s)
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-lg" style={{ color: 'var(--primary-action)' }}>
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(monthTotal)}
+                      </p>
+                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        Total do mês
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid gap-3">
+                    {monthInstallments.map((installment) => (
+                      <div 
+                        key={installment.id} 
+                        className={`p-4 rounded-xl border-l-4 ${
+                          installment.isPaid 
+                            ? 'border-green-500 bg-green-50' 
+                            : 'border-orange-500 bg-orange-50'
+                        }`}
+                        style={{ backgroundColor: installment.isPaid ? '#f0fdf4' : '#fff7ed' }}
+                      >
+                        <div className="flex items-start gap-4">
+                          <img 
+                            src={installment.productImage || '/placeholder.jpg'} 
+                            alt={installment.productName}
+                            className="w-12 h-12 object-cover rounded-lg"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h5 className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                                  {installment.productName}
+                                </h5>
+                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                  {installment.store} • {installment.paymentMethod} • {installment.bank}
+                                </p>
+                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                  Parcela {installment.installmentNumber}/{installment.totalInstallments}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold" style={{ color: 'var(--primary-action)' }}>
+                                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(installment.value)}
+                                </p>
+                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                  Venc: {new Date(installment.dueDate).toLocaleDateString('pt-BR')}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 mt-3">
+                              {installment.isPaid ? (
+                                <div className="flex items-center gap-1 text-green-600">
+                                  <CheckCircle className="w-4 h-4" />
+                                  <span className="text-sm font-medium">Pago</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1 text-orange-600">
+                                  <Clock className="w-4 h-4" />
+                                  <span className="text-sm font-medium">Pendente</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Monthly Breakdown */}
