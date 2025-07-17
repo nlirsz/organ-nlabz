@@ -83,18 +83,24 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
     },
   });
 
-  const purchasedProducts = products.filter(p => p.isPurchased);
-  const pendingProducts = products.filter(p => !p.isPurchased);
+  // Filtra apenas produtos que foram REALMENTE comprados
+  const purchasedProducts = Array.isArray(products) ? products.filter(p => p.isPurchased === true) : [];
+  const pendingProducts = Array.isArray(products) ? products.filter(p => p.isPurchased === false || p.isPurchased === null) : [];
   
-  console.log('Products data:', { total: products.length, purchased: purchasedProducts.length, pending: pendingProducts.length });
+  console.log('Products data:', { 
+    total: products.length, 
+    purchased: purchasedProducts.length, 
+    pending: pendingProducts.length,
+    purchasedProducts: purchasedProducts.map(p => ({ id: p.id, name: p.name, isPurchased: p.isPurchased }))
+  });
   
   const totalSpent = purchasedProducts.reduce((sum, p) => {
-    const price = p.price ? parseFloat(p.price) : 0;
+    const price = p.price ? parseFloat(p.price.toString()) : 0;
     return sum + price;
   }, 0);
   
   const totalPending = pendingProducts.reduce((sum, p) => {
-    const price = p.price ? parseFloat(p.price) : 0;
+    const price = p.price ? parseFloat(p.price.toString()) : 0;
     return sum + price;
   }, 0);
   
@@ -102,18 +108,20 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
   
   console.log('Financial calculations:', { totalSpent, totalPending, totalValue });
 
-  // Group by category
+  // Group by category - apenas produtos REALMENTE comprados
   const spendingByCategory = purchasedProducts.reduce((acc, product) => {
+    if (product.isPurchased !== true) return acc; // Garantia extra
     const category = product.category || 'Outros';
-    const price = product.price ? parseFloat(product.price) : 0;
+    const price = product.price ? parseFloat(product.price.toString()) : 0;
     acc[category] = (acc[category] || 0) + price;
     return acc;
   }, {} as Record<string, number>);
 
-  // Group by store
+  // Group by store - apenas produtos REALMENTE comprados
   const spendingByStore = purchasedProducts.reduce((acc, product) => {
+    if (product.isPurchased !== true) return acc; // Garantia extra
     const store = product.store || 'Outros';
-    const price = product.price ? parseFloat(product.price) : 0;
+    const price = product.price ? parseFloat(product.price.toString()) : 0;
     acc[store] = (acc[store] || 0) + price;
     return acc;
   }, {} as Record<string, number>);
@@ -249,6 +257,13 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
                 Marque alguns produtos como "comprados" para ver os gastos por categoria
               </p>
             </div>
+          ) : totalSpent === 0 ? (
+            <div className="text-center py-8">
+              <p style={{ color: 'var(--text-secondary)' }}>Produtos comprados sem preço definido</p>
+              <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
+                Adicione preços aos produtos comprados para ver as estatísticas
+              </p>
+            </div>
           ) : topCategories.length === 0 ? (
             <div className="text-center py-8">
               <p style={{ color: 'var(--text-secondary)' }}>Carregando dados...</p>
@@ -285,6 +300,13 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
               <p style={{ color: 'var(--text-secondary)' }}>Nenhuma compra realizada ainda</p>
               <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
                 Marque alguns produtos como "comprados" para ver os gastos por loja
+              </p>
+            </div>
+          ) : totalSpent === 0 ? (
+            <div className="text-center py-8">
+              <p style={{ color: 'var(--text-secondary)' }}>Produtos comprados sem preço definido</p>
+              <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
+                Adicione preços aos produtos comprados para ver as estatísticas
               </p>
             </div>
           ) : topStores.length === 0 ? (
