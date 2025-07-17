@@ -33,15 +33,25 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
       const token = localStorage.getItem('token');
       if (!token) return [];
       
-      const res = await fetch(`/api/installments`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      try {
+        const res = await fetch(`/api/installments`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!res.ok) {
+          console.log('Installments response not ok:', res.status);
+          return [];
         }
-      });
-      
-      if (!res.ok) return [];
-      return res.json();
+        const data = await res.json();
+        console.log('Installments data received:', data);
+        return data;
+      } catch (error) {
+        console.error('Error fetching installments:', error);
+        return [];
+      }
     },
   });
 
@@ -51,24 +61,46 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
       const token = localStorage.getItem('token');
       if (!token) return [];
       
-      const res = await fetch(`/api/payments`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      try {
+        const res = await fetch(`/api/payments`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!res.ok) {
+          console.log('Payments response not ok:', res.status);
+          return [];
         }
-      });
-      
-      if (!res.ok) return [];
-      return res.json();
+        const data = await res.json();
+        console.log('Payments data received:', data);
+        return data;
+      } catch (error) {
+        console.error('Error fetching payments:', error);
+        return [];
+      }
     },
   });
 
   const purchasedProducts = products.filter(p => p.isPurchased);
   const pendingProducts = products.filter(p => !p.isPurchased);
   
-  const totalSpent = purchasedProducts.reduce((sum, p) => sum + (p.price ? parseFloat(p.price) : 0), 0);
-  const totalPending = pendingProducts.reduce((sum, p) => sum + (p.price ? parseFloat(p.price) : 0), 0);
+  console.log('Products data:', { total: products.length, purchased: purchasedProducts.length, pending: pendingProducts.length });
+  
+  const totalSpent = purchasedProducts.reduce((sum, p) => {
+    const price = p.price ? parseFloat(p.price) : 0;
+    return sum + price;
+  }, 0);
+  
+  const totalPending = pendingProducts.reduce((sum, p) => {
+    const price = p.price ? parseFloat(p.price) : 0;
+    return sum + price;
+  }, 0);
+  
   const totalValue = totalSpent + totalPending;
+  
+  console.log('Financial calculations:', { totalSpent, totalPending, totalValue });
 
   // Group by category
   const spendingByCategory = purchasedProducts.reduce((acc, product) => {
@@ -85,6 +117,9 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
     acc[store] = (acc[store] || 0) + price;
     return acc;
   }, {} as Record<string, number>);
+  
+  console.log('Spending by category:', spendingByCategory);
+  console.log('Spending by store:', spendingByStore);
 
   const topCategories = Object.entries(spendingByCategory)
     .sort(([,a], [,b]) => b - a)
@@ -158,7 +193,7 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
             Total Gasto
           </h3>
           <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
-            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSpent)}
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSpent || 0)}
           </p>
         </div>
         
@@ -170,7 +205,7 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
             Pendente
           </h3>
           <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
-            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPending)}
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPending || 0)}
           </p>
         </div>
         
@@ -194,7 +229,7 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
             Valor Total
           </h3>
           <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
-            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue || 0)}
           </p>
         </div>
       </div>
@@ -207,9 +242,16 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
             Gastos por Categoria
           </h3>
           
-          {topCategories.length === 0 ? (
+          {purchasedProducts.length === 0 ? (
             <div className="text-center py-8">
               <p style={{ color: 'var(--text-secondary)' }}>Nenhuma compra realizada ainda</p>
+              <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
+                Marque alguns produtos como "comprados" para ver os gastos por categoria
+              </p>
+            </div>
+          ) : topCategories.length === 0 ? (
+            <div className="text-center py-8">
+              <p style={{ color: 'var(--text-secondary)' }}>Carregando dados...</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -238,9 +280,16 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
             Gastos por Loja
           </h3>
           
-          {topStores.length === 0 ? (
+          {purchasedProducts.length === 0 ? (
             <div className="text-center py-8">
               <p style={{ color: 'var(--text-secondary)' }}>Nenhuma compra realizada ainda</p>
+              <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
+                Marque alguns produtos como "comprados" para ver os gastos por loja
+              </p>
+            </div>
+          ) : topStores.length === 0 ? (
+            <div className="text-center py-8">
+              <p style={{ color: 'var(--text-secondary)' }}>Carregando dados...</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -271,11 +320,21 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
           Cronograma de Parcelas
         </h3>
         
-        {sortedTimeline.length === 0 ? (
+        {Array.isArray(installments) && installments.length === 0 ? (
           <div className="text-center py-8">
             <Clock className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--text-secondary)' }} />
             <p style={{ color: 'var(--text-secondary)' }}>
               Nenhuma parcela cadastrada ainda
+            </p>
+            <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
+              Marque produtos como "comprados" e cadastre as formas de pagamento para ver o cronograma
+            </p>
+          </div>
+        ) : !Array.isArray(installments) ? (
+          <div className="text-center py-8">
+            <Clock className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--text-secondary)' }} />
+            <p style={{ color: 'var(--text-secondary)' }}>
+              Carregando cronograma de parcelas...
             </p>
           </div>
         ) : (
