@@ -44,13 +44,15 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
       if (!response.ok) {
         throw new Error("Falha ao marcar produto como comprado");
       }
+      return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedProduct, productId) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
+      setPaymentProduct(updatedProduct);
       toast({
         title: "Sucesso",
-        description: "Produto marcado como comprado!",
+        description: "Produto marcado como comprado! Agora cadastre o pagamento.",
       });
     },
     onError: (error: Error) => {
@@ -122,10 +124,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
   });
 
   const handlePurchase = (product: Product) => {
-    // Primeiro marca como comprado
     purchaseProductMutation.mutate(product.id);
-    // Depois abre modal de pagamento
-    setPaymentProduct(product);
   };
 
   const handleDelete = (productId: number, productName: string) => {
@@ -185,14 +184,14 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
         product.tags ? product.tags.split(", ").map(tag => tag.trim()).filter(Boolean) : []
       ) || []
     )];
-  
+
     // Aplicar filtros de tags aos produtos já filtrados
   const finalFilteredProducts = filteredProducts.filter(product => {
     if (selectedTags.length === 0) return true;
-    
+
     const productTags = product.tags ? 
       product.tags.split(",").map(tag => tag.trim()).filter(Boolean) : [];
-    
+
     return selectedTags.every(tag => productTags.includes(tag));
   });
 

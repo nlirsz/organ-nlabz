@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -75,7 +74,7 @@ export function PaymentModal({ isOpen, onClose, product, onPaymentAdded }: Payme
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.paymentMethod || !formData.bank) {
       toast({
         title: "Erro",

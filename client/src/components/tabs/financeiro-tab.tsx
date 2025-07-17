@@ -11,7 +11,20 @@ export function FinanceiroTab({ refreshKey }: FinanceiroTabProps) {
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/products", userId, refreshKey],
-    queryFn: () => fetch(`/api/products/${userId}`).then(res => res.json()),
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return [];
+      
+      const res = await fetch(`/api/products`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!res.ok) return [];
+      return res.json();
+    },
   });
 
   const { data: installments = [] } = useQuery({

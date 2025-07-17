@@ -110,6 +110,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug route para verificar products
+  app.get("/api/products/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const products = await storage.getProducts(userId);
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+
   // Get product stats for authenticated user
   app.get("/api/products/stats/:userId", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
