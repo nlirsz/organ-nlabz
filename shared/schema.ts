@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, decimal, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, timestamp, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -11,7 +11,7 @@ export const users = pgTable("users", {
 
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   url: text("url").notNull(),
   name: text("name").notNull(),
   price: text("price"),
@@ -19,14 +19,36 @@ export const products = pgTable("products", {
   imageUrl: text("image_url"),
   store: text("store"),
   description: text("description"),
-  category: text("category").default("Geral"),
+  category: text("category"),
   brand: text("brand"),
   tags: text("tags"),
-  priority: text("priority").default("medium"),
-  notes: text("notes"),
   isPurchased: boolean("is_purchased").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const payments = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").references(() => products.id, { onDelete: "cascade" }).notNull(),
+  paymentMethod: text("payment_method").notNull(),
+  bank: text("bank").notNull(),
+  installments: integer("installments").notNull(),
+  installmentValue: real("installment_value").notNull(),
+  totalValue: real("total_value").notNull(),
+  purchaseDate: text("purchase_date").notNull(),
+  firstDueDate: text("first_due_date").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const installments = pgTable("installments", {
+  id: serial("id").primaryKey(),
+  paymentId: integer("payment_id").references(() => payments.id, { onDelete: "cascade" }).notNull(),
+  installmentNumber: integer("installment_number").notNull(),
+  dueDate: text("due_date").notNull(),
+  value: real("value").notNull(),
+  isPaid: boolean("is_paid").default(false),
+  paidDate: text("paid_date"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
