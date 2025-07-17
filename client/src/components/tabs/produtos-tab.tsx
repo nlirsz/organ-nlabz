@@ -4,6 +4,7 @@ import { Search, Filter, SortAsc, Package, Edit, Check, Trash2, Star } from "luc
 import { CategoryFilter } from "@/components/category-filter";
 import { AdvancedSearch } from "@/components/advanced-search";
 import { EditProductModal } from "@/components/edit-product-modal";
+import { PaymentModal } from "@/components/payment-modal";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
 import { TagsFilter } from "@/components/tags-filter";
@@ -19,6 +20,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [paymentProduct, setPaymentProduct] = useState<Product | null>(null);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -119,10 +121,11 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
     },
   });
 
-  const handlePurchase = (productId: number, productName: string) => {
-    if (window.confirm(`Marcar "${productName}" como comprado?`)) {
-      purchaseProductMutation.mutate(productId);
-    }
+  const handlePurchase = (product: Product) => {
+    // Primeiro marca como comprado
+    purchaseProductMutation.mutate(product.id);
+    // Depois abre modal de pagamento
+    setPaymentProduct(product);
   };
 
   const handleDelete = (productId: number, productName: string) => {
@@ -183,20 +186,15 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
       ) || []
     )];
   
-    const filteredProductsWithTags = products?.filter(product => {
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           product.store?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === "Todos" || selectedCategory === "Geral" || product.category === selectedCategory;
-  
-      // Filtro por tags
-      const matchesTags = selectedTags.length === 0 || 
-        selectedTags.every(tag => 
-          product.tags?.split(", ").map(t => t.trim()).includes(tag)
-        );
-  
-      return matchesSearch && matchesCategory && matchesTags;
-    }) || [];
+    // Aplicar filtros de tags aos produtos já filtrados
+  const finalFilteredProducts = filteredProducts.filter(product => {
+    if (selectedTags.length === 0) return true;
+    
+    const productTags = product.tags ? 
+      product.tags.split(",").map(tag => tag.trim()).filter(Boolean) : [];
+    
+    return selectedTags.every(tag => productTags.includes(tag));
+  });
 
   if (isLoading) {
     return (
@@ -217,7 +215,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
             Lista de Compras
           </h2>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            {filteredProducts.length} produto{filteredProducts.length !== 1 ? 's' : ''} pendente{filteredProducts.length !== 1 ? 's' : ''}
+            {finalFilteredProducts.length} produto{finalFilteredProducts.length !== 1 ? 's' : ''} pendente{finalFilteredProducts.length !== 1 ? 's' : ''}
           </p>
         </div>
       </div>
@@ -271,12 +269,12 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
             availableTags={allTags}
             selectedTags={selectedTags}
             onTagsChange={setSelectedTags}
-            productsCount={filteredProducts.length}
+            productsCount={finalFilteredProducts.length}
         />
       </div>
 
       {/* Products Grid */}
-      {filteredProducts.length === 0 ? (
+      {finalFilteredProducts.length === 0 ? (
         <div className="neomorphic-card p-12 rounded-2xl text-center">
           <Package className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--text-secondary)' }} />
           <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
@@ -291,7 +289,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
         </div>
       ) : (
         <div className="product-grid">
-          {filteredProducts.map((product) => (
+          {finalFilteredProducts.map((product) => (
             <div
               key={product.id}
               className="neomorphic-card p-6 rounded-2xl card-entering product-card-hover"
@@ -380,7 +378,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
                 </button>
 
                 <button
-                  onClick={() => handlePurchase(product.id, product.name)}
+                  onClick={() => handlePurchase(product)}
                   disabled={purchaseProductMutation.isPending}
                   className="flex-1 neomorphic-button-primary px-3 py-2 rounded-lg flex items-center justify-center text-sm"
                   title="Marcar como comprado"
@@ -416,6 +414,18 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
           onClose={() => setEditingProduct(null)}
           onProductUpdated={() => {
             setEditingProduct(null);
+            queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+          }}
+        />
+      )}
+
+      {paymentProduct && (
+        <PaymentModal
+          isOpen={!!paymentProduct}
+          onClose={() => setPaymentProduct(null)}
+          product={paymentProduct}
+          onPaymentAdded={() => {
+            setPaymentProduct(null);
             queryClient.invalidateQueries({ queryKey: ["/api/products"] });
           }}
         />

@@ -6,7 +6,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Product operations
   getProducts(userId: number): Promise<Product[]>;
   getProduct(id: number, userId: number): Promise<Product | undefined>;
@@ -90,7 +90,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(products)
       .where(eq(products.userId, userId));
-    
+
     const totalItems = userProducts.length;
     const purchasedItems = userProducts.filter(p => p.isPurchased).length;
     const estimatedTotal = userProducts.reduce((sum, p) => {

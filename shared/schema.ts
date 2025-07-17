@@ -53,15 +53,29 @@ export const insertProductSchema = createInsertSchema(products).omit({
   userId: z.number().default(1),
 });
 
-export const updateProductSchema = createInsertSchema(products).omit({
-  id: true,
-  userId: true,
-  createdAt: true,
-  updatedAt: true,
-}).partial();
+export const updateProductSchema = insertProductSchema.partial();
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-export type Product = typeof products.$inferSelect;
-export type InsertProduct = z.infer<typeof insertProductSchema>;
-export type UpdateProduct = z.infer<typeof updateProductSchema>;
+export const insertPaymentSchema = z.object({
+  productId: z.number(),
+  paymentMethod: z.enum(["credito", "debito", "pix", "boleto", "dinheiro"]),
+  bank: z.string().min(1),
+  installments: z.number().min(1).max(48),
+  installmentValue: z.number().positive(),
+  totalValue: z.number().positive(),
+  purchaseDate: z.string(),
+  firstDueDate: z.string(),
+});
+
+export type Payment = z.infer<typeof insertPaymentSchema>;
+
+export const installmentSchema = z.object({
+  id: z.number(),
+  paymentId: z.number(),
+  installmentNumber: z.number(),
+  dueDate: z.string(),
+  value: z.number(),
+  isPaid: z.boolean().default(false),
+  paidDate: z.string().nullable(),
+});
+
+export type Installment = z.infer<typeof installmentSchema>;

@@ -326,6 +326,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment routes
+  app.post("/api/payments", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { productId, paymentMethod, bank, installments, installmentValue, totalValue, purchaseDate, firstDueDate } = req.body;
+      const userId = parseInt(req.user.userId);
+
+      // Verificar se o produto pertence ao usuário
+      const product = await storage.getProductById(productId, userId);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      const paymentId = await storage.addPayment({
+        productId,
+        paymentMethod,
+        bank,
+        installments,
+        installmentValue,
+        totalValue,
+        purchaseDate,
+        firstDueDate
+      });
+
+      res.json({ id: paymentId, message: "Payment created successfully" });
+    } catch (error) {
+      console.error("Payment creation error:", error);
+      res.status(500).json({ error: "Failed to create payment" });
+    }
+  });
+
+  app.get("/api/payments", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = parseInt(req.user.userId);
+      const payments = await storage.getUserPayments(userId);
+      res.json(payments);
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+      res.status(500).json({ error: "Failed to fetch payments" });
+    }
+  });
+
+  app.get("/api/installments", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = parseInt(req.user.userId);
+      const installments = await storage.getUserInstallments(userId);
+      res.json(installments);
+    } catch (error) {
+      console.error("Error fetching installments:", error);
+      res.status(500).json({ error: "Failed to fetch installments" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
