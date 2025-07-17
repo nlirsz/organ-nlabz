@@ -6,6 +6,7 @@ import { AdvancedSearch } from "@/components/advanced-search";
 import { EditProductModal } from "@/components/edit-product-modal";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
+import { TagsFilter } from "@/components/tags-filter";
 
 interface ProdutosTabProps {
   refreshKey: number;
@@ -17,6 +18,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
   const [sortBy, setSortBy] = useState("name");
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -175,6 +177,27 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
       }
     });
 
+    const allTags = [...new Set(
+      products?.flatMap(product => 
+        product.tags ? product.tags.split(", ").map(tag => tag.trim()).filter(Boolean) : []
+      ) || []
+    )];
+  
+    const filteredProductsWithTags = products?.filter(product => {
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           product.store?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           product.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === "Todos" || selectedCategory === "Geral" || product.category === selectedCategory;
+  
+      // Filtro por tags
+      const matchesTags = selectedTags.length === 0 || 
+        selectedTags.every(tag => 
+          product.tags?.split(", ").map(t => t.trim()).includes(tag)
+        );
+  
+      return matchesSearch && matchesCategory && matchesTags;
+    }) || [];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -244,6 +267,12 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
             </button>
           ))}
         </div>
+          <TagsFilter
+            availableTags={allTags}
+            selectedTags={selectedTags}
+            onTagsChange={setSelectedTags}
+            productsCount={filteredProducts.length}
+        />
       </div>
 
       {/* Products Grid */}

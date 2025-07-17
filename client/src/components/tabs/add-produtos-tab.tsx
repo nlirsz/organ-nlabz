@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UrlInput } from "@/components/url-input";
+import { TagsInput } from "@/components/tags-input";
 import { Plus, Link, Search, ShoppingCart, Edit, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,7 +20,8 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
     category: "Outros",
     brand: "",
     description: "",
-    store: ""
+    store: "",
+    tags: [] as string[]
   });
 
   const queryClient = useQueryClient();
@@ -58,7 +60,8 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
         category: "Outros",
         brand: "",
         description: "",
-        store: ""
+        store: "",
+        tags: []
       });
     },
     onError: (error: Error) => {
@@ -94,6 +97,7 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
       description: formData.description || null,
       category: formData.category,
       brand: formData.brand || null,
+      tags: formData.tags.join(", ") || null,
       isPurchased: false,
     };
 
@@ -239,6 +243,23 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
                 className="neomorphic-input w-full"
                 rows={3}
                 placeholder="Descrição do produto..."
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                Tags
+              </label>
+              <TagsInput
+                tags={formData.tags}
+                onTagsChange={(tags) => setFormData(prev => ({ ...prev, tags }))}
+                placeholder="Adicionar tag..."
+                maxTags={5}
+                suggestions={[
+                  "Urgente", "Desconto", "Presente", "Favorito", "Promoção",
+                  "Black Friday", "Natal", "Aniversário", "Casa Nova", "Trabalho",
+                  "Hobbies", "Fitness", "Tecnologia", "Moda", "Decoração"
+                ]}
               />
             </div>
           </div>

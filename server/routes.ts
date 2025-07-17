@@ -150,7 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add product manually
   app.post("/api/products", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      const { name, price, url, imageUrl, store, description, category, brand, isPurchased } = req.body;
+      const { name, price, url, imageUrl, store, description, category, brand, tags, isPurchased } = req.body;
 
       if (!name || typeof name !== 'string') {
         return res.status(400).json({ error: "Product name is required" });
@@ -167,6 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: description || null,
         category: category || "Outros",
         brand: brand || null,
+        tags: tags || null,
         isPurchased: isPurchased || false,
       };
 
