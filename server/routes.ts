@@ -379,14 +379,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/installments", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  // Get user installments
+  app.get("/api/installments", authenticateToken, async (req, res) => {
     try {
-      const userId = parseInt(req.user.userId);
-      const installments = await storage.getUserInstallments(userId);
+      const installments = await storage.getUserInstallments(req.user.id);
       res.json(installments);
     } catch (error) {
-      console.error("Error fetching installments:", error);
-      res.status(500).json({ error: "Failed to fetch installments" });
+      console.error("Error getting installments:", error);
+      res.status(500).json({ error: "Erro ao buscar parcelas" });
+    }
+  });
+
+  // Get payment data for a specific product
+  app.get("/api/payments/product/:productId", authenticateToken, async (req, res) => {
+    try {
+      const productId = parseInt(req.params.productId);
+      const paymentData = await storage.getPaymentByProductId(productId, req.user.id);
+      res.json(paymentData);
+    } catch (error) {
+      console.error("Error getting payment data:", error);
+      res.status(500).json({ error: "Erro ao buscar dados de pagamento" });
+    }
+  });
+
+  // Update payment data
+  app.put("/api/payments/:paymentId", authenticateToken, async (req, res) => {
+    try {
+      const paymentId = parseInt(req.params.paymentId);
+      const updates = req.body;
+
+      const success = await storage.updatePayment(paymentId, updates, req.user.id);
+
+      if (success) {
+        res.json({ message: "Pagamento atualizado com sucesso" });
+      } else {
+        res.status(404).json({ error: "Pagamento não encontrado" });
+      }
+    } catch (error) {
+      console.error("Error updating payment:", error);
+      res.status(500).json({ error: "Erro ao atualizar pagamento" });
     }
   });
 

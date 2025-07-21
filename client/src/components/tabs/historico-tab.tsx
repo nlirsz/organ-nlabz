@@ -241,6 +241,19 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     },
   });
 
+  // Query para buscar dados de pagamento do produto
+  const { data: paymentData } = useQuery({
+    queryKey: [`/api/payments/product/${selectedProduct?.id}`, selectedProduct?.id],
+    queryFn: async () => {
+      if (!selectedProduct?.id) return null;
+
+      const response = await fetch(`/api/payments/product/${selectedProduct.id}`);
+      if (!response.ok) return null;
+      return response.json();
+    },
+    enabled: !!selectedProduct && (showDetailsModal || showEditModal),
+  });
+
   const handleFinanceSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -669,7 +682,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                   <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
                     {selectedProduct.name}
                   </h3>
-                  
+
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span style={{ color: 'var(--text-secondary)' }}>Preço Pago:</span>

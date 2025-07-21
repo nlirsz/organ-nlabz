@@ -51,6 +51,22 @@ export interface IStorage {
     userId: number
   ): Promise<boolean>;
   deleteFinance(financeId: number, userId: number): Promise<boolean>;
+
+  // Payment-specific methods
+  getPaymentByProductId(productId: number, userId: number): Promise<any | null>;
+  updatePayment(
+    paymentId: number,
+    updates: {
+      paymentMethod?: string;
+      bank?: string;
+      installments?: number;
+      installmentValue?: number;
+      totalValue?: number;
+      purchaseDate?: string;
+      firstDueDate?: string;
+    },
+    userId: number
+  ): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -318,6 +334,97 @@ export class DatabaseStorage implements IStorage {
       return !!result;
     } catch (error) {
       console.error("Error deleting finance record:", error);
+      return false;
+    }
+  }
+
+  async getPaymentByProductId(productId: number, userId: number): Promise<any | null> {
+    try {
+      const result = await db
+        .select({
+          id: payments.id,
+          paymentMethod: payments.paymentMethod,
+          bank: payments.bank,
+          installments: payments.installments,
+          installmentValue: payments.installmentValue,
+          totalValue: payments.totalValue,
+          purchaseDate: payments.purchaseDate,
+          firstDueDate: payments.firstDueDate,
+        })
+        .from(payments)
+        .innerJoin(products, eq(payments.productId, products.id))
+        .where(and(eq(payments.productId, productId), eq(products.userId, userId)))
+        .limit(1);
+
+      return result[0] || null;
+    } catch (error) {
+      console.error("Error getting payment by product ID:", error);
+      return null;
+    }
+  }
+
+  async updatePayment(
+    paymentId: number,
+    updates: {
+      paymentMethod?: string;
+      bank?: string;
+      installments?: number;
+      installmentValue?: number;
+      totalValue?: number;
+      purchaseDate?: string;
+      firstDueDate?: string;
+    },
+    userId: number
+  ): Promise<boolean> {
+    try {
+      // Primeiro verifica se o pagamento pertence ao usuário
+      const paymentOwner = await db
+        .select({ productId: payments.productId })
+        .from(payments)
+        .innerJoin(products, eq(payments.productId, products.id))
+        .where(and(eq(payments.id, paymentId), eq(products.userId, userId)))
+        .limit(1);
+
+      if (paymentOwner.length === 0) {
+        return false; // Pagamento não encontrado ou não pertence ao usuário
+      }
+
+      const [result] = await db
+        .update(payments)
+        .set(updates)
+        .where(eq(payments.id, paymentId))
+        .returning({ id: payments.id });
+
+      // Se o número de parcelas mudou, recria as parcelas
+      if (updates.installments && updates.firstDueDate) {
+        // Remove parcelas antigas
+        await db.delete(installments).where(eq(installments.paymentId, paymentId));
+
+        // Cria novas parcelas
+        const installmentsData = [];
+        const firstDueDate = new Date(updates.firstDueDate);
+        const installmentValue = updates.installmentValue || 0;
+
+        for (let i = 0; i < updates.installments; i++) {
+          const dueDate = new Date(firstDueDate);
+          dueDate.setMonth(dueDate.getMonth() + i);
+
+          installmentsData.push({
+            paymentId: paymentId,
+            installmentNumber: i + 1,
+            dueDate: dueDate,
+            value: installmentValue.toString()
+          });
+        }
+
+        if (installmentsData.length > 0) {
+          await db.insert(installments).values(installmentsData);
+        }
+      }
+
+      return !!result;
+    } catch (error) {
+      console.error("Error updating payment:", error);
       return false;
     }
   }
