@@ -17,8 +17,7 @@ const tabs = [
   { id: "dashboard", label: "Dashboard Principal", icon: BarChart3, color: "#3b82f6" },
   { id: "produtos", label: "Produtos", icon: Package, color: "#10b981" },
   { id: "add-produtos", label: "Add Produtos", icon: Plus, color: "#f59e0b" },
-  { id: "historico", label: "Histórico de Compra", icon: History, color: "#8b5cf6" },
-  { id: "financeiro", label: "Financeiro", icon: DollarSign, color: "#ef4444" },
+  { id: "historico", label: "Histórico", icon: History, color: "#8b5cf6" },
 ];
 
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
@@ -28,7 +27,7 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
-          
+
           return (
             <button
               key={tab.id}
@@ -59,3 +58,4 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
     </nav>
   );
 }
+```
