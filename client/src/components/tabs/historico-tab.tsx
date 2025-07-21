@@ -1,28 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { History, CheckCircle, Calendar, Store, Trash2, DollarSign, TrendingUp, ShoppingBag, PieChart, Clock, Plus, Edit } from "lucide-react";
+import { History, CheckCircle, Calendar, Store, Trash2, DollarSign, TrendingUp, ShoppingBag, PieChart, Clock, Plus, Edit, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { SelectProduct } from "@shared/schema";
 import { useState } from "react";
 import { InstallmentsTimeline } from "@/components/installments-timeline";
-
+import { Button } from "@/components/ui/button";
 interface HistoricoTabProps {
   refreshKey: number;
 }
 
-interface FinanceEntry {
-  id: number;
-  mes_ano: string;
-  receita: number;
-  gastos: number;
-  userId: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
-  const userId = localStorage.getItem('userId') || '3';
-  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [expandedProducts, setExpandedProducts] = useState<Set<number>>(new Set());
+  const [selectedProduct, setSelectedProduct] = useState<SelectProduct | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const userId = localStorage.getItem('userId') || '3';
   const [isAddingFinance, setIsAddingFinance] = useState(false);
   const [editingFinance, setEditingFinance] = useState<FinanceEntry | null>(null);
   const [financeForm, setFinanceForm] = useState({
@@ -280,6 +274,32 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
   const handleDeleteFinance = (financeId: number) => {
     if (window.confirm('Tem certeza que deseja excluir este registro financeiro?')) {
       deleteFinanceMutation.mutate(financeId);
+    }
+  };
+
+  const toggleExpanded = (productId: number) => {
+    const newExpanded = new Set(expandedProducts);
+    if (newExpanded.has(productId)) {
+      newExpanded.delete(productId);
+    } else {
+      newExpanded.add(productId);
+    }
+    setExpandedProducts(newExpanded);
+  };
+
+  const handleViewDetails = (product: SelectProduct) => {
+    setSelectedProduct(product);
+    setShowDetailsModal(true);
+  };
+
+  const handleEditProduct = (product: SelectProduct) => {
+    setSelectedProduct(product);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteProduct2 = (productId: number) => {
+    if (confirm("Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.")) {
+      deleteProductMutation.mutate(productId);
     }
   };
 
