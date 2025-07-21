@@ -1,17 +1,35 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { History, CheckCircle, Calendar, Store, Trash2, DollarSign, TrendingUp, ShoppingBag, PieChart, Clock } from "lucide-react";
+import { History, CheckCircle, Calendar, Store, Trash2, DollarSign, TrendingUp, ShoppingBag, PieChart, Clock, Plus, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
+import { useState } from "react";
 
 interface HistoricoTabProps {
   refreshKey: number;
 }
 
+interface FinanceEntry {
+  id: number;
+  mes_ano: string;
+  receita: number;
+  gastos: number;
+  userId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
-  const userId = 1; // Default user ID
+  const userId = localStorage.getItem('userId') || '2';
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [isAddingFinance, setIsAddingFinance] = useState(false);
+  const [editingFinance, setEditingFinance] = useState<FinanceEntry | null>(null);
+  const [financeForm, setFinanceForm] = useState({
+    mes_ano: '',
+    receita: '',
+    gastos: ''
+  });
 
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/products", userId, refreshKey],
@@ -31,14 +49,14 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     },
   });
 
-  const { data: installments = [] } = useQuery({
-    queryKey: ["/api/installments", refreshKey],
+  const { data: finances = [] } = useQuery<FinanceEntry[]>({
+    queryKey: ["/api/finances", userId, refreshKey],
     queryFn: async () => {
       const token = localStorage.getItem('token');
       if (!token) return [];
       
       try {
-        const res = await fetch(`/api/installments`, {
+        const res = await fetch(`/api/finances`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -46,42 +64,14 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
         });
         
         if (!res.ok) {
-          console.log('Installments response not ok:', res.status);
+          console.log('Finances response not ok:', res.status);
           return [];
         }
         const data = await res.json();
-        console.log('Installments data received:', data);
+        console.log('Finances data received:', data);
         return data;
       } catch (error) {
-        console.error('Error fetching installments:', error);
-        return [];
-      }
-    },
-  });
-
-  const { data: payments = [] } = useQuery({
-    queryKey: ["/api/payments", refreshKey], 
-    queryFn: async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return [];
-      
-      try {
-        const res = await fetch(`/api/payments`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!res.ok) {
-          console.log('Payments response not ok:', res.status);
-          return [];
-        }
-        const data = await res.json();
-        console.log('Payments data received:', data);
-        return data;
-      } catch (error) {
-        console.error('Error fetching payments:', error);
+        console.error('Error fetching finances:', error);
         return [];
       }
     },
@@ -107,8 +97,11 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     const price = p.price ? parseFloat(p.price.toString()) : 0;
     return sum + price;
   }, 0);
-  
-  const totalValue = totalSpent + totalPending;
+
+  // Calcula dados financeiros
+  const totalRevenue = finances.reduce((sum, f) => sum + (f.receita || 0), 0);
+  const totalExpenses = finances.reduce((sum, f) => sum + (f.gastos || 0), 0);
+  const currentBalance = totalRevenue - totalExpenses;
 
   // Group by category - apenas produtos REALMENTE comprados
   const spendingByCategory = purchasedProducts.reduce((acc, product) => {
@@ -136,63 +129,77 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     .sort(([,a], [,b]) => b - a)
     .slice(0, 5);
 
-  // Processa timeline de parcelas - CORRIGIDO
-  const installmentTimeline = (Array.isArray(installments) ? installments : []).reduce((timeline, item) => {
-    // Verifica se item tem as propriedades necessárias
-    if (!item || !item.installment || !item.payment || !item.product) {
-      console.warn('Item de parcela inválido:', item);
-      return timeline;
-    }
-
-    const installment = item.installment;
-    const payment = item.payment;
-    const product = item.product;
-    
-    try {
-      const dueDate = new Date(installment.dueDate);
-      if (isNaN(dueDate.getTime())) {
-        console.warn('Data de vencimento inválida:', installment.dueDate);
-        return timeline;
-      }
-
-      const monthYear = dueDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  // Mutations para finanças
+  const saveFinanceMutation = useMutation({
+    mutationFn: async (data: { mes_ano: string; receita: number; gastos: number; id?: number }) => {
+      const token = localStorage.getItem('token');
+      const url = data.id ? `/api/finances/${data.id}` : '/api/finances';
+      const method = data.id ? 'PUT' : 'POST';
       
-      if (!timeline[monthYear]) {
-        timeline[monthYear] = [];
-      }
-      
-      timeline[monthYear].push({
-        id: installment.id,
-        installmentNumber: installment.installmentNumber || 1,
-        dueDate: installment.dueDate,
-        value: installment.value || 0,
-        isPaid: installment.isPaid || false,
-        productName: product.name || 'Produto sem nome',
-        productImage: product.imageUrl || '/placeholder.jpg',
-        store: product.store || 'Loja não informada',
-        totalInstallments: payment.installments || 1,
-        paymentMethod: payment.paymentMethod || 'Não informado',
-        bank: payment.bank || 'Não informado'
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          mes_ano: data.mes_ano,
+          receita: data.receita,
+          gastos: data.gastos
+        })
       });
-    } catch (error) {
-      console.error('Erro ao processar parcela:', error, item);
-    }
-    
-    return timeline;
-  }, {} as Record<string, any[]>);
-
-  // Ordena por data e agrupa os próximos 12 meses
-  const sortedTimeline = Object.entries(installmentTimeline)
-    .sort(([a], [b]) => {
-      try {
-        const dateA = new Date(a + " 01");
-        const dateB = new Date(b + " 01");
-        return dateA.getTime() - dateB.getTime();
-      } catch {
-        return 0;
+      
+      if (!response.ok) {
+        throw new Error('Falha ao salvar dados financeiros');
       }
-    })
-    .slice(0, 12);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/finances"] });
+      toast({
+        title: "Sucesso",
+        description: editingFinance ? "Dados financeiros atualizados" : "Dados financeiros salvos",
+      });
+      resetFinanceForm();
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Falha ao salvar dados financeiros",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteFinanceMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/finances/${id}`, {
+        method: "DELETE",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error("Falha ao excluir registro financeiro");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/finances"] });
+      toast({
+        title: "Sucesso",
+        description: "Registro financeiro removido",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Falha ao excluir registro financeiro",
+        variant: "destructive",
+      });
+    },
+  });
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: number) => {
@@ -225,9 +232,51 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     },
   });
 
-  const handleDelete = (productId: number, productName: string) => {
+  const handleFinanceSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!financeForm.mes_ano || !financeForm.receita || !financeForm.gastos) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    saveFinanceMutation.mutate({
+      mes_ano: financeForm.mes_ano,
+      receita: parseFloat(financeForm.receita),
+      gastos: parseFloat(financeForm.gastos),
+      id: editingFinance?.id
+    });
+  };
+
+  const resetFinanceForm = () => {
+    setFinanceForm({ mes_ano: '', receita: '', gastos: '' });
+    setIsAddingFinance(false);
+    setEditingFinance(null);
+  };
+
+  const handleEditFinance = (finance: FinanceEntry) => {
+    setEditingFinance(finance);
+    setFinanceForm({
+      mes_ano: finance.mes_ano,
+      receita: finance.receita.toString(),
+      gastos: finance.gastos.toString()
+    });
+    setIsAddingFinance(true);
+  };
+
+  const handleDeleteProduct = (productId: number, productName: string) => {
     if (window.confirm(`Tem certeza que deseja remover "${productName}" do histórico?`)) {
       deleteProductMutation.mutate(productId);
+    }
+  };
+
+  const handleDeleteFinance = (financeId: number) => {
+    if (window.confirm('Tem certeza que deseja excluir este registro financeiro?')) {
+      deleteFinanceMutation.mutate(financeId);
     }
   };
 
@@ -253,22 +302,22 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
             <TrendingUp className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
           </div>
           <h3 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-            Total Gasto
+            Receita Total
           </h3>
           <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
-            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSpent || 0)}
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalRevenue || 0)}
           </p>
         </div>
         
         <div className="neomorphic-card p-6 rounded-2xl text-center">
           <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-3">
-            <ShoppingBag className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
+            <DollarSign className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
           </div>
           <h3 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-            Pendente
+            Gastos Registrados
           </h3>
           <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
-            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPending || 0)}
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalExpenses || 0)}
           </p>
         </div>
         
@@ -277,24 +326,158 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
             <CheckCircle className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
           </div>
           <h3 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+            Saldo Atual
+          </h3>
+          <p className={`text-xl font-bold ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(currentBalance || 0)}
+          </p>
+        </div>
+        
+        <div className="neomorphic-card p-6 rounded-2xl text-center">
+          <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-3">
+            <ShoppingBag className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
+          </div>
+          <h3 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
             Compras Realizadas
           </h3>
           <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
             {purchasedProducts.length}
           </p>
         </div>
-        
-        <div className="neomorphic-card p-6 rounded-2xl text-center">
-          <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-3">
-            <Store className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
-          </div>
-          <h3 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-            Lojas Diferentes
+      </div>
+
+      {/* Financial Management */}
+      <div className="neomorphic-card p-6 rounded-2xl">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+            Gestão Financeira
           </h3>
-          <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
-            {new Set(purchasedProducts.map(p => p.store)).size}
-          </p>
+          <button
+            onClick={() => setIsAddingFinance(!isAddingFinance)}
+            className="neomorphic-button px-4 py-2 rounded-lg flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            {isAddingFinance ? 'Cancelar' : 'Adicionar Registro'}
+          </button>
         </div>
+
+        {/* Finance Form */}
+        {isAddingFinance && (
+          <form onSubmit={handleFinanceSubmit} className="mb-6 p-4 neomorphic-card rounded-xl">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Mês/Ano
+                </label>
+                <input
+                  type="month"
+                  value={financeForm.mes_ano}
+                  onChange={(e) => setFinanceForm(prev => ({ ...prev, mes_ano: e.target.value }))}
+                  className="w-full p-3 neomorphic-input rounded-lg border-0"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Receita (R$)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={financeForm.receita}
+                  onChange={(e) => setFinanceForm(prev => ({ ...prev, receita: e.target.value }))}
+                  className="w-full p-3 neomorphic-input rounded-lg border-0"
+                  placeholder="0,00"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  Gastos (R$)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={financeForm.gastos}
+                  onChange={(e) => setFinanceForm(prev => ({ ...prev, gastos: e.target.value }))}
+                  className="w-full p-3 neomorphic-input rounded-lg border-0"
+                  placeholder="0,00"
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button
+                type="submit"
+                disabled={saveFinanceMutation.isPending}
+                className="neomorphic-button px-6 py-2 rounded-lg"
+                style={{ backgroundColor: 'var(--primary-action)', color: 'white' }}
+              >
+                {saveFinanceMutation.isPending ? 'Salvando...' : (editingFinance ? 'Atualizar' : 'Salvar')}
+              </button>
+              <button
+                type="button"
+                onClick={resetFinanceForm}
+                className="neomorphic-button px-6 py-2 rounded-lg"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Finance Records */}
+        {finances.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>
+              Registros Financeiros
+            </h4>
+            {finances
+              .sort((a, b) => new Date(b.mes_ano).getTime() - new Date(a.mes_ano).getTime())
+              .map((finance) => {
+                const balance = finance.receita - finance.gastos;
+                const monthYear = new Date(finance.mes_ano + '-01').toLocaleDateString('pt-BR', { 
+                  month: 'long', 
+                  year: 'numeric' 
+                });
+                
+                return (
+                  <div key={finance.id} className="p-4 neomorphic-card rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                          {monthYear}
+                        </h5>
+                        <div className="text-sm space-x-4" style={{ color: 'var(--text-secondary)' }}>
+                          <span>Receita: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(finance.receita)}</span>
+                          <span>Gastos: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(finance.gastos)}</span>
+                          <span className={balance >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            Saldo: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(balance)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditFinance(finance)}
+                          className="w-8 h-8 neomorphic-button rounded-full flex items-center justify-center"
+                          title="Editar"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteFinance(finance.id)}
+                          className="w-8 h-8 neomorphic-button rounded-full flex items-center justify-center text-red-500"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
       </div>
 
       {/* Analysis Charts */}
@@ -390,121 +573,6 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
         </div>
       </div>
 
-      {/* Timeline de Parcelas */}
-      <div className="neomorphic-card p-6 rounded-2xl">
-        <h3 className="text-xl font-semibold mb-6 flex items-center gap-3" style={{ color: 'var(--text-primary)' }}>
-          <Calendar className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
-          Cronograma de Parcelas
-        </h3>
-        
-        {!Array.isArray(installments) || installments.length === 0 ? (
-          <div className="text-center py-8">
-            <Clock className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--text-secondary)' }} />
-            <p style={{ color: 'var(--text-secondary)' }}>
-              Nenhuma parcela cadastrada ainda
-            </p>
-            <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
-              Marque produtos como "comprados" e cadastre as formas de pagamento para ver o cronograma
-            </p>
-          </div>
-        ) : sortedTimeline.length === 0 ? (
-          <div className="text-center py-8">
-            <Clock className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--text-secondary)' }} />
-            <p style={{ color: 'var(--text-secondary)' }}>
-              Carregando cronograma de parcelas...
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {sortedTimeline.map(([monthYear, monthInstallments]) => {
-              const monthTotal = monthInstallments.reduce((sum, inst) => sum + (inst.value || 0), 0);
-              const paidCount = monthInstallments.filter(inst => inst.isPaid).length;
-              
-              return (
-                <div key={monthYear} className="space-y-4">
-                  <div className="flex items-center justify-between p-4 neomorphic-card rounded-xl">
-                    <div>
-                      <h4 className="font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>
-                        {monthYear}
-                      </h4>
-                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        {monthInstallments.length} parcela(s) • {paidCount} paga(s)
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-lg" style={{ color: 'var(--primary-action)' }}>
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(monthTotal)}
-                      </p>
-                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        Total do mês
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid gap-3">
-                    {monthInstallments.map((installment) => (
-                      <div 
-                        key={installment.id} 
-                        className={`p-4 rounded-xl border-l-4 ${
-                          installment.isPaid 
-                            ? 'border-green-500 bg-green-50' 
-                            : 'border-orange-500 bg-orange-50'
-                        }`}
-                        style={{ backgroundColor: installment.isPaid ? '#f0fdf4' : '#fff7ed' }}
-                      >
-                        <div className="flex items-start gap-4">
-                          <img 
-                            src={installment.productImage || '/placeholder.jpg'} 
-                            alt={installment.productName}
-                            className="w-12 h-12 object-cover rounded-lg"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h5 className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                                  {installment.productName}
-                                </h5>
-                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                                  {installment.store} • {installment.paymentMethod} • {installment.bank}
-                                </p>
-                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                                  Parcela {installment.installmentNumber}/{installment.totalInstallments}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-bold" style={{ color: 'var(--primary-action)' }}>
-                                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(installment.value || 0)}
-                                </p>
-                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                                  Venc: {installment.dueDate ? new Date(installment.dueDate).toLocaleDateString('pt-BR') : 'Data inválida'}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 mt-3">
-                              {installment.isPaid ? (
-                                <div className="flex items-center gap-1 text-green-600">
-                                  <CheckCircle className="w-4 h-4" />
-                                  <span className="text-sm font-medium">Pago</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1 text-orange-600">
-                                  <Clock className="w-4 h-4" />
-                                  <span className="text-sm font-medium">Pendente</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
       {/* Purchase History */}
       <div className="neomorphic-card p-6 rounded-2xl">
         <h3 className="text-xl font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>
@@ -561,7 +629,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                   </div>
                   
                   <button
-                    onClick={() => handleDelete(product.id, product.name)}
+                    onClick={() => handleDeleteProduct(product.id, product.name)}
                     disabled={deleteProductMutation.isPending}
                     className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center hover:text-red-500 transition-colors"
                     title="Remover do histórico"

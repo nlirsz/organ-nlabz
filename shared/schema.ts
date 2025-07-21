@@ -1,12 +1,23 @@
-import { pgTable, text, serial, integer, boolean, decimal, timestamp, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, timestamp, real, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  username: varchar("username", { length: 255 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const finances = pgTable("finances", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  mes_ano: varchar("mes_ano", { length: 7 }).notNull(), // formato: YYYY-MM
+  receita: decimal("receita", { precision: 10, scale: 2 }).notNull().default("0"),
+  gastos: decimal("gastos", { precision: 10, scale: 2 }).notNull().default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const products = pgTable("products", {
@@ -62,10 +73,10 @@ export const productsRelations = relations(products, ({ one }) => ({
   }),
 }));
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
+export type InsertUser = typeof users.$inferInsert;
+export type SelectUser = typeof users.$inferSelect;
+export type InsertFinance = typeof finances.$inferInsert;
+export type SelectFinance = typeof finances.$inferSelect;
 
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
