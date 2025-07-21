@@ -213,8 +213,32 @@ export class DatabaseStorage implements IStorage {
 
   async getUserInstallments(userId: number): Promise<any[]> {
     try {
-      // Implementação placeholder - aqui você pode buscar as parcelas específicas do usuário
-      return [];
+      const result = await db
+        .select({
+          id: installments.id,
+          productId: products.id,
+          productName: products.name,
+          installmentNumber: installments.installmentNumber,
+          totalInstallments: payments.installments,
+          amount: installments.amount,
+          dueDate: installments.dueDate,
+          isPaid: installments.status,
+          paidAt: installments.paidAt,
+        })
+        .from(installments)
+        .innerJoin(payments, eq(installments.paymentId, payments.id))
+        .innerJoin(products, eq(payments.productId, products.id))
+        .where(eq(products.userId, userId))
+        .orderBy(installments.dueDate);
+
+      return result.map(item => ({
+        ...item,
+        amount: parseFloat(item.amount),
+        isPaid: item.isPaid === 'paid',
+        dueDate: item.dueDate.toISOString(),
+        month: item.dueDate.getMonth() + 1,
+        year: item.dueDate.getFullYear(),
+      }));
     } catch (error) {
       console.error("Error getting user installments:", error);
       return [];

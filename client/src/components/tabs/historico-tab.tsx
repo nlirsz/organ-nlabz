@@ -3,6 +3,7 @@ import { History, CheckCircle, Calendar, Store, Trash2, DollarSign, TrendingUp, 
 import { useToast } from "@/hooks/use-toast";
 import type { SelectProduct } from "@shared/schema";
 import { useState } from "react";
+import { InstallmentsTimeline } from "@/components/installments-timeline";
 
 interface HistoricoTabProps {
   refreshKey: number;
@@ -579,6 +580,14 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Annual Installments Timeline */}
+      <div className="neomorphic-card p-6 rounded-2xl">
+        <h3 className="text-xl font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>
+          Linha do Tempo de Parcelas {new Date().getFullYear()}
+        </h3>
+        <InstallmentsTimeline />
       </div>
 
       {/* Purchase History */}
