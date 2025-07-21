@@ -6,12 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Product } from "@shared/schema";
+import type { SelectProduct } from "@shared/schema";
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  product: Product;
+  product: SelectProduct;
   onPaymentAdded: () => void;
 }
 
@@ -27,7 +27,7 @@ export function PaymentModal({ isOpen, onClose, product, onPaymentAdded }: Payme
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const authToken = localStorage.getItem("authToken");
+  const authToken = localStorage.getItem("token");
 
   const addPaymentMutation = useMutation({
     mutationFn: async (paymentData: any) => {
@@ -35,7 +35,7 @@ export function PaymentModal({ isOpen, onClose, product, onPaymentAdded }: Payme
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-auth-token": authToken || ""
+          "Authorization": `Bearer ${authToken}`
         },
         body: JSON.stringify(paymentData),
       });
@@ -44,7 +44,22 @@ export function PaymentModal({ isOpen, onClose, product, onPaymentAdded }: Payme
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Mark product as purchased after successful payment registration
+      try {
+        const token = localStorage.getItem('token');
+        await fetch(`/api/products/${product.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ isPurchased: true })
+        });
+      } catch (error) {
+        console.error('Error marking product as purchased:', error);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       onPaymentAdded();

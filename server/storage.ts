@@ -1,18 +1,18 @@
-import { users, products, payments, installments, finances, type User, type InsertUser, type Product, type InsertProduct, type UpdateProduct } from "@shared/schema";
+import { users, products, payments, installments, finances, type SelectUser, type InsertUser, type SelectProduct, type InsertProduct } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getUser(id: number): Promise<SelectUser | undefined>;
+  getUserByUsername(username: string): Promise<SelectUser | undefined>;
+  createUser(user: InsertUser): Promise<SelectUser>;
 
   // Product operations
-  getProducts(userId: number): Promise<Product[]>;
-  getProduct(id: number, userId: number): Promise<Product | undefined>;
-  getProductById(id: number, userId: number): Promise<Product | undefined>;
-  createProduct(product: InsertProduct): Promise<Product>;
-  updateProduct(id: number, product: UpdateProduct, userId: number): Promise<Product | undefined>;
+  getProducts(userId: number): Promise<SelectProduct[]>;
+  getProduct(id: number, userId: number): Promise<SelectProduct | undefined>;
+  getProductById(id: number, userId: number): Promise<SelectProduct | undefined>;
+  createProduct(product: InsertProduct): Promise<SelectProduct>;
+  updateProduct(id: number, product: Partial<InsertProduct>, userId: number): Promise<SelectProduct | undefined>;
   deleteProduct(id: number, userId: number): Promise<boolean>;
   getProductStats(userId: number): Promise<{
     totalItems: number;
@@ -54,17 +54,17 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getUser(id: number): Promise<User | undefined> {
+  async getUser(id: number): Promise<SelectUser | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
+  async getUserByUsername(username: string): Promise<SelectUser | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user || undefined;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(insertUser: InsertUser): Promise<SelectUser> {
     const [user] = await db
       .insert(users)
       .values(insertUser)
@@ -72,7 +72,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getProducts(userId: number): Promise<Product[]> {
+  async getProducts(userId: number): Promise<SelectProduct[]> {
     const productList = await db
       .select()
       .from(products)
@@ -81,7 +81,7 @@ export class DatabaseStorage implements IStorage {
     return productList;
   }
 
-  async getProduct(id: number, userId: number): Promise<Product | undefined> {
+  async getProduct(id: number, userId: number): Promise<SelectProduct | undefined> {
     const [product] = await db
       .select()
       .from(products)
@@ -89,7 +89,7 @@ export class DatabaseStorage implements IStorage {
     return product || undefined;
   }
 
-  async getProductById(id: number, userId: number): Promise<Product | undefined> {
+  async getProductById(id: number, userId: number): Promise<SelectProduct | undefined> {
     const [product] = await db
       .select()
       .from(products)
@@ -97,7 +97,7 @@ export class DatabaseStorage implements IStorage {
     return product || undefined;
   }
 
-  async createProduct(insertProduct: InsertProduct): Promise<Product> {
+  async createProduct(insertProduct: InsertProduct): Promise<SelectProduct> {
     const [product] = await db
       .insert(products)
       .values(insertProduct)
@@ -105,7 +105,7 @@ export class DatabaseStorage implements IStorage {
     return product;
   }
 
-  async updateProduct(id: number, updateProduct: UpdateProduct, userId: number): Promise<Product | undefined> {
+  async updateProduct(id: number, updateProduct: Partial<InsertProduct>, userId: number): Promise<SelectProduct | undefined> {
     const [product] = await db
       .update(products)
       .set({ ...updateProduct, updatedAt: new Date() })

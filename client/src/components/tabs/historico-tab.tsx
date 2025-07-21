@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { History, CheckCircle, Calendar, Store, Trash2, DollarSign, TrendingUp, ShoppingBag, PieChart, Clock, Plus, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Product } from "@shared/schema";
+import type { SelectProduct } from "@shared/schema";
 import { useState } from "react";
 
 interface HistoricoTabProps {
@@ -19,7 +19,7 @@ interface FinanceEntry {
 }
 
 export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
-  const userId = localStorage.getItem('userId') || '2';
+  const userId = localStorage.getItem('userId') || '3';
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isAddingFinance, setIsAddingFinance] = useState(false);
@@ -30,7 +30,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     gastos: ''
   });
 
-  const { data: products = [] } = useQuery<Product[]>({
+  const { data: products = [] } = useQuery<SelectProduct[]>({
     queryKey: ["/api/products", userId, refreshKey],
     queryFn: async () => {
       const token = localStorage.getItem('token');
@@ -121,11 +121,11 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
   }, {} as Record<string, number>);
 
   const topCategories = Object.entries(spendingByCategory)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([,a], [,b]) => (b as number) - (a as number))
     .slice(0, 5);
 
   const topStores = Object.entries(spendingByStore)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([,a], [,b]) => (b as number) - (a as number))
     .slice(0, 5);
 
   // Mutations para finanças
@@ -595,7 +595,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
         ) : (
           <div className="space-y-4">
             {purchasedProducts
-              .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+              .sort((a, b) => new Date(b.updatedAt || b.createdAt || Date.now()).getTime() - new Date(a.updatedAt || a.createdAt || Date.now()).getTime())
               .map((product) => (
               <div key={product.id} className="flex items-center space-x-4 p-4 neomorphic-card rounded-xl">
                 {product.imageUrl && (
@@ -615,7 +615,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                     <span>•</span>
                     <span>{product.store}</span>
                     <span>•</span>
-                    <span>{new Date(product.updatedAt).toLocaleDateString('pt-BR')}</span>
+                    <span>{new Date(product.updatedAt || product.createdAt || Date.now()).toLocaleDateString('pt-BR')}</span>
                   </div>
                   <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
                     💳 Pagamento ilustrativo registrado
