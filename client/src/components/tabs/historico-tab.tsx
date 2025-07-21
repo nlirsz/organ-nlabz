@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { History, CheckCircle, Calendar, Store, Trash2, DollarSign, TrendingUp, ShoppingBag, PieChart, Clock, Plus, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -36,14 +35,14 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     queryFn: async () => {
       const token = localStorage.getItem('token');
       if (!token) return [];
-      
+
       const res = await fetch(`/api/products`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!res.ok) return [];
       return res.json();
     },
@@ -54,7 +53,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     queryFn: async () => {
       const token = localStorage.getItem('token');
       if (!token) return [];
-      
+
       try {
         const res = await fetch(`/api/finances`, {
           headers: {
@@ -62,7 +61,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
             'Content-Type': 'application/json'
           }
         });
-        
+
         if (!res.ok) {
           console.log('Finances response not ok:', res.status);
           return [];
@@ -80,19 +79,19 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
   // Filtra apenas produtos que foram REALMENTE comprados
   const purchasedProducts = Array.isArray(products) ? products.filter(p => p.isPurchased === true) : [];
   const pendingProducts = Array.isArray(products) ? products.filter(p => p.isPurchased === false || p.isPurchased === null) : [];
-  
+
   console.log('Products data:', { 
     total: products.length, 
     purchased: purchasedProducts.length, 
     pending: pendingProducts.length,
     purchasedProducts: purchasedProducts.map(p => ({ id: p.id, name: p.name, isPurchased: p.isPurchased }))
   });
-  
+
   const totalSpent = purchasedProducts.reduce((sum, p) => {
     const price = p.price ? parseFloat(p.price.toString()) : 0;
     return sum + price;
   }, 0);
-  
+
   const totalPending = pendingProducts.reduce((sum, p) => {
     const price = p.price ? parseFloat(p.price.toString()) : 0;
     return sum + price;
@@ -135,7 +134,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
       const token = localStorage.getItem('token');
       const url = data.id ? `/api/finances/${data.id}` : '/api/finances';
       const method = data.id ? 'PUT' : 'POST';
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -148,7 +147,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
           gastos: data.gastos
         })
       });
-      
+
       if (!response.ok) {
         throw new Error('Falha ao salvar dados financeiros');
       }
@@ -234,7 +233,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
 
   const handleFinanceSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!financeForm.mes_ano || !financeForm.receita || !financeForm.gastos) {
       toast({
         title: "Erro",
@@ -308,7 +307,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalRevenue || 0)}
           </p>
         </div>
-        
+
         <div className="neomorphic-card p-6 rounded-2xl text-center">
           <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-3">
             <DollarSign className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
@@ -320,7 +319,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalExpenses || 0)}
           </p>
         </div>
-        
+
         <div className="neomorphic-card p-6 rounded-2xl text-center">
           <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-3">
             <CheckCircle className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
@@ -332,7 +331,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(currentBalance || 0)}
           </p>
         </div>
-        
+
         <div className="neomorphic-card p-6 rounded-2xl text-center">
           <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-3">
             <ShoppingBag className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
@@ -440,7 +439,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                   month: 'long', 
                   year: 'numeric' 
                 });
-                
+
                 return (
                   <div key={finance.id} className="p-4 neomorphic-card rounded-xl">
                     <div className="flex items-center justify-between">
@@ -487,7 +486,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
           <h3 className="text-xl font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>
             Gastos por Categoria
           </h3>
-          
+
           {purchasedProducts.length === 0 ? (
             <div className="text-center py-8">
               <p style={{ color: 'var(--text-secondary)' }}>Nenhuma compra realizada ainda</p>
@@ -518,7 +517,8 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount)}
                     </p>
                     <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      {((amount / totalSpent) * 100).toFixed(1)}% do total
+                      {Object.values(spendingByCategory).reduce((sum, val) => sum + val, 0) > 0 ? 
+                        ((amount / Object.values(spendingByCategory).reduce((sum, val) => sum + val, 0)) * 100).toFixed(1) : 0}% do total
                     </p>
                   </div>
                 </div>
@@ -532,7 +532,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
           <h3 className="text-xl font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>
             Gastos por Loja
           </h3>
-          
+
           {purchasedProducts.length === 0 ? (
             <div className="text-center py-8">
               <p style={{ color: 'var(--text-secondary)' }}>Nenhuma compra realizada ainda</p>
@@ -563,7 +563,8 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount)}
                     </p>
                     <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      {((amount / totalSpent) * 100).toFixed(1)}% do total
+                      {Object.values(spendingByStore).reduce((sum, val) => sum + val, 0) > 0 ? 
+                        ((amount / Object.values(spendingByStore).reduce((sum, val) => sum + val, 0)) * 100).toFixed(1) : 0}% do total
                     </p>
                   </div>
                 </div>
@@ -578,7 +579,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
         <h3 className="text-xl font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>
           Histórico de Compras
         </h3>
-        
+
         {purchasedProducts.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 neomorphic-card rounded-full flex items-center justify-center">
@@ -604,7 +605,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                     className="w-16 h-16 rounded-lg object-cover"
                   />
                 )}
-                
+
                 <div className="flex-1">
                   <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>
                     {product.name}
@@ -617,7 +618,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                     <span>{new Date(product.updatedAt).toLocaleDateString('pt-BR')}</span>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-3">
                   <div className="text-right">
                     <p className="font-bold text-lg" style={{ color: 'var(--primary-action)' }}>
@@ -627,7 +628,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                       Comprado
                     </span>
                   </div>
-                  
+
                   <button
                     onClick={() => handleDeleteProduct(product.id, product.name)}
                     disabled={deleteProductMutation.isPending}
