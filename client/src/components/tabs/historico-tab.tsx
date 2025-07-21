@@ -49,8 +49,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
         return [];
       }
       const data = await res.json();
-      console.log('Historico: Products fetched:', data);
-      console.log('Historico: Products array check:', Array.isArray(data), data.length);
+
       return data;
     },
   });
@@ -87,10 +86,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
   const purchasedProducts = Array.isArray(products) ? products.filter(p => p.isPurchased === true) : [];
   const pendingProducts = Array.isArray(products) ? products.filter(p => p.isPurchased !== true) : [];
 
-  console.log('Historico - Query state:', { productsLoading, productsError: productsError?.message });
-  console.log('Historico - Raw products:', products);
-  console.log('Historico - Products array check:', Array.isArray(products));
-  console.log('Historico - Products data:', { 
+  console.log('Products data:', { 
     total: products.length, 
     purchased: purchasedProducts.length, 
     pending: pendingProducts.length,

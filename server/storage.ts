@@ -183,10 +183,8 @@ export class DatabaseStorage implements IStorage {
       installmentsData.push({
         paymentId: createdPayment.id,
         installmentNumber: i + 1,
-        dueDate: dueDate, // Usar objeto Date diretamente
+        dueDate: dueDate,
         amount: payment.installmentValue.toString(),
-        status: 'pending',
-        paidAt: null,
       });
     }
 
@@ -222,8 +220,6 @@ export class DatabaseStorage implements IStorage {
           totalInstallments: payments.installments,
           amount: installments.amount,
           dueDate: installments.dueDate,
-          isPaid: installments.status,
-          paidAt: installments.paidAt,
         })
         .from(installments)
         .innerJoin(payments, eq(installments.paymentId, payments.id))
@@ -234,10 +230,9 @@ export class DatabaseStorage implements IStorage {
       return result.map(item => ({
         ...item,
         amount: parseFloat(item.amount),
-        isPaid: item.isPaid === 'paid',
-        dueDate: item.dueDate.toISOString(),
-        month: item.dueDate.getMonth() + 1,
-        year: item.dueDate.getFullYear(),
+        dueDate: typeof item.dueDate === 'string' ? item.dueDate : item.dueDate.toISOString(),
+        month: typeof item.dueDate === 'string' ? new Date(item.dueDate).getMonth() + 1 : item.dueDate.getMonth() + 1,
+        year: typeof item.dueDate === 'string' ? new Date(item.dueDate).getFullYear() : item.dueDate.getFullYear(),
       }));
     } catch (error) {
       console.error("Error getting user installments:", error);
