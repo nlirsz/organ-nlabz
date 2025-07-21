@@ -53,13 +53,14 @@ export const payments = pgTable("payments", {
 
 export const installments = pgTable("installments", {
   id: serial("id").primaryKey(),
-  paymentId: integer("payment_id").references(() => payments.id, { onDelete: "cascade" }).notNull(),
+  paymentId: integer("payment_id").references(() => payments.id),
   installmentNumber: integer("installment_number").notNull(),
-  dueDate: text("due_date").notNull(),
-  value: real("value").notNull(),
-  isPaid: boolean("is_paid").default(false),
-  paidDate: text("paid_date"),
+  dueDate: timestamp("due_date").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, paid, overdue
+  paidAt: timestamp("paid_at"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
 });
 
 export const usersRelations = relations(users, ({ many }) => ({

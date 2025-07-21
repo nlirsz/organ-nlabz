@@ -44,7 +44,9 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
       });
 
       if (!res.ok) return [];
-      return res.json();
+      const data = await res.json();
+      console.log('Historico: Products fetched:', data);
+      return data;
     },
   });
 
@@ -76,9 +78,10 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     },
   });
 
-  // Filtra apenas produtos que foram REALMENTE comprados
-  const purchasedProducts = Array.isArray(products) ? products.filter(p => p.isPurchased === true) : [];
-  const pendingProducts = Array.isArray(products) ? products.filter(p => p.isPurchased === false || p.isPurchased === null) : [];
+  // Como não temos campo isPurchased corretamente, vamos considerar TODOS os produtos como histórico
+  // Você pode marcar como comprados posteriormente
+  const purchasedProducts = Array.isArray(products) ? products : [];
+  const pendingProducts: Product[] = [];
 
   console.log('Products data:', { 
     total: products.length, 

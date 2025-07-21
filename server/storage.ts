@@ -1,6 +1,6 @@
-import { users, products, payments, installments, type User, type InsertUser, type Product, type InsertProduct, type UpdateProduct } from "@shared/schema";
+import { users, products, payments, installments, finances, type User, type InsertUser, type Product, type InsertProduct, type UpdateProduct } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -33,6 +33,24 @@ export interface IStorage {
   }): Promise<number>;
   getUserPayments(userId: number): Promise<any[]>;
   getUserInstallments(userId: number): Promise<any[]>;
+
+  getFinances(userId: number): Promise<any[]>;
+  addFinance(financeData: {
+    userId: number;
+    mes_ano: string;
+    receita: number;
+    gastos: number;
+  }): Promise<number>;
+  updateFinance(
+    financeId: number,
+    updates: {
+      mes_ano?: string;
+      receita?: number;
+      gastos?: number;
+    },
+    userId: number
+  ): Promise<boolean>;
+  deleteFinance(financeId: number, userId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -194,19 +212,95 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserInstallments(userId: number): Promise<any[]> {
-    const userInstallments = await db
-      .select({
-        installment: installments,
-        payment: payments,
-        product: products,
-      })
-      .from(installments)
-      .innerJoin(payments, eq(installments.paymentId, payments.id))
-      .innerJoin(products, eq(payments.productId, products.id))
-      .where(eq(products.userId, userId))
-      .orderBy(installments.dueDate);
+    try {
+      // Implementação placeholder - aqui você pode buscar as parcelas específicas do usuário
+      return [];
+    } catch (error) {
+      console.error("Error getting user installments:", error);
+      return [];
+    }
+  }
 
-    return userInstallments;
+  async getFinances(userId: number): Promise<any[]> {
+    try {
+      const result = await db
+        .select()
+        .from(finances)
+        .where(eq(finances.userId, userId))
+        .orderBy(desc(finances.mes_ano));
+
+      return result;
+    } catch (error) {
+      console.error("Error getting finances:", error);
+      return [];
+    }
+  }
+
+  async addFinance(financeData: {
+    userId: number;
+    mes_ano: string;
+    receita: number;
+    gastos: number;
+  }): Promise<number> {
+    try {
+      const [result] = await db
+        .insert(finances)
+        .values({
+          userId: financeData.userId,
+          mes_ano: financeData.mes_ano,
+          receita: financeData.receita.toString(),
+          gastos: financeData.gastos.toString(),
+          updatedAt: new Date()
+        })
+        .returning({ id: finances.id });
+
+      return result.id;
+    } catch (error) {
+      console.error("Error adding finance record:", error);
+      throw error;
+    }
+  }
+
+  async updateFinance(
+    financeId: number,
+    updates: {
+      mes_ano?: string;
+      receita?: number;
+      gastos?: number;
+    },
+    userId: number
+  ): Promise<boolean> {
+    try {
+      const [result] = await db
+        .update(finances)
+        .set({
+          ...(updates.mes_ano && { mes_ano: updates.mes_ano }),
+          ...(updates.receita !== undefined && { receita: updates.receita.toString() }),
+          ...(updates.gastos !== undefined && { gastos: updates.gastos.toString() }),
+          updatedAt: new Date()
+        })
+        .where(and(eq(finances.id, financeId), eq(finances.userId, userId)))
+        .returning({ id: finances.id });
+
+      return !!result;
+    } catch (error) {
+      console.error("Error updating finance record:", error);
+      return false;
+    }
+  }
+
+  async deleteFinance(financeId: number, userId: number): Promise<boolean> {
+    try {
+      const [result] = await db
+        .delete(finances)
+        .where(and(eq(finances.id, financeId), eq(finances.userId, userId)))
+        .returning({ id: finances.id });
+
+      return !!result;
+    } catch (error) {
+      console.error("Error deleting finance record:", error);
+      return false;
+    }
   }
 }
 

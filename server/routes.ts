@@ -390,6 +390,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Finance routes
+  app.get("/api/finances", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = parseInt(req.user.userId);
+      const finances = await storage.getFinances(userId);
+      res.json(finances);
+    } catch (error) {
+      console.error("Error fetching finances:", error);
+      res.status(500).json({ error: "Failed to fetch finances" });
+    }
+  });
+
+  app.post("/api/finances", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = parseInt(req.user.userId);
+      const { mes_ano, receita, gastos } = req.body;
+
+      if (!mes_ano || receita === undefined || gastos === undefined) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+
+      const financeId = await storage.addFinance({
+        userId,
+        mes_ano,
+        receita: parseFloat(receita),
+        gastos: parseFloat(gastos)
+      });
+
+      res.json({ id: financeId, message: "Finance record created successfully" });
+    } catch (error) {
+      console.error("Error creating finance record:", error);
+      res.status(500).json({ error: "Failed to create finance record" });
+    }
+  });
+
+  app.put("/api/finances/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const financeId = parseInt(req.params.id);
+      const userId = parseInt(req.user.userId);
+      const { mes_ano, receita, gastos } = req.body;
+
+      const success = await storage.updateFinance(financeId, {
+        mes_ano,
+        receita: parseFloat(receita),
+        gastos: parseFloat(gastos)
+      }, userId);
+
+      if (!success) {
+        return res.status(404).json({ error: "Finance record not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating finance record:", error);
+      res.status(500).json({ error: "Failed to update finance record" });
+    }
+  });
+
+  app.delete("/api/finances/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const financeId = parseInt(req.params.id);
+      const userId = parseInt(req.user.userId);
+
+      const success = await storage.deleteFinance(financeId, userId);
+
+      if (!success) {
+        return res.status(404).json({ error: "Finance record not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting finance record:", error);
+      res.status(500).json({ error: "Failed to delete finance record" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
