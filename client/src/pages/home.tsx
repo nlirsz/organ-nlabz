@@ -6,7 +6,7 @@ import { DashboardTab } from "@/components/tabs/dashboard-tab";
 import { ProdutosTab } from "@/components/tabs/produtos-tab";
 import { AddProdutosTab } from "@/components/tabs/add-produtos-tab";
 import { HistoricoTab } from "@/components/tabs/historico-tab";
-import { FinanceiroTab } from "@/components/tabs/financeiro-tab";
+
 import { AuthForm } from "@/components/auth/login-form";
 import type { Product } from "@shared/schema";
 
@@ -159,9 +159,7 @@ export default function Home() {
           {activeTab === "historico" && (
             <HistoricoTab refreshKey={refreshKey} />
           )}
-          {activeTab === "financeiro" && (
-            <FinanceiroTab refreshKey={refreshKey} />
-          )}
+          
         </div>
       </main>
     </div>

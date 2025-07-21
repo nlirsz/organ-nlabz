@@ -58,4 +58,3 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
     </nav>
   );
 }
-```
