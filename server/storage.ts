@@ -183,10 +183,10 @@ export class DatabaseStorage implements IStorage {
       installmentsData.push({
         paymentId: createdPayment.id,
         installmentNumber: i + 1,
-        dueDate: dueDate.toISOString().split('T')[0],
-        value: payment.installmentValue,
-        isPaid: false,
-        paidDate: null,
+        dueDate: dueDate, // Usar objeto Date diretamente
+        amount: payment.installmentValue.toString(),
+        status: 'pending',
+        paidAt: null,
       });
     }
 

@@ -78,10 +78,9 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     },
   });
 
-  // Como não temos campo isPurchased corretamente, vamos considerar TODOS os produtos como histórico
-  // Você pode marcar como comprados posteriormente
-  const purchasedProducts = Array.isArray(products) ? products : [];
-  const pendingProducts: Product[] = [];
+  // Filtra produtos comprados corretamente
+  const purchasedProducts = Array.isArray(products) ? products.filter(p => p.isPurchased === true) : [];
+  const pendingProducts = Array.isArray(products) ? products.filter(p => p.isPurchased !== true) : [];
 
   console.log('Products data:', { 
     total: products.length, 
@@ -105,18 +104,16 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
   const totalExpenses = finances.reduce((sum, f) => sum + (f.gastos || 0), 0);
   const currentBalance = totalRevenue - totalExpenses;
 
-  // Group by category - apenas produtos REALMENTE comprados
+  // Group by category - produtos comprados
   const spendingByCategory = purchasedProducts.reduce((acc, product) => {
-    if (product.isPurchased !== true) return acc;
     const category = product.category || 'Outros';
     const price = product.price ? parseFloat(product.price.toString()) : 0;
     acc[category] = (acc[category] || 0) + price;
     return acc;
   }, {} as Record<string, number>);
 
-  // Group by store - apenas produtos REALMENTE comprados
+  // Group by store - produtos comprados
   const spendingByStore = purchasedProducts.reduce((acc, product) => {
-    if (product.isPurchased !== true) return acc;
     const store = product.store || 'Outros';
     const price = product.price ? parseFloat(product.price.toString()) : 0;
     acc[store] = (acc[store] || 0) + price;
@@ -619,6 +616,9 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                     <span>{product.store}</span>
                     <span>•</span>
                     <span>{new Date(product.updatedAt).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                    💳 Pagamento ilustrativo registrado
                   </div>
                 </div>
 
