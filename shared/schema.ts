@@ -57,10 +57,7 @@ export const installments = pgTable("installments", {
   installmentNumber: integer("installment_number").notNull(),
   dueDate: timestamp("due_date").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, paid, overdue
-  paidAt: timestamp("paid_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow()
+  createdAt: timestamp("created_at").defaultNow()
 });
 
 export const usersRelations = relations(users, ({ many }) => ({

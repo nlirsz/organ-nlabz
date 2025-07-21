@@ -330,108 +330,109 @@ export function SmartDashboard() {
         </Card>
       </div>
 
-      {/* Recomendações inteligentes */}
+      {/* Resumo Financeiro */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-yellow-500" />
-            Recomendações Inteligentes
+            <DollarSign className="h-5 w-5 text-green-500" />
+            Resumo de Gastos
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {dashboardData.recommendations.map((rec, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Star className="h-4 w-4 text-yellow-500" />
-                  <span className="text-sm">{rec.message}</span>
-                </div>
-                <Button variant="outline" size="sm">
-                  {rec.action}
-                </Button>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h4 className="font-medium text-green-800">Produtos Comprados</h4>
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCurrency(dashboardData.purchasedValue)}
+                </p>
+                <p className="text-sm text-green-600">
+                  {Math.round((dashboardData.purchasedValue / dashboardData.totalValue) * 100) || 0}% do total
+                </p>
               </div>
-            ))}
+              
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <h4 className="font-medium text-orange-800">Ainda Pendente</h4>
+                <p className="text-2xl font-bold text-orange-600">
+                  {formatCurrency(dashboardData.pendingValue)}
+                </p>
+                <p className="text-sm text-orange-600">
+                  {dashboardData.totalProducts - (dashboardData.totalProducts - Math.round((dashboardData.pendingValue / dashboardData.totalValue) * dashboardData.totalProducts))} produtos
+                </p>
+              </div>
+
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-800">Economia Potencial</h4>
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(dashboardData.totalValue * 0.15)}
+                </p>
+                <p className="text-sm text-blue-600">
+                  Aguardando promoções
+                </p>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Gráficos */}
+      {/* Análises */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Tendência mensal */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Tendência Mensal</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={dashboardData.monthlyTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                <Line type="monotone" dataKey="spending" stroke="#3b82f6" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
         {/* Distribuição por categoria */}
         <Card>
           <CardHeader>
             <CardTitle>Distribuição por Categoria</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={dashboardData.categoriesData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={120}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {dashboardData.categoriesData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => `${value}%`} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Alertas de preço e atividade recente */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Alertas de preço */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingDown className="h-5 w-5 text-green-500" />
-              Alertas de Preço
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
             <div className="space-y-3">
-              {dashboardData.priceAlerts.map((alert, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium text-sm">{alert.name}</p>
-                    <p className="text-xs text-gray-600">
-                      {formatCurrency(alert.oldPrice)} → {formatCurrency(alert.newPrice)}
+              {dashboardData.categoriesData.map((category, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: category.color }}
+                    />
+                    <span className="font-medium">{category.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold">{category.value} produtos</span>
+                    <p className="text-sm text-gray-600">
+                      {((category.value / dashboardData.totalProducts) * 100).toFixed(1)}%
                     </p>
                   </div>
-                  <Badge variant="default" className="bg-green-500">
-                    -{((alert.oldPrice - alert.newPrice) / alert.oldPrice * 100).toFixed(0)}%
-                  </Badge>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
+        {/* Principais lojas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Principais Lojas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {dashboardData.topStores.slice(0, 5).map((store, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Store className="w-4 h-4 text-gray-500" />
+                    <span className="font-medium">{store.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold">{store.count} produtos</span>
+                    <p className="text-sm text-gray-600">
+                      {formatCurrency(store.value)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Atividade recente e estatísticas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Atividade recente */}
         <Card>
           <CardHeader>
@@ -442,17 +443,63 @@ export function SmartDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {dashboardData.recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
-                  {getActivityIcon(activity.type)}
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{activity.product}</p>
-                    <p className="text-xs text-gray-600">
-                      {new Date(activity.timestamp).toLocaleString('pt-BR')}
-                    </p>
+              {dashboardData.recentActivity.length > 0 ? (
+                dashboardData.recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
+                    {getActivityIcon(activity.type)}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{activity.product}</p>
+                      <p className="text-xs text-gray-600">
+                        {activity.type === 'purchased' ? 'Marcado como comprado' : 'Adicionado à lista'} • {new Date(activity.timestamp).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                  <p>Nenhuma atividade recente</p>
                 </div>
-              ))}
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Estatísticas de progresso */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-purple-500" />
+              Progresso das Compras
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium">Produtos Comprados</span>
+                  <span className="text-sm text-gray-600">
+                    {Math.round((dashboardData.purchasedValue / dashboardData.totalValue) * 100) || 0}%
+                  </span>
+                </div>
+                <Progress 
+                  value={Math.round((dashboardData.purchasedValue / dashboardData.totalValue) * 100) || 0} 
+                  className="w-full h-2"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <p className="text-lg font-bold text-blue-600">{dashboardData.totalProducts}</p>
+                  <p className="text-xs text-blue-600">Total de Produtos</p>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <p className="text-lg font-bold text-green-600">
+                    {Math.round(dashboardData.totalProducts - (dashboardData.pendingValue / dashboardData.avgProductPrice))}
+                  </p>
+                  <p className="text-xs text-green-600">Já Comprados</p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

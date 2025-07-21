@@ -206,11 +206,11 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: number) => {
-      const token = localStorage.getItem('token');
+      const authToken = localStorage.getItem('authToken');
       const response = await fetch(`/api/products/${productId}`, {
         method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'x-auth-token': authToken || '',
           'Content-Type': 'application/json'
         }
       });
