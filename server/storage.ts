@@ -184,7 +184,7 @@ export class DatabaseStorage implements IStorage {
         paymentId: createdPayment.id,
         installmentNumber: i + 1,
         dueDate: dueDate,
-        amount: payment.installmentValue.toString()
+        value: payment.installmentValue.toString()
       });
     }
 
@@ -218,7 +218,7 @@ export class DatabaseStorage implements IStorage {
           productName: products.name,
           installmentNumber: installments.installmentNumber,
           totalInstallments: payments.installments,
-          amount: installments.amount,
+          amount: installments.value,
           dueDate: installments.dueDate,
         })
         .from(installments)
