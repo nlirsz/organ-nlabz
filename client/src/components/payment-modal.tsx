@@ -27,7 +27,7 @@ export function PaymentModal({ isOpen, onClose, product, onPaymentAdded }: Payme
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const authToken = localStorage.getItem("token");
+  const authToken = localStorage.getItem("authToken");
 
   const addPaymentMutation = useMutation({
     mutationFn: async (paymentData: any) => {
@@ -35,7 +35,7 @@ export function PaymentModal({ isOpen, onClose, product, onPaymentAdded }: Payme
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${authToken}`
+          "x-auth-token": authToken || ""
         },
         body: JSON.stringify(paymentData),
       });
@@ -47,12 +47,12 @@ export function PaymentModal({ isOpen, onClose, product, onPaymentAdded }: Payme
     onSuccess: async () => {
       // Mark product as purchased after successful payment registration
       try {
-        const token = localStorage.getItem('token');
+        const authToken = localStorage.getItem('authToken');
         await fetch(`/api/products/${product.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'x-auth-token': authToken || ''
           },
           body: JSON.stringify({ isPurchased: true })
         });

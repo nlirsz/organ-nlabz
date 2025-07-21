@@ -30,36 +30,40 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     gastos: ''
   });
 
-  const { data: products = [] } = useQuery<SelectProduct[]>({
-    queryKey: ["/api/products", userId, refreshKey],
+  const { data: products = [], isLoading: productsLoading, error: productsError } = useQuery<SelectProduct[]>({
+    queryKey: ["/api/products", refreshKey],
     queryFn: async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return [];
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return [];
 
       const res = await fetch(`/api/products`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'x-auth-token': authToken,
           'Content-Type': 'application/json'
         }
       });
 
-      if (!res.ok) return [];
+      if (!res.ok) {
+        console.log('Historico: Products fetch failed:', res.status);
+        return [];
+      }
       const data = await res.json();
       console.log('Historico: Products fetched:', data);
+      console.log('Historico: Products array check:', Array.isArray(data), data.length);
       return data;
     },
   });
 
   const { data: finances = [] } = useQuery<FinanceEntry[]>({
-    queryKey: ["/api/finances", userId, refreshKey],
+    queryKey: ["/api/finances", refreshKey],
     queryFn: async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return [];
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) return [];
 
       try {
         const res = await fetch(`/api/finances`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'x-auth-token': authToken,
             'Content-Type': 'application/json'
           }
         });
@@ -82,7 +86,10 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
   const purchasedProducts = Array.isArray(products) ? products.filter(p => p.isPurchased === true) : [];
   const pendingProducts = Array.isArray(products) ? products.filter(p => p.isPurchased !== true) : [];
 
-  console.log('Products data:', { 
+  console.log('Historico - Query state:', { productsLoading, productsError: productsError?.message });
+  console.log('Historico - Raw products:', products);
+  console.log('Historico - Products array check:', Array.isArray(products));
+  console.log('Historico - Products data:', { 
     total: products.length, 
     purchased: purchasedProducts.length, 
     pending: pendingProducts.length,
