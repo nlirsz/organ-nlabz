@@ -110,45 +110,7 @@ export function InstallmentsTimeline() {
     }
   };
 
-  const getInstallmentStatus = (installment: InstallmentData) => {
-    const dueDate = new Date(installment.dueDate);
-    const today = new Date();
-    const daysDiff = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (installment.isPaid) return 'paid';
-    if (daysDiff < 0) return 'overdue';
-    if (daysDiff <= 7) return 'due-soon';
-    return 'pending';
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'paid': return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'overdue': return <AlertCircle className="w-4 h-4 text-red-600" />;
-      case 'due-soon': return <Clock className="w-4 h-4 text-yellow-600" />;
-      default: return <Clock className="w-4 h-4 text-gray-400" />;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    const badges = {
-      paid: 'Pago',
-      overdue: 'Vencido',
-      'due-soon': 'Vence em breve',
-      pending: 'A vencer'
-    };
-    return badges[status as keyof typeof badges];
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      paid: 'text-green-600 bg-green-50',
-      overdue: 'text-red-600 bg-red-50',
-      'due-soon': 'text-yellow-600 bg-yellow-50',
-      pending: 'text-blue-600 bg-blue-50'
-    };
-    return colors[status as keyof typeof colors];
-  };
+  
 
   if (loading) {
     return (
@@ -284,7 +246,6 @@ export function InstallmentsTimeline() {
                 {selectedMonth.installments
                   .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
                   .map((installment) => {
-                    const status = getInstallmentStatus(installment);
                     const dueDate = new Date(installment.dueDate);
 
                     return (
@@ -296,27 +257,20 @@ export function InstallmentsTimeline() {
                           <div className="flex-1">
                             <h4 className="font-medium text-sm mb-2">{installment.productName}</h4>
 
-                            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300 mb-2">
+                            <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
                               <span className="flex items-center gap-1">
                                 <CreditCard className="w-4 h-4" />
                                 {installment.installmentNumber}/{installment.totalInstallments}x
                               </span>
                               <span className="flex items-center gap-1">
-                                <Clock className="w-4 h-4" />
+                                <Calendar className="w-4 h-4" />
                                 {dueDate.toLocaleDateString('pt-BR')}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              {getStatusIcon(status)}
-                              <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(status)}`}>
-                                {getStatusText(status)}
                               </span>
                             </div>
                           </div>
 
                           <div className="text-right">
-                            <p className="text-lg font-bold text-blue-600">
+                            <p className="text-lg font-bold" style={{ color: 'var(--primary-action)' }}>
                               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(installment.amount)}
                             </p>
                           </div>
@@ -332,55 +286,28 @@ export function InstallmentsTimeline() {
 
       {/* Estatísticas resumidas */}
       {installments.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="neomorphic-card p-4 rounded-xl text-center">
-            <div className="w-10 h-10 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-2">
-              <CreditCard className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
+            <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-3">
+              <CreditCard className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
             </div>
-            <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-              Total Parcelas
+            <h4 className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              Total de Parcelas
             </h4>
-            <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
+            <p className="text-2xl font-bold" style={{ color: 'var(--primary-action)' }}>
               {installments.length}
             </p>
           </div>
 
           <div className="neomorphic-card p-4 rounded-xl text-center">
-            <div className="w-10 h-10 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
+            <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-3">
+              <DollarSign className="w-6 h-6" style={{ color: 'var(--primary-action)' }} />
             </div>
-            <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-              Pagas
+            <h4 className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              Valor Total do Ano
             </h4>
-            <p className="text-xl font-bold text-green-600">
-              {installments.filter(i => i.isPaid).length}
-            </p>
-          </div>
-
-          <div className="neomorphic-card p-4 rounded-xl text-center">
-            <div className="w-10 h-10 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-2">
-              <AlertCircle className="w-5 h-5 text-red-600" />
-            </div>
-            <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-              Vencidas
-            </h4>
-            <p className="text-xl font-bold text-red-600">
-              {installments.filter(i => {
-                const dueDate = new Date(i.dueDate);
-                return dueDate < new Date() && !i.isPaid;
-              }).length}
-            </p>
-          </div>
-
-          <div className="neomorphic-card p-4 rounded-xl text-center">
-            <div className="w-10 h-10 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-2">
-              <Clock className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
-            </div>
-            <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-              Pendentes
-            </h4>
-            <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
-              {installments.filter(i => !i.isPaid).length}
+            <p className="text-2xl font-bold" style={{ color: 'var(--primary-action)' }}>
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(yearTotal)}
             </p>
           </div>
         </div>
