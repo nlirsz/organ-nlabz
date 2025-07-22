@@ -22,8 +22,8 @@ const tabs = [
 
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   return (
-    <nav className="neomorphic-card rounded-2xl p-2 mb-8">
-      <div className="flex flex-wrap justify-center gap-2">
+    <nav className="neomorphic-card rounded-2xl tab-navigation">
+      <div className="flex flex-wrap justify-center">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -33,8 +33,8 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "flex items-center space-x-2 px-4 py-3 rounded-xl transition-all duration-200",
-                "text-sm font-medium border-0 outline-none focus:outline-none",
+                "flex items-center space-x-2 rounded-xl transition-all duration-200",
+                "font-medium border-0 outline-none focus:outline-none",
                 isActive
                   ? "text-white shadow-inner"
                   : "text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"

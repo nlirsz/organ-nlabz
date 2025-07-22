@@ -461,7 +461,7 @@
       flex-direction: column;
       gap: 0.5rem;
     }
-    
+
     .product-grid .neomorphic-card .neomorphic-button,
     .product-grid .neomorphic-card .neomorphic-button-primary {
       width: 100%;
@@ -485,6 +485,23 @@
       margin-top: 1.25rem;
     }
 
+  /* Tab navigation responsivo */
+  .tab-navigation {
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .tab-navigation .flex {
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  .tab-navigation button {
+    padding: 1rem 1.5rem;
+    font-size: 0.875rem;
+    min-width: 120px;
+    white-space: nowrap;
+  }
     /* Tab navigation mobile */
     .tab-navigation {
       overflow-x: auto;

@@ -107,9 +107,6 @@ export default function Home() {
               }}>orgaN</h1>
             </div>
             <div className="flex items-center space-x-3">
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                Olá, {currentUser?.username}
-              </span>
               <button 
                 onClick={toggleTheme}
                 className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
