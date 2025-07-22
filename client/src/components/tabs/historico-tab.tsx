@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { CategoryProductsModal } from '@/components/category-products-modal';
 import { StoreProductsModal } from '@/components/store-products-modal';
-import { EditProductModal } from '@/components/edit-product-modal';
+import { EditProductWithPaymentModal } from '@/components/edit-product-with-payment-modal';
 import { PriceHistoryChart } from '@/components/price-history-chart';
 import { InstallmentsTimeline } from '@/components/installments-timeline';
 
@@ -481,38 +481,50 @@ export function HistoricoTab() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {purchasedProducts.map((product) => (
-                <Card key={product.id} className="group hover:shadow-md transition-shadow">
+                <Card key={product.id} className="group hover:shadow-md transition-shadow bg-card border-border">
                   <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-4">
                       {product.imageUrl && (
                         <img 
                           src={product.imageUrl} 
                           alt={product.name}
-                          className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+                          className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer"
                           onClick={() => handleViewProduct(product)}
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm leading-tight mb-1 line-clamp-2 cursor-pointer hover:text-blue-600"
-                            onClick={() => handleViewProduct(product)}>
-                          {product.name}
-                        </h4>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {product.category || 'Outros'}
-                          </Badge>
-                          <span className="text-xs text-gray-500">{product.store}</span>
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-base leading-tight mb-2 line-clamp-2 cursor-pointer hover:text-primary text-foreground"
+                                onClick={() => handleViewProduct(product)}>
+                              {product.name}
+                            </h4>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="secondary" className="text-xs bg-secondary text-secondary-foreground">
+                                {product.category || 'Outros'}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">{product.store}</span>
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <span className="text-xl font-bold text-green-600 dark:text-green-400 whitespace-nowrap">
+                              R$ {parseFloat(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-lg font-bold text-green-600">
-                            R$ {parseFloat(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
+                        
+                        <div className="flex items-center justify-between pt-2 border-t border-border">
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            Comprado em {new Date(product.createdAt).toLocaleDateString('pt-BR')}
+                          </div>
                           <div className="flex gap-1">
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => handleViewProduct(product)}
                               title="Ver detalhes"
+                              className="h-8 w-8 p-0"
                             >
                               <Info className="h-4 w-4" />
                             </Button>
@@ -521,6 +533,7 @@ export function HistoricoTab() {
                               variant="ghost"
                               onClick={() => handleEditProduct(product)}
                               title="Editar produto"
+                              className="h-8 w-8 p-0"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -532,6 +545,7 @@ export function HistoricoTab() {
                                 setEditModalOpen(true);
                               }}
                               title="Gerenciar pagamento"
+                              className="h-8 w-8 p-0"
                             >
                               <CreditCard className="h-4 w-4" />
                             </Button>
@@ -541,6 +555,7 @@ export function HistoricoTab() {
                                 variant="ghost"
                                 onClick={() => window.open(product.url, '_blank')}
                                 title="Ver no site"
+                                className="h-8 w-8 p-0"
                               >
                                 <ExternalLink className="h-4 w-4" />
                               </Button>
@@ -578,9 +593,9 @@ export function HistoricoTab() {
         products={getFilteredProducts()}
       />
 
-      {/* Modal de Edição */}
+      {/* Modal de Edição com Pagamento */}
       {selectedProduct && (
-        <EditProductModal
+        <EditProductWithPaymentModal
           product={selectedProduct}
           isOpen={editModalOpen}
           onClose={() => {

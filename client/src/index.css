@@ -331,6 +331,25 @@
     margin-bottom: 24px;
   }
 
+  /* Melhor visibilidade no dark mode */
+  .dark .text-muted-foreground {
+    color: hsl(210 40% 70%);
+  }
+
+  .dark .text-secondary-foreground {
+    color: hsl(210 40% 85%);
+  }
+
+  .dark .text-foreground {
+    color: hsl(210 40% 98%);
+  }
+
+  /* Cards de produtos comprados */
+  .dark .bg-card {
+    background-color: hsl(222.2 84% 4.9%);
+    border-color: hsl(217.2 32.6% 17.5%);
+  }
+
   .tab-button {
     background: transparent;
     border: none;
