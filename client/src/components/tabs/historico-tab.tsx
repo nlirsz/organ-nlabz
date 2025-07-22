@@ -653,13 +653,13 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                   <img
                     src={selectedProduct.imageUrl}
                     alt={selectedProduct.name}
-                    className="w-full h-64 object-cover rounded-lg"
-                    style={{ backgroundColor: 'var(--c-light)' }}
+                    className="w-full h-48 object-contain rounded-lg p-4"
+                    style={{ backgroundColor: 'white' }}
                   />
                 ) : (
-                  <div className="w-full h-64 rounded-lg neomorphic-card flex items-center justify-center" 
-                       style={{ backgroundColor: 'var(--c-light)' }}>
-                    <ShoppingBag className="w-20 h-20" style={{ color: 'var(--text-secondary)' }} />
+                  <div className="w-full h-48 rounded-lg neomorphic-card flex items-center justify-center" 
+                       style={{ backgroundColor: 'white' }}>
+                    <ShoppingBag className="w-16 h-16" style={{ color: 'var(--text-secondary)' }} />
                   </div>
                 )}
 
@@ -891,13 +891,13 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                       <img
                         src={product.imageUrl}
                         alt={product.name}
-                        className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-lg"
-                        style={{ backgroundColor: 'var(--c-light)' }}
+                        className="w-12 h-12 md:w-14 md:h-14 object-contain rounded-lg p-1"
+                        style={{ backgroundColor: 'white' }}
                       />
                     ) : (
-                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg neomorphic-card flex items-center justify-center"
-                           style={{ backgroundColor: 'var(--c-light)' }}>
-                        <ShoppingBag className="w-4 h-4 md:w-6 md:h-6" style={{ color: 'var(--text-secondary)' }} />
+                      <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg neomorphic-card flex items-center justify-center"
+                           style={{ backgroundColor: 'white' }}>
+                        <ShoppingBag className="w-4 h-4 md:w-5 md:h-5" style={{ color: 'var(--text-secondary)' }} />
                       </div>
                     )}
                   </div>

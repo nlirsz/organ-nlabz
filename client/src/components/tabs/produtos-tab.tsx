@@ -300,15 +300,15 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
                     <img
                       src={product.imageUrl}
                       alt={product.name}
-                      className="w-full h-48 object-cover rounded-xl"
-                      style={{ backgroundColor: 'var(--c-light)' }}
+                      className="w-full h-32 object-contain rounded-lg p-2"
+                      style={{ backgroundColor: 'white' }}
                       onError={(e) => {
                         e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTAwQzEwNS41MjMgMTAwIDExMCA5NS41MjI4IDExMCA5MEM1MTAgODQuNDc3MiAxMDUuNTIzIDgwIDEwMCA4MEM5NC40NzcyIDgwIDkwIDg0LjQ3NzIgOTAgOTBDOTAgOTUuNTIyOCA5NC40NzcyIDEwMCAxMDAgMTAwWiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNMTM1IDEyMEgxMTVWMTEwSDEzNVYxMjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik05NSAxMjBINzVWMTEwSDk1VjEyMFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
                       }}
                     />
                   ) : (
-                    <div className="w-full h-48 rounded-xl image-placeholder flex items-center justify-center">
-                      <Package className="w-16 h-16" style={{ color: 'var(--text-secondary)' }} />
+                    <div className="w-full h-32 rounded-lg image-placeholder flex items-center justify-center" style={{ backgroundColor: 'white' }}>
+                      <Package className="w-12 h-12" style={{ color: 'var(--text-secondary)' }} />
                     </div>
                   )}
                 </div>

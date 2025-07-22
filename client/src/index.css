@@ -380,6 +380,39 @@
     white-space: nowrap;
   }
 
+  /* Card image improvements */
+  .neomorphic-card img {
+    background-color: white;
+    object-fit: contain;
+    object-position: center;
+    border-radius: 8px;
+    box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.8);
+  }
+
+  /* Product card specific image sizing */
+  .product-grid .neomorphic-card img {
+    height: 120px;
+    width: 100%;
+    padding: 8px;
+    background-color: white;
+  }
+
+  /* History card image sizing */
+  .product-card img {
+    height: 80px;
+    width: 80px;
+    padding: 4px;
+    background-color: white;
+  }
+
+  /* Modal detail images */
+  .dialog-content img {
+    max-height: 200px;
+    width: 100%;
+    padding: 8px;
+    background-color: white;
+  }
+
   /* Mobile responsive layouts */
   @media (max-width: 768px) {
     .container {

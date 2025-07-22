@@ -122,10 +122,12 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
           <img
             src={product.imageUrl || 'https://via.placeholder.com/400x300/e0e5ec/6c757d?text=Sem+Imagem'}
             alt={product.name}
-            className="w-full h-40 md:h-48 object-cover rounded-lg"
+            className="w-full h-32 md:h-36 object-contain rounded-lg p-2"
+            style={{ backgroundColor: 'white' }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = 'https://via.placeholder.com/400x300/e0e5ec/6c757d?text=Sem+Imagem';
+              target.src = 'https://via.placeholder.com/400x300/ffffff/6c757d?text=Sem+Imagem';
+              target.style.backgroundColor = 'white';
             }}
           />
           {product.isPurchased && (
@@ -279,13 +281,13 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
                   <img
                     src={product.imageUrl}
                     alt={product.name}
-                    className="w-full h-64 object-cover rounded-lg"
-                    style={{ backgroundColor: 'var(--c-light)' }}
+                    className="w-full h-48 object-contain rounded-lg p-4"
+                    style={{ backgroundColor: 'white' }}
                   />
                 ) : (
-                  <div className="w-full h-64 rounded-lg neomorphic-card flex items-center justify-center"
-                       style={{ backgroundColor: 'var(--c-light)' }}>
-                    <ShoppingCart className="w-20 h-20" style={{ color: 'var(--text-secondary)' }} />
+                  <div className="w-full h-48 rounded-lg neomorphic-card flex items-center justify-center"
+                       style={{ backgroundColor: 'white' }}>
+                    <ShoppingCart className="w-16 h-16" style={{ color: 'var(--text-secondary)' }} />
                   </div>
                 )}
 
