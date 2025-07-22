@@ -779,7 +779,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                       <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                         <CreditCard className="w-4 h-4 text-gray-600" />
                         <div>
-                          <span className="text-sm font-medium text-gray-700">Forma de Pagamento</span>
+                          <span className"text-sm font-medium text-gray-700">Forma de Pagamento</span>
                           <p className="text-sm text-gray-900">{selectedProduct.paymentMethod}</p>
                         </div>
                       </div>
@@ -878,7 +878,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
             {purchasedProducts
               .sort((a, b) => new Date(b.updatedAt || b.createdAt || Date.now()).getTime() - new Date(a.updatedAt || a.createdAt || Date.now()).getTime())
               .map((product) => (
-              
+
                 <div className="product-card neomorphic-card p-3 md:p-4 mb-3 cursor-pointer hover:shadow-lg transition-shadow"
                    onClick={() => {
                      setSelectedProduct(product);
@@ -951,7 +951,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                   </div>
                 </div>
               </div>
-              
+
             ))}
           </div>
         )}

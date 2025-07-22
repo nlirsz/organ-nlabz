@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Calendar, CreditCard, Clock, CheckCircle, AlertCircle, DollarSign, X, MapPin } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
@@ -170,7 +169,7 @@ export function InstallmentsTimeline() {
               Timeline de Parcelas
             </h2>
           </div>
-          
+
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -187,7 +186,7 @@ export function InstallmentsTimeline() {
             })}
           </select>
         </div>
-        
+
         {yearTotal > 0 && (
           <div className="flex items-center gap-2 neomorphic-card px-4 py-2 rounded-lg">
             <DollarSign className="w-4 h-4" style={{ color: 'var(--primary-action)' }} />
@@ -263,7 +262,7 @@ export function InstallmentsTimeline() {
               Parcelas de {selectedMonth?.fullName} {selectedYear}
             </DialogTitle>
           </DialogHeader>
-          
+
           {selectedMonth && (
             <div className="space-y-4 mt-4">
               {/* Resumo do mês */}
@@ -296,8 +295,8 @@ export function InstallmentsTimeline() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <h4 className="font-medium text-sm mb-2">{installment.productName}</h4>
-                            
-                            <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+
+                            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300 mb-2">
                               <span className="flex items-center gap-1">
                                 <CreditCard className="w-4 h-4" />
                                 {installment.installmentNumber}/{installment.totalInstallments}x
@@ -307,7 +306,7 @@ export function InstallmentsTimeline() {
                                 {dueDate.toLocaleDateString('pt-BR')}
                               </span>
                             </div>
-                            
+
                             <div className="flex items-center gap-2">
                               {getStatusIcon(status)}
                               <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(status)}`}>
@@ -315,7 +314,7 @@ export function InstallmentsTimeline() {
                               </span>
                             </div>
                           </div>
-                          
+
                           <div className="text-right">
                             <p className="text-lg font-bold text-blue-600">
                               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(installment.amount)}
