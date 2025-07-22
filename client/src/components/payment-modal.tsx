@@ -31,16 +31,23 @@ export function PaymentModal({ isOpen, onClose, product, onPaymentAdded }: Payme
 
   const addPaymentMutation = useMutation({
     mutationFn: async (paymentData: any) => {
+      if (!authToken) {
+        throw new Error("Token de autenticação não encontrado");
+      }
+      
       const response = await fetch("/api/payments", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-auth-token": authToken || ""
+          "x-auth-token": authToken
         },
         body: JSON.stringify(paymentData),
       });
+      
       if (!response.ok) {
-        throw new Error("Falha ao cadastrar pagamento");
+        const errorData = await response.text();
+        console.error("Payment error:", errorData);
+        throw new Error(`Falha ao cadastrar pagamento: ${response.status}`);
       }
       return response.json();
     },

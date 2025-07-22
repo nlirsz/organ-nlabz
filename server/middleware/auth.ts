@@ -43,7 +43,8 @@ export const authenticateToken = async (req: AuthenticatedRequest, res: Response
 
   if (!token) {
     console.log('❌ Auth middleware: Nenhum token fornecido');
-    return res.status(401).json({ msg: 'Nenhum token, autorização negada.' });
+    console.log('❌ Headers recebidos:', JSON.stringify(req.headers, null, 2));
+    return res.status(401).json({ msg: 'Nenhum token, autorização negada' });
   }
 
   try {
@@ -69,7 +70,7 @@ export const authenticateToken = async (req: AuthenticatedRequest, res: Response
         console.log('❌ Auth middleware: ID do usuário inválido:', userId);
         return res.status(401).json({ msg: 'ID do usuário inválido.' });
       }
-      
+
       console.log('🔍 Auth middleware: Executando storage.getUser...');
       user = await storage.getUser(numericUserId);
       console.log('📋 Auth middleware: Resultado da busca:', {

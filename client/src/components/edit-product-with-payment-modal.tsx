@@ -39,13 +39,21 @@ export function EditProductWithPaymentModal({ isOpen, onClose, product, onSucces
 
   // Query para buscar dados de pagamento existentes
   const { data: existingPayment } = useQuery({
-    queryKey: [`/api/payments/product/${product.id}`],
-    queryFn: () => 
-      apiRequest(`/api/payments/product/${product.id}`, {
+    queryKey: [`/api/payments/product/${product.id}`, product.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/payments/product/${product.id}`, {
         headers: {
           "x-auth-token": authToken || ""
         }
-      }),
+      });
+      if (!response.ok && response.status !== 404) {
+        throw new Error("Failed to fetch payment data");
+      }
+      if (response.status === 404) {
+        return null;
+      }
+      return response.json();
+    },
     enabled: isOpen && !!authToken,
   });
 

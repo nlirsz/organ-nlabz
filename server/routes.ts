@@ -344,9 +344,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { productId, paymentMethod, bank, installments, installmentValue, totalValue, purchaseDate, firstDueDate } = req.body;
       const userId = parseInt(req.user.userId);
 
+      console.log(`[Payment Creation] Dados recebidos:`, {
+        productId, paymentMethod, bank, installments, installmentValue, totalValue, purchaseDate, firstDueDate, userId
+      });
+
+      if (!productId || !paymentMethod || !bank) {
+        return res.status(400).json({ error: "Dados obrigatórios faltando: productId, paymentMethod, bank" });
+      }
+
       // Verificar se o produto pertence ao usuário
       const product = await storage.getProductById(productId, userId);
       if (!product) {
+        console.error(`[Payment Creation] Produto ${productId} não encontrado para usuário ${userId}`);
         return res.status(404).json({ error: "Product not found" });
       }
 
@@ -354,17 +363,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         productId,
         paymentMethod,
         bank,
-        installments,
-        installmentValue,
-        totalValue,
+        installments: installments || 1,
+        installmentValue: installmentValue || totalValue,
+        totalValue: totalValue || installmentValue,
         purchaseDate,
         firstDueDate
       });
 
+      console.log(`[Payment Creation] Pagamento criado com ID: ${paymentId}`);
       res.json({ id: paymentId, message: "Payment created successfully" });
     } catch (error) {
       console.error("Payment creation error:", error);
-      res.status(500).json({ error: "Failed to create payment" });
+      res.status(500).json({ error: "Failed to create payment", details: error.message });
     }
   });
 
@@ -391,10 +401,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get payment data for a specific product
-  app.get("/api/payments/product/:productId", authenticateToken, async (req, res) => {
+  app.get("/api/payments/product/:productId", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const productId = parseInt(req.params.productId);
-      const paymentData = await storage.getPaymentByProductId(productId, req.user.id);
+      const userId = parseInt(req.user.userId);
+      
+      console.log(`[Payment Route] Buscando pagamento para produto ${productId} do usuário ${userId}`);
+      
+      const paymentData = await storage.getPaymentByProductId(productId, userId);
+      
+      if (!paymentData) {
+        return res.status(404).json({ error: "Nenhum pagamento encontrado para este produto" });
+      }
+      
       res.json(paymentData);
     } catch (error) {
       console.error("Error getting payment data:", error);
