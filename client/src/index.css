@@ -376,6 +376,44 @@
     color: #e2e8f0 !important;
   }
 
+  /* Ícones com fundo escuro no dark mode */
+  .dark .stats-card .icon-container,
+  .dark .stats-card [class*="icon"],
+  .dark .stats-card svg {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+    border-radius: 8px !important;
+  }
+
+  /* Fundos de ícones específicos no dark mode */
+  .dark .w-12.h-12,
+  .dark .w-10.h-10,
+  .dark .w-8.h-8 {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+  }
+
+  /* Fundos brancos/claros removidos no dark mode */
+  .dark .bg-white,
+  .dark .bg-gray-50,
+  .dark .bg-gray-100 {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+  }
+
+  /* Ícones específicos com fundos escuros */
+  .dark .rounded-lg,
+  .dark .rounded-md,
+  .dark .rounded {
+    background-color: #1e293b !important;
+  }
+
+  /* Ajuste para elementos com bordas claras */
+  .dark .border-gray-200,
+  .dark .border-gray-300 {
+    border-color: #374151 !important;
+  }
+
   .tab-button {
     background: transparent;
     border: none;
