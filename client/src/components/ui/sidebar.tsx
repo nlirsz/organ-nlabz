@@ -155,7 +155,7 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
 
   return (
     <>
-      {/* Overlay para mobile */}
+      {/* Overlay para mobile - clica fora para fechar */}
       <div 
         className="fixed inset-0 bg-black/70 z-40 backdrop-blur-sm"
         onClick={close}
@@ -170,6 +170,7 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
             "animate-in zoom-in-95 duration-200",
             "min-w-[280px]"
           )}
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Logo no topo */}
           <div className="mb-4">

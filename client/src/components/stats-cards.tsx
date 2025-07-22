@@ -21,10 +21,10 @@ export function StatsCards({ stats }: StatsCardsProps) {
       <div className="neomorphic-card p-4 md:p-6">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <p className="text-xs md:text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-xs md:text-sm font-medium mb-2 dark:text-gray-300" style={{ color: 'var(--text-secondary)' }}>
               Total de Produtos
             </p>
-            <p className="text-xl md:text-2xl font-bold" style={{ 
+            <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white" style={{ 
               color: 'var(--text-primary)',
               fontFamily: 'Space Grotesk, sans-serif'
             }}>
@@ -40,10 +40,10 @@ export function StatsCards({ stats }: StatsCardsProps) {
       <div className="neomorphic-card p-4 md:p-6">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <p className="text-xs md:text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-xs md:text-sm font-medium mb-2 dark:text-gray-300" style={{ color: 'var(--text-secondary)' }}>
               Produtos Comprados
             </p>
-            <p className="text-xl md:text-2xl font-bold" style={{ 
+            <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white" style={{ 
               color: 'var(--success-color)',
               fontFamily: 'Space Grotesk, sans-serif'
             }}>
@@ -59,10 +59,10 @@ export function StatsCards({ stats }: StatsCardsProps) {
       <div className="neomorphic-card p-4 md:p-6">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <p className="text-xs md:text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-xs md:text-sm font-medium mb-2 dark:text-gray-300" style={{ color: 'var(--text-secondary)' }}>
               Gasto Total (Comprados)
             </p>
-            <p className="text-lg md:text-2xl font-bold" style={{ 
+            <p className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white" style={{ 
               color: 'var(--edit-color)',
               fontFamily: 'Space Grotesk, sans-serif'
             }}>
@@ -78,10 +78,10 @@ export function StatsCards({ stats }: StatsCardsProps) {
       <div className="neomorphic-card p-4 md:p-6">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <p className="text-xs md:text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-xs md:text-sm font-medium mb-2 dark:text-gray-300" style={{ color: 'var(--text-secondary)' }}>
               Valor Médio por Compra
             </p>
-            <p className="text-lg md:text-2xl font-bold" style={{ 
+            <p className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white" style={{ 
               color: 'var(--text-primary)',
               fontFamily: 'Space Grotesk, sans-serif'
             }}>
@@ -97,10 +97,10 @@ export function StatsCards({ stats }: StatsCardsProps) {
       <div className="neomorphic-card p-4 md:p-6">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <p className="text-xs md:text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-xs md:text-sm font-medium mb-2 dark:text-gray-300" style={{ color: 'var(--text-secondary)' }}>
               Produtos na Lista
             </p>
-            <p className="text-xl md:text-2xl font-bold" style={{ 
+            <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white" style={{ 
               color: 'var(--text-primary)',
               fontFamily: 'Space Grotesk, sans-serif'
             }}>
@@ -116,10 +116,10 @@ export function StatsCards({ stats }: StatsCardsProps) {
       <div className="neomorphic-card p-4 md:p-6">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <p className="text-xs md:text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-xs md:text-sm font-medium mb-2 dark:text-gray-300" style={{ color: 'var(--text-secondary)' }}>
               Balanço do Mês
             </p>
-            <p className="text-lg md:text-2xl font-bold" style={{ 
+            <p className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white" style={{ 
               color: 'var(--success-color)',
               fontFamily: 'Space Grotesk, sans-serif'
             }}>
