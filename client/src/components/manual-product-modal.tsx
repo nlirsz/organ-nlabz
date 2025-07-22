@@ -163,6 +163,8 @@ export function ManualProductModal({ isOpen, onClose, initialUrl = "", initialDa
               placeholder="Digite o nome do produto"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="product-name-field"
+              maxLength={100}
               required
             />
           </div>

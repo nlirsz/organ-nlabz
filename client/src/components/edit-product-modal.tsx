@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -93,7 +92,7 @@ export function EditProductModal({ product, isOpen, onClose, onProductUpdated }:
         <DialogHeader>
           <DialogTitle>Editar Produto</DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -102,6 +101,8 @@ export function EditProductModal({ product, isOpen, onClose, onProductUpdated }:
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
+                className="product-name-field"
+                maxLength={100}
                 required
               />
             </div>
@@ -187,6 +188,8 @@ export function EditProductModal({ product, isOpen, onClose, onProductUpdated }:
               type="url"
               value={formData.url}
               onChange={(e) => handleInputChange('url', e.target.value)}
+              className="modal-field-restricted"
+              maxLength={500}
               required
             />
           </div>
@@ -198,6 +201,8 @@ export function EditProductModal({ product, isOpen, onClose, onProductUpdated }:
               type="url"
               value={formData.imageUrl}
               onChange={(e) => handleInputChange('imageUrl', e.target.value)}
+              className="modal-field-restricted"
+              maxLength={500}
             />
           </div>
 
@@ -207,6 +212,8 @@ export function EditProductModal({ product, isOpen, onClose, onProductUpdated }:
               id="description"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
+              className="product-description-field"
+              maxLength={300}
               rows={3}
             />
           </div>

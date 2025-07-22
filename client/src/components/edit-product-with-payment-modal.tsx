@@ -198,6 +198,8 @@ export function EditProductWithPaymentModal({
                       id="name"
                       value={productForm.name}
                       onChange={(e) => setProductForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="product-name-field"
+                      maxLength={100}
                       required
                     />
                   </div>
@@ -272,6 +274,8 @@ export function EditProductWithPaymentModal({
                     type="url"
                     value={productForm.url}
                     onChange={(e) => setProductForm(prev => ({ ...prev, url: e.target.value }))}
+                    className="modal-field-restricted"
+                    maxLength={500}
                     required
                   />
                 </div>
@@ -283,6 +287,8 @@ export function EditProductWithPaymentModal({
                     type="url"
                     value={productForm.imageUrl}
                     onChange={(e) => setProductForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                    className="modal-field-restricted"
+                    maxLength={500}
                   />
                 </div>
 
@@ -292,6 +298,8 @@ export function EditProductWithPaymentModal({
                     id="description"
                     value={productForm.description}
                     onChange={(e) => setProductForm(prev => ({ ...prev, description: e.target.value }))}
+                    className="product-description-field"
+                    maxLength={300}
                     rows={3}
                   />
                 </div>
