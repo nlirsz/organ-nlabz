@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from 'react';
-import { Calendar, CreditCard, Clock, CheckCircle, AlertCircle, DollarSign } from 'lucide-react';
+import { Calendar, CreditCard, Clock, CheckCircle, AlertCircle, DollarSign, X, MapPin } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Button } from './ui/button';
 
 interface InstallmentData {
   id: number;
@@ -27,6 +29,8 @@ export function InstallmentsTimeline() {
   const [installments, setInstallments] = useState<InstallmentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const months = [
     { num: 1, name: 'JAN', fullName: 'Janeiro' },
@@ -100,6 +104,13 @@ export function InstallmentsTimeline() {
   const currentYear = new Date().getFullYear();
   const yearTotal = monthsData.reduce((sum, month) => sum + month.totalAmount, 0);
 
+  const handleMonthClick = (monthData: MonthData) => {
+    if (monthData.installments.length > 0) {
+      setSelectedMonth(monthData);
+      setIsModalOpen(true);
+    }
+  };
+
   const getInstallmentStatus = (installment: InstallmentData) => {
     const dueDate = new Date(installment.dueDate);
     const today = new Date();
@@ -111,15 +122,6 @@ export function InstallmentsTimeline() {
     return 'pending';
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid': return 'border-green-500 bg-green-50';
-      case 'overdue': return 'border-red-500 bg-red-50';
-      case 'due-soon': return 'border-yellow-500 bg-yellow-50';
-      default: return 'border-gray-300 bg-white';
-    }
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'paid': return <CheckCircle className="w-4 h-4 text-green-600" />;
@@ -129,26 +131,24 @@ export function InstallmentsTimeline() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusText = (status: string) => {
     const badges = {
       paid: 'Pago',
       overdue: 'Vencido',
       'due-soon': 'Vence em breve',
       pending: 'A vencer'
     };
-    
-    const colors = {
-      paid: 'bg-green-100 text-green-800',
-      overdue: 'bg-red-100 text-red-800',
-      'due-soon': 'bg-yellow-100 text-yellow-800',
-      pending: 'bg-gray-100 text-gray-800'
-    };
+    return badges[status as keyof typeof badges];
+  };
 
-    return (
-      <span className={`inline-block mt-2 text-xs px-2 py-1 rounded-full ${colors[status as keyof typeof colors]}`}>
-        {badges[status as keyof typeof badges]}
-      </span>
-    );
+  const getStatusColor = (status: string) => {
+    const colors = {
+      paid: 'text-green-600 bg-green-50',
+      overdue: 'text-red-600 bg-red-50',
+      'due-soon': 'text-yellow-600 bg-yellow-50',
+      pending: 'text-blue-600 bg-blue-50'
+    };
+    return colors[status as keyof typeof colors];
   };
 
   if (loading) {
@@ -198,26 +198,26 @@ export function InstallmentsTimeline() {
         )}
       </div>
 
-      {/* Grid da Timeline */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* Grid da Timeline - mais compacto */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         {monthsData.map((monthData) => {
           const isCurrentMonth = monthData.month === currentMonth && selectedYear === currentYear;
-          const hasOverdue = monthData.installments.some(inst => getInstallmentStatus(inst) === 'overdue');
-          const hasDueSoon = monthData.installments.some(inst => getInstallmentStatus(inst) === 'due-soon');
+          const hasInstallments = monthData.installments.length > 0;
 
           return (
             <div
               key={monthData.month}
               className={`
-                neomorphic-card rounded-xl p-4 min-h-[280px] transition-all duration-200 hover:shadow-lg
+                neomorphic-card rounded-lg p-3 min-h-[120px] transition-all duration-200 cursor-pointer
                 ${isCurrentMonth ? 'ring-2 ring-blue-500' : ''}
-                ${hasOverdue ? 'border-l-4 border-red-500' : hasDueSoon ? 'border-l-4 border-yellow-500' : ''}
+                ${hasInstallments ? 'hover:shadow-lg hover:scale-105' : 'opacity-60'}
               `}
+              onClick={() => handleMonthClick(monthData)}
             >
               {/* Cabeçalho do Mês */}
-              <div className="text-center mb-4 pb-3 border-b" style={{ borderColor: 'var(--border-color)' }}>
+              <div className="text-center mb-3">
                 <h3 
-                  className={`font-bold text-base mb-1 ${isCurrentMonth ? 'text-blue-600' : ''}`}
+                  className={`font-bold text-sm mb-1 ${isCurrentMonth ? 'text-blue-600' : ''}`}
                   style={{ color: isCurrentMonth ? 'var(--primary-action)' : 'var(--text-primary)' }}
                 >
                   {monthData.monthName}
@@ -225,160 +225,166 @@ export function InstallmentsTimeline() {
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                   {monthData.fullName}
                 </p>
-                {monthData.totalAmount > 0 && (
-                  <div className="mt-2 p-2 neomorphic-card rounded-lg">
-                    <p className="text-xs font-medium" style={{ color: 'var(--primary-action)' }}>
+              </div>
+
+              {/* Informações das Parcelas */}
+              {hasInstallments ? (
+                <div className="space-y-2">
+                  <div className="text-center">
+                    <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      {monthData.installments.length} parcela{monthData.installments.length > 1 ? 's' : ''}
+                    </p>
+                    <p className="text-sm font-bold" style={{ color: 'var(--primary-action)' }}>
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(monthData.totalAmount)}
                     </p>
                   </div>
-                )}
-              </div>
-
-              {/* Lista de Parcelas */}
-              <div className="space-y-3">
-                {monthData.installments.length === 0 ? (
-                  <div className="text-center py-6">
-                    <div className="w-8 h-8 mx-auto mb-2 neomorphic-card rounded-full flex items-center justify-center opacity-50">
-                      <Calendar className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-                    </div>
-                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      Sem parcelas
-                    </p>
+                </div>
+              ) : (
+                <div className="text-center py-2">
+                  <div className="w-6 h-6 mx-auto mb-1 neomorphic-card rounded-full flex items-center justify-center opacity-30">
+                    <Calendar className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
                   </div>
-                ) : (
-                  monthData.installments
-                    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-                    .map((installment) => {
-                      const status = getInstallmentStatus(installment);
-                      const dueDate = new Date(installment.dueDate);
-
-                      return (
-                        <div
-                          key={installment.id}
-                          className={`p-3 rounded-lg border-l-3 transition-all ${getStatusColor(status)}`}
-                        >
-                          {/* Nome do Produto */}
-                          <h4 className="font-medium text-xs mb-2 line-clamp-2" style={{ color: 'var(--text-primary)' }}>
-                            {installment.productName}
-                          </h4>
-
-                          {/* Info da Parcela */}
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 font-medium">
-                              {installment.installmentNumber}/{installment.totalInstallments}x
-                            </span>
-                            {getStatusIcon(status)}
-                          </div>
-
-                          {/* Valor */}
-                          <p className="text-sm font-bold mb-2" style={{ color: 'var(--primary-action)' }}>
-                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(installment.amount)}
-                          </p>
-
-                          {/* Data de Vencimento */}
-                          <div className="flex items-center gap-1 mb-2">
-                            <Clock className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
-                            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                              {dueDate.toLocaleDateString('pt-BR', { 
-                                day: '2-digit', 
-                                month: '2-digit' 
-                              })}
-                            </p>
-                          </div>
-
-                          {/* Badge de Status */}
-                          {getStatusBadge(status)}
-                        </div>
-                      );
-                    })
-                )}
-              </div>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    Sem parcelas
+                  </p>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* Legenda e Estatísticas */}
+      {/* Modal com detalhes do mês */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              Parcelas de {selectedMonth?.fullName} {selectedYear}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedMonth && (
+            <div className="space-y-4 mt-4">
+              {/* Resumo do mês */}
+              <div className="flex items-center justify-between p-4 neomorphic-card rounded-lg">
+                <div>
+                  <p className="text-sm text-gray-600">Total de parcelas</p>
+                  <p className="text-lg font-bold">{selectedMonth.installments.length}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Valor total</p>
+                  <p className="text-lg font-bold text-blue-600">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedMonth.totalAmount)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Lista detalhada das parcelas */}
+              <div className="space-y-3">
+                {selectedMonth.installments
+                  .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+                  .map((installment) => {
+                    const status = getInstallmentStatus(installment);
+                    const dueDate = new Date(installment.dueDate);
+
+                    return (
+                      <div
+                        key={installment.id}
+                        className="p-4 border rounded-lg neomorphic-card"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-sm mb-2">{installment.productName}</h4>
+                            
+                            <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                              <span className="flex items-center gap-1">
+                                <CreditCard className="w-4 h-4" />
+                                {installment.installmentNumber}/{installment.totalInstallments}x
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                {dueDate.toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(status)}
+                              <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(status)}`}>
+                                {getStatusText(status)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-blue-600">
+                              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(installment.amount)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Estatísticas resumidas */}
       {installments.length > 0 && (
-        <>
-          {/* Legenda */}
-          <div className="flex flex-wrap gap-6 p-4 neomorphic-card rounded-xl">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Pago</span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="neomorphic-card p-4 rounded-xl text-center">
+            <div className="w-10 h-10 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-2">
+              <CreditCard className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Vence em breve</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Vencido</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>A vencer</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 border-2 border-blue-500 rounded-full"></div>
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Mês atual</span>
-            </div>
+            <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Total Parcelas
+            </h4>
+            <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
+              {installments.length}
+            </p>
           </div>
 
-          {/* Estatísticas */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="neomorphic-card p-4 rounded-xl text-center">
-              <div className="w-10 h-10 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-2">
-                <CreditCard className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
-              </div>
-              <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Total Parcelas
-              </h4>
-              <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
-                {installments.length}
-              </p>
+          <div className="neomorphic-card p-4 rounded-xl text-center">
+            <div className="w-10 h-10 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
             </div>
-
-            <div className="neomorphic-card p-4 rounded-xl text-center">
-              <div className="w-10 h-10 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Pagas
-              </h4>
-              <p className="text-xl font-bold text-green-600">
-                {installments.filter(i => i.isPaid).length}
-              </p>
-            </div>
-
-            <div className="neomorphic-card p-4 rounded-xl text-center">
-              <div className="w-10 h-10 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-2">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-              </div>
-              <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Vencidas
-              </h4>
-              <p className="text-xl font-bold text-red-600">
-                {installments.filter(i => {
-                  const dueDate = new Date(i.dueDate);
-                  return dueDate < new Date() && !i.isPaid;
-                }).length}
-              </p>
-            </div>
-
-            <div className="neomorphic-card p-4 rounded-xl text-center">
-              <div className="w-10 h-10 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-2">
-                <Clock className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
-              </div>
-              <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Pendentes
-              </h4>
-              <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
-                {installments.filter(i => !i.isPaid).length}
-              </p>
-            </div>
+            <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Pagas
+            </h4>
+            <p className="text-xl font-bold text-green-600">
+              {installments.filter(i => i.isPaid).length}
+            </p>
           </div>
-        </>
+
+          <div className="neomorphic-card p-4 rounded-xl text-center">
+            <div className="w-10 h-10 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-2">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Vencidas
+            </h4>
+            <p className="text-xl font-bold text-red-600">
+              {installments.filter(i => {
+                const dueDate = new Date(i.dueDate);
+                return dueDate < new Date() && !i.isPaid;
+              }).length}
+            </p>
+          </div>
+
+          <div className="neomorphic-card p-4 rounded-xl text-center">
+            <div className="w-10 h-10 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-2">
+              <Clock className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
+            </div>
+            <h4 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Pendentes
+            </h4>
+            <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
+              {installments.filter(i => !i.isPaid).length}
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Mensagem quando não há parcelas */}
