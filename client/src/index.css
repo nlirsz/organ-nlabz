@@ -177,7 +177,6 @@
 
   .glass-card:hover {
     box-shadow: var(--shadow-glass-hover);
-    transform: translateY(-2px);
   }
 
   .glass-input {
@@ -237,24 +236,29 @@
     color: var(--primary-action);
     border-color: var(--primary-action);
     box-shadow: var(--shadow-glass-hover);
-    transform: translateY(-1px);
+    transform: scale(1.05);
   }
 
   .glass-button:active {
-    transform: translateY(0);
+    transform: scale(0.98);
   }
 
   .glass-button-primary {
     background: var(--gradient-primary);
     color: var(--highlight-action-text);
     border: none;
-    box-shadow: 0 8px 32px 0 rgba(59, 130, 246, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(59, 130, 246, 0.2);
   }
 
   .glass-button-primary:hover {
     background: var(--gradient-accent);
     color: var(--highlight-action-text);
-    box-shadow: 0 8px 32px 0 rgba(59, 130, 246, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(59, 130, 246, 0.3);
+    transform: scale(1.05);
+  }
+
+  .glass-button-primary:active {
+    transform: scale(0.98);
   }
 
   /* Stats grid com glassmorphism */
@@ -289,7 +293,6 @@
   }
 
   .stats-card:hover {
-    transform: translateY(-4px);
     box-shadow: var(--shadow-glass-hover);
   }
 
@@ -314,7 +317,6 @@
   }
 
   .product-card:hover {
-    transform: translateY(-4px);
     box-shadow: var(--shadow-glass-hover);
   }
 
@@ -383,58 +385,103 @@
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: translateY(20px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
     }
   }
 
-  .slide-in-up {
-    animation: slideInUp 0.5s ease-out;
+  /* Animação de botões com scale */
+  .button-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  @keyframes slideInUp {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  .button-hover:hover {
+    transform: scale(1.05);
   }
 
-  /* Efeito pulsante para carregamento */
-  .pulse-glow {
-    animation: pulseGlow 2s infinite;
+  .button-hover:active {
+    transform: scale(0.98);
   }
 
-  @keyframes pulseGlow {
+  /* Animação de borda em movimento */
+  .animated-border {
+    position: relative;
+    overflow: hidden;
+    border: 2px solid transparent;
+    background: linear-gradient(var(--c-card), var(--c-card)) padding-box,
+                linear-gradient(45deg, var(--primary-action), var(--secondary-action), var(--accent-color)) border-box;
+  }
+
+  .animated-border::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, 
+      var(--primary-action), 
+      var(--secondary-action), 
+      var(--accent-color), 
+      var(--primary-action));
+    background-size: 400% 400%;
+    animation: borderMove 3s ease infinite;
+    border-radius: inherit;
+    z-index: -1;
+  }
+
+  @keyframes borderMove {
     0%, 100% {
-      box-shadow: var(--shadow-glass);
+      background-position: 0% 50%;
     }
     50% {
-      box-shadow: 0 8px 32px 0 rgba(17, 148, 35, 0.3);
+      background-position: 100% 50%;
     }
   }
 
-  /* Animação de borda brilhante */
-  .animated-border {
+  /* Gradientes em movimento */
+  .moving-gradient {
+    background: linear-gradient(45deg, 
+      var(--primary-action), 
+      var(--secondary-action), 
+      var(--accent-color), 
+      var(--primary-action));
+    background-size: 400% 400%;
+    animation: gradientMove 4s ease infinite;
+  }
+
+  @keyframes gradientMove {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  /* Borda brilhante em movimento */
+  .shimmer-border {
     position: relative;
     overflow: hidden;
   }
 
-  .animated-border::before {
+  .shimmer-border::before {
     content: '';
     position: absolute;
     top: 0;
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(17, 148, 35, 0.4), transparent);
-    animation: shimmer 2s infinite;
+    background: linear-gradient(90deg, 
+      transparent, 
+      rgba(59, 130, 246, 0.6), 
+      rgba(99, 102, 241, 0.6),
+      transparent);
+    animation: shimmer 2.5s infinite;
     pointer-events: none;
   }
 
@@ -447,33 +494,29 @@
     }
   }
 
-  /* Animação de pulso para destaque */
-  .pulse-highlight {
-    animation: pulseHighlight 2s ease-in-out infinite;
+  /* Texto com gradiente em movimento */
+  .gradient-text {
+    background: linear-gradient(45deg, 
+      var(--primary-action), 
+      var(--secondary-action), 
+      var(--accent-color));
+    background-size: 200% 200%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: textGradientMove 3s ease infinite;
   }
 
-  @keyframes pulseHighlight {
+  @keyframes textGradientMove {
     0%, 100% {
-      box-shadow: var(--shadow-glass);
-      border-color: var(--c-border);
+      background-position: 0% 50%;
     }
     50% {
-      box-shadow: 0 0 30px rgba(17, 148, 35, 0.3);
-      border-color: rgba(17, 148, 35, 0.5);
+      background-position: 100% 50%;
     }
   }
 
-  /* Animação de hover suave */
-  .smooth-hover {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .smooth-hover:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(17, 148, 35, 0.15);
-  }
-
-  /* Animação de entrada escalonada */
+  /* Animação de entrada escalonada sem translateY */
   .staggered-fade {
     animation: fadeInStagger 0.8s ease-out forwards;
     opacity: 0;
@@ -487,11 +530,26 @@
   @keyframes fadeInStagger {
     from {
       opacity: 0;
-      transform: translateY(20px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+    }
+  }
+
+  /* Borda pulsante colorida */
+  .pulse-border {
+    animation: pulseBorder 2s ease-in-out infinite;
+    border: 2px solid var(--primary-action);
+  }
+
+  @keyframes pulseBorder {
+    0%, 100% {
+      border-color: var(--primary-action);
+      box-shadow: 0 0 5px var(--primary-action);
+    }
+    50% {
+      border-color: var(--secondary-action);
+      box-shadow: 0 0 20px var(--secondary-action);
     }
   }
 
@@ -612,13 +670,13 @@
   /* Animação do botão mobile */
   .mobile-menu-button {
     background: var(--gradient-primary);
-    box-shadow: 0 8px 32px rgba(17, 148, 35, 0.3);
+    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
     transition: all 0.3s ease;
   }
 
   .mobile-menu-button:hover {
     transform: scale(1.1);
-    box-shadow: 0 12px 40px rgba(17, 148, 35, 0.4);
+    box-shadow: 0 12px 40px rgba(59, 130, 246, 0.3);
   }
 
   /* Layout ajustes */
@@ -667,7 +725,7 @@
   /* Glow effect para botões ativos */
   .nav-button-active {
     background: var(--gradient-primary);
-    box-shadow: 0 4px 20px rgba(17, 148, 35, 0.3);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
     position: relative;
     overflow: hidden;
   }
