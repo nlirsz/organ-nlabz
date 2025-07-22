@@ -418,9 +418,15 @@ export function EditProductWithPaymentModal({
           ) : (
             <Card>
               <CardContent className="pt-6">
-                <p className="text-center text-gray-500">
-                  Este produto não possui dados de pagamento cadastrados.
-                </p>
+                <div className="text-center space-y-4">
+                  <p className="text-gray-500">
+                    Este produto não possui dados de pagamento cadastrados.
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    Para adicionar dados de pagamento, você pode marcar o produto como "não comprado" 
+                    e depois comprá-lo novamente, preenchendo as informações de pagamento.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           )}

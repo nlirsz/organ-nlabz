@@ -3,9 +3,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash2, Edit, ExternalLink, Check, RotateCcw, ShoppingCart, Heart, TrendingUp, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { EditProductWithPaymentModal } from "./edit-product-with-payment-modal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useQuery } from "@tanstack/react-query";
 import { PriceHistoryChart } from "@/components/price-history-chart";
-import { EditProductModal } from "@/components/edit-product-modal";
 import { useFavorites } from "@/components/favorites-system";
 import type { Product } from "@shared/schema";
 
@@ -258,7 +259,7 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
           </div>
         </div>
 
-        <EditProductModal
+        <EditProductWithPaymentModal
           product={product}
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
