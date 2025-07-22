@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   ShoppingCart, 
   DollarSign, 
@@ -18,10 +19,14 @@ import {
   Activity,
   Zap,
   Eye,
-  ExternalLink
+  ExternalLink,
+  Edit,
+  Info
 } from 'lucide-react';
 import { CategoryProductsModal } from '@/components/category-products-modal';
 import { StoreProductsModal } from '@/components/store-products-modal';
+import { EditProductModal } from '@/components/edit-product-modal';
+import { PriceHistoryChart } from '@/components/price-history-chart';
 
 interface Product {
   id: number;
@@ -69,6 +74,9 @@ export function HistoricoTab() {
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [storeModalOpen, setStoreModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const authToken = localStorage.getItem("authToken");
   const userId = localStorage.getItem("userId");
@@ -193,6 +201,38 @@ export function HistoricoTab() {
       return purchasedProducts.filter(p => p.store === selectedStore);
     }
     return [];
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setEditModalOpen(true);
+  };
+
+  const handleViewProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setViewModalOpen(true);
+  };
+
+  const handleProductUpdated = () => {
+    // Recarregar dados após atualização
+    const fetchData = async () => {
+      if (!authToken || !userId) return;
+      
+      try {
+        const productsRes = await fetch("/api/products", {
+          headers: { "x-auth-token": authToken }
+        });
+        
+        if (productsRes.ok) {
+          const productsData = await productsRes.json();
+          setProducts(productsData);
+        }
+      } catch (error) {
+        console.error("Erro ao recarregar produtos:", error);
+      }
+    };
+
+    fetchData();
   };
 
   return (
@@ -434,11 +474,13 @@ export function HistoricoTab() {
                         <img 
                           src={product.imageUrl} 
                           alt={product.name}
-                          className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                          className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+                          onClick={() => handleViewProduct(product)}
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm leading-tight mb-1 line-clamp-2">
+                        <h4 className="font-medium text-sm leading-tight mb-1 line-clamp-2 cursor-pointer hover:text-blue-600"
+                            onClick={() => handleViewProduct(product)}>
                           {product.name}
                         </h4>
                         <div className="flex items-center gap-2 mb-2">
@@ -451,16 +493,34 @@ export function HistoricoTab() {
                           <span className="text-lg font-bold text-green-600">
                             R$ {parseFloat(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
-                          {product.url && (
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => window.open(product.url, '_blank')}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleViewProduct(product)}
+                              title="Ver detalhes"
                             >
-                              <ExternalLink className="h-4 w-4" />
+                              <Info className="h-4 w-4" />
                             </Button>
-                          )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditProduct(product)}
+                              title="Editar produto"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            {product.url && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => window.open(product.url, '_blank')}
+                                title="Ver no site"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -492,6 +552,114 @@ export function HistoricoTab() {
         store={selectedStore || ''}
         products={getFilteredProducts()}
       />
+
+      {/* Modal de Edição */}
+      {selectedProduct && (
+        <EditProductModal
+          product={selectedProduct}
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          onProductUpdated={handleProductUpdated}
+        />
+      )}
+
+      {/* Modal de Visualização */}
+      {selectedProduct && (
+        <Dialog open={viewModalOpen} onOpenChange={setViewModalOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{selectedProduct.name}</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Imagem do produto */}
+              {selectedProduct.imageUrl && (
+                <div className="flex justify-center">
+                  <img 
+                    src={selectedProduct.imageUrl} 
+                    alt={selectedProduct.name}
+                    className="max-w-full max-h-64 object-contain rounded-lg"
+                  />
+                </div>
+              )}
+
+              {/* Informações do produto */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold text-gray-700 mb-2">Preço</h3>
+                  <p className="text-2xl font-bold text-green-600">
+                    R$ {parseFloat(selectedProduct.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  {selectedProduct.originalPrice && selectedProduct.originalPrice !== selectedProduct.price && (
+                    <p className="text-gray-500 line-through">
+                      R$ {parseFloat(selectedProduct.originalPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-700 mb-2">Loja</h3>
+                  <p className="text-gray-600">{selectedProduct.store || 'Não informado'}</p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-700 mb-2">Categoria</h3>
+                  <Badge variant="secondary">{selectedProduct.category || 'Outros'}</Badge>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-700 mb-2">Prioridade</h3>
+                  <Badge variant={
+                    selectedProduct.priority === 'high' ? 'destructive' :
+                    selectedProduct.priority === 'medium' ? 'default' : 'secondary'
+                  }>
+                    {selectedProduct.priority === 'high' ? 'Alta' :
+                     selectedProduct.priority === 'medium' ? 'Média' : 'Baixa'}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Descrição */}
+              {selectedProduct.description && (
+                <div>
+                  <h3 className="font-semibold text-gray-700 mb-2">Descrição</h3>
+                  <p className="text-gray-600 whitespace-pre-wrap">{selectedProduct.description}</p>
+                </div>
+              )}
+
+              {/* Notas */}
+              {selectedProduct.notes && (
+                <div>
+                  <h3 className="font-semibold text-gray-700 mb-2">Notas</h3>
+                  <p className="text-gray-600 whitespace-pre-wrap">{selectedProduct.notes}</p>
+                </div>
+              )}
+
+              {/* Gráfico de Histórico de Preços */}
+              <div>
+                <h3 className="font-semibold text-gray-700 mb-4">Histórico de Preços</h3>
+                <PriceHistoryChart productId={selectedProduct.id} />
+              </div>
+
+              {/* Link para o produto */}
+              {selectedProduct.url && (
+                <div className="flex justify-center pt-4">
+                  <Button
+                    onClick={() => window.open(selectedProduct.url, '_blank')}
+                    className="w-full md:w-auto"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Ver no Site Original
+                  </Button>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
