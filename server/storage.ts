@@ -1,5 +1,5 @@
 import { users, products, payments, installments, finances, type SelectUser, type InsertUser, type SelectProduct, type InsertProduct } from "@shared/schema";
-import { db } from "./db";
+import { db, executeWithRetry } from "./db";
 import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
@@ -72,30 +72,38 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<SelectUser | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    return executeWithRetry(async () => {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user || undefined;
+    });
   }
 
   async getUserByUsername(username: string): Promise<SelectUser | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+    return executeWithRetry(async () => {
+      const [user] = await db.select().from(users).where(eq(users.username, username));
+      return user || undefined;
+    });
   }
 
   async createUser(insertUser: InsertUser): Promise<SelectUser> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
+    return executeWithRetry(async () => {
+      const [user] = await db
+        .insert(users)
+        .values(insertUser)
+        .returning();
+      return user;
+    });
   }
 
   async getProducts(userId: number): Promise<SelectProduct[]> {
-    const productList = await db
-      .select()
-      .from(products)
-      .where(eq(products.userId, userId))
-      .orderBy(products.createdAt);
-    return productList;
+    return executeWithRetry(async () => {
+      const productList = await db
+        .select()
+        .from(products)
+        .where(eq(products.userId, userId))
+        .orderBy(products.createdAt);
+      return productList;
+    });
   }
 
   async getProduct(id: number, userId: number): Promise<SelectProduct | undefined> {
@@ -229,33 +237,35 @@ export class DatabaseStorage implements IStorage {
 
   async getUserInstallments(userId: number): Promise<any[]> {
     try {
-      const result = await db
-        .select({
-          id: installments.id,
-          productId: products.id,
-          productName: products.name,
-          installmentNumber: installments.installmentNumber,
-          totalInstallments: payments.installments,
-          amount: installments.value,
-          dueDate: installments.dueDate,
-          isPaid: installments.isPaid,
-        })
-        .from(installments)
-        .innerJoin(payments, eq(installments.payment_id, payments.id))
-        .innerJoin(products, eq(payments.productId, products.id))
-        .where(eq(products.userId, userId))
-        .orderBy(installments.dueDate);
+      return await executeWithRetry(async () => {
+        const result = await db
+          .select({
+            id: installments.id,
+            productId: products.id,
+            productName: products.name,
+            installmentNumber: installments.installmentNumber,
+            totalInstallments: payments.installments,
+            amount: installments.value,
+            dueDate: installments.dueDate,
+            isPaid: installments.isPaid,
+          })
+          .from(installments)
+          .innerJoin(payments, eq(installments.payment_id, payments.id))
+          .innerJoin(products, eq(payments.productId, products.id))
+          .where(eq(products.userId, userId))
+          .orderBy(installments.dueDate);
 
-      console.log(`[Storage] Parcelas encontradas para usuário ${userId}:`, result.length);
+        console.log(`[Storage] Parcelas encontradas para usuário ${userId}:`, result.length);
 
-      return result.map(item => ({
-        ...item,
-        amount: parseFloat(item.amount),
-        dueDate: typeof item.dueDate === 'string' ? item.dueDate : item.dueDate.toISOString(),
-        month: typeof item.dueDate === 'string' ? new Date(item.dueDate).getMonth() + 1 : item.dueDate.getMonth() + 1,
-        year: typeof item.dueDate === 'string' ? new Date(item.dueDate).getFullYear() : item.dueDate.getFullYear(),
-        isPaid: item.isPaid || false,
-      }));
+        return result.map(item => ({
+          ...item,
+          amount: parseFloat(item.amount),
+          dueDate: typeof item.dueDate === 'string' ? item.dueDate : item.dueDate.toISOString(),
+          month: typeof item.dueDate === 'string' ? new Date(item.dueDate).getMonth() + 1 : item.dueDate.getMonth() + 1,
+          year: typeof item.dueDate === 'string' ? new Date(item.dueDate).getFullYear() : item.dueDate.getFullYear(),
+          isPaid: item.isPaid || false,
+        }));
+      });
     } catch (error) {
       console.error("Error getting user installments:", error);
       return [];

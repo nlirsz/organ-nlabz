@@ -1,16 +1,73 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-import * as schema from "@shared/schema";
-import { products, users, finances } from "@shared/schema";
-
-neonConfig.webSocketConstructor = ws;
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
 
 if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+  throw new Error('DATABASE_URL is required');
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema: { products, users, finances } });
+// Configuração de conexão com retry e timeout
+const sql = neon(process.env.DATABASE_URL, {
+  // Configurações de conexão
+  connectionTimeoutMillis: 30000, // 30 segundos
+  idleTimeoutMillis: 30000, // 30 segundos de idle
+  maxUses: 100, // Máximo de usos por conexão
+
+  // Configurações de fetch para melhor compatibilidade
+  fetchOptions: {
+    cache: 'no-store'
+  }
+});
+
+export const db = drizzle(sql, {
+  logger: process.env.NODE_ENV === 'development'
+});
+
+// Função para testar a conexão
+export async function testConnection() {
+  try {
+    await sql`SELECT 1 as test`;
+    console.log("✅ Conectado ao PostgreSQL com sucesso!");
+    return true;
+  } catch (error) {
+    console.error("❌ Erro ao conectar com PostgreSQL:", error);
+    return false;
+  }
+}
+
+// Wrapper para queries com retry automático
+export async function executeWithRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 1000
+): Promise<T> {
+  let lastError: Error;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error as Error;
+
+      // Se for erro de conexão, tenta reconectar
+      if (
+        error instanceof Error && 
+        (error.message.includes('terminating connection') ||
+         error.message.includes('connection') ||
+         error.message.includes('timeout'))
+      ) {
+        console.warn(`⚠️ Erro de conexão (tentativa ${attempt}/${maxRetries}):`, error.message);
+
+        if (attempt < maxRetries) {
+          console.log(`🔄 Tentando novamente em ${delayMs}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+          continue;
+        }
+      }
+
+      // Se não for erro de conexão ou se esgotaram as tentativas, relança o erro
+      throw error;
+    }
+  }
+
+  throw lastError!;
+}
