@@ -438,12 +438,33 @@ export class DatabaseStorage implements IStorage {
 
   async deletePaymentByProductId(productId: number, userId: number): Promise<boolean> {
     try {
+      // Primeiro verifica se o produto pertence ao usuário
+      const product = await db
+        .select({ id: products.id })
+        .from(products)
+        .where(and(eq(products.id, productId), eq(products.userId, userId)))
+        .limit(1);
+
+      if (product.length === 0) {
+        return false; // Produto não encontrado ou não pertence ao usuário
+      }
+
+      // Remove as parcelas primeiro (devido à foreign key)
+      await db
+        .delete(installments)
+        .where(eq(installments.payment_id, 
+          db.select({ id: payments.id })
+            .from(payments)
+            .where(eq(payments.productId, productId))
+        ));
+
+      // Remove o pagamento
       const result = await db
         .delete(payments)
-        .where(and(eq(payments.productId, productId), eq(products.userId, userId)))
+        .where(eq(payments.productId, productId))
         .returning({ id: payments.id });
 
-      return !!result;
+      return result.length > 0;
     } catch (error) {
       console.error("Error deleting payment by product ID:", error);
       return false;
