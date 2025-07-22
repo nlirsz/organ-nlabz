@@ -459,16 +459,24 @@ export class DatabaseStorage implements IStorage {
         return false; // Produto não encontrado ou não pertence ao usuário
       }
 
-      // Remove as parcelas primeiro (devido à foreign key)
-      await db
-        .delete(installments)
-        .where(eq(installments.payment_id, 
-          db.select({ id: payments.id })
-            .from(payments)
-            .where(eq(payments.productId, productId))
-        ));
+      // Busca o(s) pagamento(s) do produto
+      const productPayments = await db
+        .select({ id: payments.id })
+        .from(payments)
+        .where(eq(payments.productId, productId));
 
-      // Remove o pagamento
+      if (productPayments.length === 0) {
+        return false; // Nenhum pagamento encontrado
+      }
+
+      // Remove as parcelas para cada pagamento
+      for (const payment of productPayments) {
+        await db
+          .delete(installments)
+          .where(eq(installments.payment_id, payment.id));
+      }
+
+      // Remove o(s) pagamento(s)
       const result = await db
         .delete(payments)
         .where(eq(payments.productId, productId))
