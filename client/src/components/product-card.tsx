@@ -115,6 +115,16 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
     }
   };
 
+  // Buscar dados de pagamento quando o produto estiver comprado
+  const { data: paymentData } = useQuery({
+    queryKey: [`/api/payments/product/${product.id}`, product.id],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/payments/product/${product.id}`);
+      return response.json();
+    },
+    enabled: isPurchased && isEditModalOpen, // Só busca quando o modal estiver aberto e produto comprado
+  });
+
   return (
     <div className="product-card slide-in-up">
       <div className="flex flex-col h-full">

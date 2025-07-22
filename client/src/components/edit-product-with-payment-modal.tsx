@@ -117,24 +117,33 @@ export function EditProductWithPaymentModal({
 
   const updatePaymentMutation = useMutation({
     mutationFn: async (updates: Partial<PaymentData>) => {
-      if (!paymentData?.id) {
-        throw new Error("ID do pagamento não encontrado");
+      if (paymentData?.id) {
+        // Atualizar pagamento existente
+        const response = await apiRequest("PUT", `/api/payments/${paymentData.id}`, updates);
+        return response.json();
+      } else {
+        // Criar novo pagamento
+        const paymentDataToCreate = {
+          productId: product.id,
+          ...updates
+        };
+        const response = await apiRequest("POST", `/api/payments`, paymentDataToCreate);
+        return response.json();
       }
-      const response = await apiRequest("PUT", `/api/payments/${paymentData.id}`, updates);
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/payments/product/${product.id}`, product.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/installments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Sucesso",
-        description: "Dados de pagamento atualizados com sucesso!",
+        description: paymentData ? "Dados de pagamento atualizados com sucesso!" : "Dados de pagamento adicionados com sucesso!",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Erro",
-        description: error.message || "Falha ao atualizar pagamento",
+        description: error.message || "Falha ao salvar dados de pagamento",
         variant: "destructive",
       });
     },
@@ -147,10 +156,10 @@ export function EditProductWithPaymentModal({
 
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!paymentData) {
+    if (!product.isPurchased) {
       toast({
         title: "Erro",
-        description: "Nenhum dados de pagamento encontrados para este produto",
+        description: "Este produto não está marcado como comprado",
         variant: "destructive",
       });
       return;
@@ -160,7 +169,7 @@ export function EditProductWithPaymentModal({
 
   const handleSaveAll = () => {
     updateProductMutation.mutate(productForm);
-    if (paymentData) {
+    if (product.isPurchased) {
       updatePaymentMutation.mutate(paymentForm);
     }
     onProductUpdated();
@@ -172,7 +181,7 @@ export function EditProductWithPaymentModal({
       <Tabs defaultValue="produto" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="produto">Dados do Produto</TabsTrigger>
-          <TabsTrigger value="pagamento" disabled={!paymentData}>Dados do Pagamento</TabsTrigger>
+          <TabsTrigger value="pagamento" disabled={!product.isPurchased}>Dados do Pagamento</TabsTrigger>
         </TabsList>
 
         <TabsContent value="produto" className="space-y-4">
@@ -415,16 +424,138 @@ export function EditProductWithPaymentModal({
                 </form>
               </CardContent>
             </Card>
+          ) : product.isPurchased ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Adicionar Informações do Pagamento</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="paymentMethod">Forma de Pagamento</Label>
+                      <Select
+                        value={paymentForm.paymentMethod}
+                        onValueChange={(value) => setPaymentForm(prev => ({ ...prev, paymentMethod: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a forma de pagamento" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="credito">Cartão de Crédito</SelectItem>
+                          <SelectItem value="debito">Cartão de Débito</SelectItem>
+                          <SelectItem value="pix">PIX</SelectItem>
+                          <SelectItem value="boleto">Boleto</SelectItem>
+                          <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="bank">Banco/Cartão</Label>
+                      <Input
+                        id="bank"
+                        value={paymentForm.bank}
+                        onChange={(e) => setPaymentForm(prev => ({ ...prev, bank: e.target.value }))}
+                        placeholder="Ex: Nubank, Itaú, Santander..."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="installments">Número de Parcelas</Label>
+                      <Input
+                        id="installments"
+                        type="number"
+                        min="1"
+                        max="48"
+                        value={paymentForm.installments}
+                        onChange={(e) => {
+                          const installments = parseInt(e.target.value);
+                          setPaymentForm(prev => ({ 
+                            ...prev, 
+                            installments,
+                            installmentValue: prev.totalValue / installments
+                          }));
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="installmentValue">Valor da Parcela</Label>
+                      <Input
+                        id="installmentValue"
+                        type="number"
+                        step="0.01"
+                        value={paymentForm.installmentValue}
+                        onChange={(e) => {
+                          const installmentValue = parseFloat(e.target.value);
+                          setPaymentForm(prev => ({ 
+                            ...prev, 
+                            installmentValue,
+                            totalValue: installmentValue * prev.installments
+                          }));
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="totalValue">Valor Total</Label>
+                      <Input
+                        id="totalValue"
+                        type="number"
+                        step="0.01"
+                        value={paymentForm.totalValue}
+                        onChange={(e) => {
+                          const totalValue = parseFloat(e.target.value);
+                          setPaymentForm(prev => ({ 
+                            ...prev, 
+                            totalValue,
+                            installmentValue: totalValue / prev.installments
+                          }));
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="purchaseDate">Data da Compra</Label>
+                      <Input
+                        id="purchaseDate"
+                        type="date"
+                        value={paymentForm.purchaseDate}
+                        onChange={(e) => setPaymentForm(prev => ({ ...prev, purchaseDate: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="firstDueDate">Primeiro Vencimento</Label>
+                      <Input
+                        id="firstDueDate"
+                        type="date"
+                        value={paymentForm.firstDueDate}
+                        onChange={(e) => setPaymentForm(prev => ({ ...prev, firstDueDate: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-center text-sm text-gray-500 mb-4">
+                    Complete as informações de pagamento para este produto já comprado.
+                  </div>
+
+                  <Button type="submit" disabled={updatePaymentMutation.isPending}>
+                    {updatePaymentMutation.isPending ? "Salvando..." : "Salvar Dados de Pagamento"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           ) : (
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center space-y-4">
                   <p className="text-gray-500">
-                    Este produto não possui dados de pagamento cadastrados.
+                    Este produto não está marcado como comprado.
                   </p>
                   <p className="text-sm text-gray-400">
-                    Para adicionar dados de pagamento, você pode marcar o produto como "não comprado" 
-                    e depois comprá-lo novamente, preenchendo as informações de pagamento.
+                    Para adicionar dados de pagamento, marque o produto como comprado primeiro.
                   </p>
                 </div>
               </CardContent>
