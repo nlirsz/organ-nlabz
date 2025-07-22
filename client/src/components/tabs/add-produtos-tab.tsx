@@ -3,7 +3,27 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UrlInput } from "@/components/url-input";
 import { TagsInput } from "@/components/tags-input";
-import { Plus, Link, Search, ShoppingCart, Edit, ArrowLeft } from "lucide-react";
+import { 
+  Plus, 
+  Link, 
+  Search, 
+  ShoppingCart, 
+  Edit, 
+  ArrowLeft, 
+  Sparkles,
+  Zap,
+  Heart,
+  Star,
+  Gift,
+  CheckCircle,
+  ExternalLink,
+  Package,
+  Tag,
+  DollarSign,
+  Image as ImageIcon,
+  FileText,
+  Store
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AddProdutosTabProps {
@@ -106,17 +126,17 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
 
   if (isManualMode) {
     return (
-      <div className="max-w-2xl mx-auto space-y-8">
+      <div className="max-w-2xl mx-auto space-y-8 fade-in">
         {/* Header */}
-        <div className="text-center">
+        <div className="text-center staggered-fade">
           <button
             onClick={() => setIsManualMode(false)}
-            className="neomorphic-button mb-4"
+            className="neomorphic-button mb-4 icon-button smooth-hover"
           >
             <ArrowLeft className="w-4 h-4" />
             Voltar
           </button>
-          <div className="w-16 h-16 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-4 pulse-highlight">
             <Edit className="w-8 h-8" style={{ color: 'var(--primary-action)' }} />
           </div>
           <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
@@ -128,10 +148,11 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
         </div>
 
         {/* Manual Form */}
-        <form onSubmit={handleSubmit} className="neomorphic-card p-6 rounded-2xl space-y-4">
+        <form onSubmit={handleSubmit} className="neomorphic-card p-6 rounded-2xl space-y-4 animated-border staggered-fade">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+              <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                <Package className="w-4 h-4" />
                 Nome do Produto *
               </label>
               <input
@@ -145,7 +166,8 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+              <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                <DollarSign className="w-4 h-4" />
                 Preço (R$)
               </label>
               <input
@@ -159,7 +181,8 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+              <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                <Store className="w-4 h-4" />
                 Loja
               </label>
               <input
@@ -172,7 +195,8 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+              <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                <Tag className="w-4 h-4" />
                 Categoria
               </label>
               <select
@@ -195,7 +219,8 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+              <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                <Star className="w-4 h-4" />
                 Marca
               </label>
               <input
@@ -208,7 +233,8 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+              <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                <ExternalLink className="w-4 h-4" />
                 URL do Produto
               </label>
               <input
@@ -221,7 +247,8 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+              <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                <ImageIcon className="w-4 h-4" />
                 URL da Imagem
               </label>
               <input
@@ -234,7 +261,8 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+              <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                <FileText className="w-4 h-4" />
                 Descrição
               </label>
               <textarea
@@ -247,7 +275,8 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+              <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+                <Tag className="w-4 h-4" />
                 Tags
               </label>
               <TagsInput
@@ -268,16 +297,27 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
             <button
               type="button"
               onClick={() => setIsManualMode(false)}
-              className="neomorphic-button flex-1"
+              className="neomorphic-button flex-1 icon-button"
             >
+              <ArrowLeft className="w-4 h-4" />
               Cancelar
             </button>
             <button
               type="submit"
               disabled={addProductMutation.isPending}
-              className="neomorphic-button-primary flex-1"
+              className="neomorphic-button-primary flex-1 icon-button"
             >
-              {addProductMutation.isPending ? "Adicionando..." : "Adicionar Produto"}
+              {addProductMutation.isPending ? (
+                <>
+                  <Sparkles className="w-4 h-4 animate-spin" />
+                  Adicionando...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Adicionar Produto
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -286,10 +326,10 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="max-w-2xl mx-auto space-y-8 fade-in">
       {/* Header */}
-      <div className="text-center">
-        <div className="w-16 h-16 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="text-center staggered-fade">
+        <div className="w-16 h-16 neomorphic-card rounded-full flex items-center justify-center mx-auto mb-4 pulse-glow">
           <Plus className="w-8 h-8" style={{ color: 'var(--primary-action)' }} />
         </div>
         <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
@@ -302,7 +342,7 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
 
       {/* Mode Selection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="neomorphic-card p-6 rounded-2xl text-center">
+        <div className="neomorphic-card p-6 rounded-2xl text-center smooth-hover animated-border staggered-fade">
           <Link className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--primary-action)' }} />
           <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
             Por URL (Automático)
@@ -315,7 +355,7 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
           </div>
         </div>
 
-        <div className="neomorphic-card p-6 rounded-2xl text-center">
+        <div className="neomorphic-card p-6 rounded-2xl text-center smooth-hover staggered-fade featured-card">
           <Edit className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--primary-action)' }} />
           <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
             Manual
@@ -325,21 +365,23 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
           </p>
           <button
             onClick={() => setIsManualMode(true)}
-            className="neomorphic-button-primary w-full"
+            className="neomorphic-button-primary w-full icon-button"
           >
+            <Edit className="w-4 h-4" />
             Adicionar Manualmente
           </button>
         </div>
       </div>
 
       {/* Instructions */}
-      <div className="neomorphic-card p-6 rounded-2xl">
-        <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+      <div className="neomorphic-card p-6 rounded-2xl pulse-highlight staggered-fade">
+        <h3 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+          <Sparkles className="w-5 h-5" />
           Como adicionar produtos:
         </h3>
 
         <div className="space-y-4">
-          <div className="flex items-start space-x-3">
+          <div className="flex items-start space-x-3 smooth-hover">
             <div className="w-8 h-8 neomorphic-card rounded-full flex items-center justify-center flex-shrink-0">
               <Link className="w-4 h-4" style={{ color: 'var(--primary-action)' }} />
             </div>
@@ -353,9 +395,9 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
             </div>
           </div>
 
-          <div className="flex items-start space-x-3">
+          <div className="flex items-start space-x-3 smooth-hover">
             <div className="w-8 h-8 neomorphic-card rounded-full flex items-center justify-center flex-shrink-0">
-              <Search className="w-4 h-4" style={{ color: 'var(--primary-action)' }} />
+              <Zap className="w-4 h-4" style={{ color: 'var(--primary-action)' }} />
             </div>
             <div>
               <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -367,9 +409,9 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
             </div>
           </div>
 
-          <div className="flex items-start space-x-3">
+          <div className="flex items-start space-x-3 smooth-hover">
             <div className="w-8 h-8 neomorphic-card rounded-full flex items-center justify-center flex-shrink-0">
-              <ShoppingCart className="w-4 h-4" style={{ color: 'var(--primary-action)' }} />
+              <CheckCircle className="w-4 h-4" style={{ color: 'var(--primary-action)' }} />
             </div>
             <div>
               <h4 className="font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -384,8 +426,9 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
       </div>
 
       {/* Supported Stores */}
-      <div className="neomorphic-card p-6 rounded-2xl">
-        <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+      <div className="neomorphic-card p-6 rounded-2xl animated-border staggered-fade">
+        <h3 className="flex items-center gap-2 text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+          <Store className="w-5 h-5" />
           Lojas Compatíveis:
         </h3>
 
@@ -403,9 +446,10 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
             "Pichau",
             "Netshoes",
             "Zara"
-          ].map((store) => (
-            <div key={store} className="text-center p-3 neomorphic-card rounded-xl">
-              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+          ].map((store, index) => (
+            <div key={store} className={`text-center p-3 neomorphic-card rounded-xl smooth-hover staggered-fade`} style={{ animationDelay: `${index * 0.05}s` }}>
+              <span className="text-sm font-medium flex items-center justify-center gap-1" style={{ color: 'var(--text-primary)' }}>
+                <Heart className="w-3 h-3 opacity-50" />
                 {store}
               </span>
             </div>

@@ -164,20 +164,26 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
             <button
               type="submit"
               disabled={addProductMutation.isPending}
-              className="flex-1 neomorphic-button-primary flex items-center justify-center gap-2"
+              className="flex-1 neomorphic-button-primary flex items-center justify-center gap-2 icon-button"
               title="Adicionar produto via URL"
             >
               {addProductMutation.isPending ? (
-                <Wand2 className="w-4 h-4 animate-spin" />
+                <>
+                  <Wand2 className="w-4 h-4 animate-spin" />
+                  Analisando...
+                </>
               ) : (
-                <Plus className="w-4 h-4" />
+                <>
+                  <Plus className="w-4 h-4" />
+                  Adicionar
+                </>
               )}
             </button>
 
             <button
               type="button"
               onClick={() => setShowManualModal(true)}
-              className="neomorphic-button flex items-center justify-center"
+              className="neomorphic-button flex items-center justify-center icon-button"
               title="Adicionar produto manualmente"
             >
               <Edit className="w-4 h-4" />
