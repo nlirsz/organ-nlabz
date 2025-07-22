@@ -264,7 +264,8 @@ export function SmartDashboard() {
           {[1, 2, 3, 4].map(i => (
             <Card key={i}>
               <CardContent className="p-6">
-                <div className="animate-pulse">
+                <div```typescript
+ className="animate-pulse">
                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                   <div className="h-8 bg-gray-200 rounded w-1/2"></div>
                 </div>
@@ -277,7 +278,25 @@ export function SmartDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200">
+          📊 Dashboard Inteligente
+        </h2>
+        <button
+          onClick={refreshData}
+          disabled={isRefreshing}
+          className="neomorphic-button w-full sm:w-auto"
+        >
+          {isRefreshing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <RefreshCcw className="w-4 h-4" />
+          )}
+          Atualizar
+        </button>
+      </div>
+
       {/* Métricas principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -349,7 +368,7 @@ export function SmartDashboard() {
                   {Math.round((dashboardData.purchasedValue / dashboardData.totalValue) * 100) || 0}% do total
                 </p>
               </div>
-              
+
               <div className="bg-orange-50 p-4 rounded-lg">
                 <h4 className="font-medium text-orange-800">Ainda Pendente</h4>
                 <p className="text-2xl font-bold text-orange-600">
@@ -486,7 +505,7 @@ export function SmartDashboard() {
                   className="w-full h-2"
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div className="text-center p-3 bg-blue-50 rounded-lg">
                   <p className="text-lg font-bold text-blue-600">{dashboardData.totalProducts}</p>

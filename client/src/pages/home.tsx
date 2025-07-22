@@ -134,7 +134,7 @@ export default function Home() {
         </div>
       </header>
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-6 space-y-8 pb-8">
+      <main className="max-w-6xl mx-auto px-3 md:px-4 space-y-4 md:space-y-8 pb-4 md:pb-8">
         {/* Tab Navigation */}
         <TabNavigation 
           activeTab={activeTab}
@@ -159,7 +159,7 @@ export default function Home() {
           {activeTab === "historico" && (
             <HistoricoTab refreshKey={refreshKey} />
           )}
-          
+
         </div>
       </main>
     </div>

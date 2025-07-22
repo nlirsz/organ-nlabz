@@ -219,10 +219,31 @@
     gap: 20px;
   }
 
+  @media (max-width: 640px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  }
+
   .product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 24px;
+  }
+
+  @media (max-width: 768px) {
+    .product-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .product-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
   }
 
   .category-tag {
@@ -359,14 +380,130 @@
     white-space: nowrap;
   }
 
-  /* Mobile responsive card actions */
+  /* Mobile responsive layouts */
+  @media (max-width: 768px) {
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    /* Card responsividade */
+    .neomorphic-card {
+      margin: 0;
+      border-radius: 16px;
+    }
+
+    /* Títulos responsivos */
+    h1 {
+      font-size: 1.5rem;
+      line-height: 1.4;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      line-height: 1.4;
+    }
+
+    h3 {
+      font-size: 1.125rem;
+      line-height: 1.4;
+    }
+
+    /* Botões em mobile */
+    .neomorphic-button,
+    .neomorphic-button-primary {
+      padding: 10px 16px;
+      font-size: 0.875rem;
+      min-height: 2.25rem;
+    }
+  }
+
   @media (max-width: 640px) {
+    /* Product cards mobile */
+    .product-grid .neomorphic-card {
+      padding: 1rem;
+    }
+
     .product-grid .neomorphic-card .flex.gap-2 {
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 0.5rem;
     }
     
-    .product-grid .neomorphic-card .flex-1 {
-      min-width: calc(50% - 0.25rem);
+    .product-grid .neomorphic-card .neomorphic-button,
+    .product-grid .neomorphic-card .neomorphic-button-primary {
+      width: 100%;
+      justify-content: center;
+      font-size: 0.875rem;
+      padding: 0.75rem;
+    }
+
+    /* Text responsivo */
+    .line-clamp-2 {
+      -webkit-line-clamp: 3;
+      line-height: 1.4;
+    }
+
+    /* Spacing mobile */
+    .space-y-4 > * + * {
+      margin-top: 1rem;
+    }
+
+    .space-y-6 > * + * {
+      margin-top: 1.25rem;
+    }
+
+    /* Tab navigation mobile */
+    .tab-navigation {
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .tab-navigation::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  /* Scrollbar utilities */
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (max-width: 480px) {
+    /* Extra small screens */
+    .container {
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+
+    .neomorphic-card {
+      padding: 0.75rem;
+      border-radius: 12px;
+    }
+
+    .neomorphic-button,
+    .neomorphic-button-primary {
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      min-height: 2rem;
+    }
+
+    /* Stats cards mobile */
+    .stats-grid .neomorphic-card {
+      padding: 1rem;
+    }
+
+    .stats-grid .neomorphic-card h3 {
+      font-size: 1rem;
+    }
+
+    .stats-grid .neomorphic-card .text-2xl {
+      font-size: 1.5rem;
     }
   }
 }

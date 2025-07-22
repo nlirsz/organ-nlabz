@@ -115,339 +115,338 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
   };
 
   return (
-    <div className={`neomorphic-card p-6 ${isPurchased ? 'opacity-75' : ''}`}>
-      {/* Header with Category */}
-      <div className="flex items-center justify-between mb-4">
-        <span className="category-tag text-xs">
-          {getCategoryDisplay(product.category || 'Geral')}
-        </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleFavorite(product.id);
-          }}
-          className={`w-8 h-8 neomorphic-button rounded-full flex items-center justify-center ${
-            isFavorite(product.id) ? 'neomorphic-button-primary' : ''
-          }`}
-          title={isFavorite(product.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-        >
-          <Heart className={`w-4 h-4 ${isFavorite(product.id) ? 'fill-current text-white' : ''}`} 
-                 style={{ color: isFavorite(product.id) ? 'white' : 'var(--primary-action)' }} />
-        </button>
-      </div>
-
-      {/* Product Image */}
-      <div className="mb-4">
-        <div className="relative">
-          {product.imageUrl ? (
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="w-full h-48 object-cover rounded-xl"
-              style={{ backgroundColor: 'var(--c-light)' }}
-              onError={(e) => {
-                e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTAwQzEwNS41MjMgMTAwIDExMCA5NS41MjI4IDExMCA5MEM1MTAgODQuNDc3MiAxMDUuNTIzIDgwIDEwMCA4MEM5NC40NzcyIDgwIDkwIDg0LjQ3NzIgOTAgOTBDOTAgOTUuNTIyOCA5NC40NzcyIDEwMCAxMDAgMTAwWiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNMTM1IDEyMEgxMTVWMTEwSDEzNVYxMjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik05NSAxMjBINzVWMTEwSDk1VjEyMFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
-              }}
-            />
-          ) : (
-            <div className="w-full h-48 rounded-xl bg-gray-100 flex items-center justify-center">
-              <ShoppingCart className="w-16 h-16 text-gray-400" />
-            </div>
-          )}
-
-          {/* Purchase Status Overlay */}
-          {isPurchased && (
-            <div className="absolute inset-0 bg-black bg-opacity-30 rounded-xl flex items-center justify-center">
-              <div className="bg-green-500 rounded-full p-3">
-                <Check className="w-8 h-8 text-white" />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Product Info */}
-      <div className="mb-4">
-        <h3 className={`font-semibold text-lg mb-2 ${isPurchased ? 'line-through opacity-60' : ''}`} 
-            style={{ color: 'var(--text-primary)' }}>
-          {product.name}
-        </h3>
-
-        <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
-          {product.store || 'Loja Online'}
-        </p>
-
-        <div className="flex items-center justify-between">
-          <span className={`text-xl font-bold ${isPurchased ? 'line-through opacity-60' : ''}`} 
-                style={{ color: isPurchased ? 'var(--text-secondary)' : 'var(--primary-action)' }}>
-            {formatPrice(product.price)}
-          </span>
-
-          {isPurchased && (
-            <span className="text-xs px-2 py-1 rounded-full bg-green-500 text-white">
-              COMPRADO
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Card Actions */}
-      <div className="flex items-center justify-between border-t pt-4" 
-           style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handlePurchaseToggle();
-          }}
-          disabled={updateProductMutation.isPending}
-          className={`w-10 h-10 neomorphic-button rounded-full flex items-center justify-center ${
-            isPurchased ? 'neomorphic-button-primary' : ''
-          }`}
-          title={isPurchased ? "Marcar como não comprado" : "Marcar como comprado"}
-        >
-          {isPurchased ? (
-            <RotateCcw className="w-5 h-5" style={{ color: 'white' }} />
-          ) : (
-            <Check className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
-          )}
-        </button>
-
-        <a
-          href={product.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
-          title="Abrir link do produto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <ExternalLink className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
-        </a>
-
-        {onReScrape && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleReScrape();
+    <div className="neomorphic-card p-4 md:p-6 product-card-hover card-entering">
+      <div className="flex flex-col h-full">
+        {/* Image Section */}
+        <div className="relative mb-3 md:mb-4">
+          <img
+            src={product.imageUrl || 'https://via.placeholder.com/400x300/e0e5ec/6c757d?text=Sem+Imagem'}
+            alt={product.name}
+            className="w-full h-40 md:h-48 object-cover rounded-lg"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = 'https://via.placeholder.com/400x300/e0e5ec/6c757d?text=Sem+Imagem';
             }}
-            disabled={isReScrapingLoading}
-            className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
-            title="Atualizar dados do produto"
-          >
-            <RefreshCw className={`w-5 h-5 ${isReScrapingLoading ? "animate-spin" : ""}`} style={{ color: 'var(--primary-action)' }} />
-          </button>
-        )}
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsEditModalOpen(true);
-          }}
-          className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
-          title="Editar produto"
-        >
-          <Edit className="w-5 h-5" style={{ color: 'var(--edit-color)' }} />
-        </button>
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDelete();
-          }}
-          disabled={deleteProductMutation.isPending}
-          className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center hover:text-red-500"
-          title="Remover produto"
-        >
-          <Trash2 className="w-5 h-5" style={{ color: 'var(--delete-color)' }} />
-        </button>
-      </div>
-
-      <EditProductModal
-        product={product}
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onProductUpdated={onProductUpdated}
-      />
-
-      {/* Product Details Modal */}
-      <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">
-              {product.name}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Product Image */}
-            <div className="space-y-4">
-              {product.imageUrl ? (
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  className="w-full h-64 object-cover rounded-lg"
-                  style={{ backgroundColor: 'var(--c-light)' }}
-                />
-              ) : (
-                <div className="w-full h-64 rounded-lg neomorphic-card flex items-center justify-center" 
-                     style={{ backgroundColor: 'var(--c-light)' }}>
-                  <ShoppingCart className="w-20 h-20" style={{ color: 'var(--text-secondary)' }} />
-                </div>
-              )}
-
-              {/* Product Actions */}
-              <div className="flex gap-2">
-                <a
-                  href={product.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 neomorphic-button px-4 py-2 rounded-lg text-center"
-                  style={{ color: 'var(--primary-action)' }}
-                >
-                  <ExternalLink className="w-4 h-4 inline mr-2" />
-                  Ver Produto
-                </a>
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="neomorphic-button px-4 py-2 rounded-lg"
-                  style={{ color: 'var(--edit-color)' }}
-                >
-                  <Edit className="w-4 h-4 inline mr-2" />
-                  Editar
-                </button>
-              </div>
+          />
+          {product.isPurchased && (
+            <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+              ✓ Comprado
             </div>
+          )}
+        </div>
 
-            {/* Product Details */}
-            <div className="space-y-6">
-              {/* Price Info */}
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  Preço
-                </h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold" style={{ color: 'var(--primary-action)' }}>
+        {/* Content Section */}
+        <div className="flex-1 space-y-2 md:space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            <h3 className="font-semibold text-base md:text-lg leading-tight line-clamp-2 text-gray-800 dark:text-gray-200 flex-1 min-w-0">
+              {product.name}
+            </h3>
+            <span className="category-tag text-xs whitespace-nowrap">
+              {getCategoryDisplay(product.category)}
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              {product.price ? (
+                <>
+                  <span className="text-lg md:text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
                     {formatPrice(product.price)}
                   </span>
                   {product.originalPrice && product.originalPrice !== product.price && (
-                    <span className="text-lg line-through" style={{ color: 'var(--text-secondary)' }}>
+                    <span className="text-sm text-gray-500 line-through">
                       {formatPrice(product.originalPrice)}
                     </span>
                   )}
-                </div>
-              </div>
+                </>
+              ) : (
+                <span className="text-base md:text-lg text-gray-500">Preço não disponível</span>
+              )}
+            </div>
 
-              {/* Product Info */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      Loja
-                    </label>
-                    <p className="text-base" style={{ color: 'var(--text-primary)' }}>
-                      {product.store || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      Categoria
-                    </label>
-                    <p className="text-base" style={{ color: 'var(--text-primary)' }}>
-                      {getCategoryDisplay(product.category || 'Geral')}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      Marca
-                    </label>
-                    <p className="text-base" style={{ color: 'var(--text-primary)' }}>
-                      {product.brand || 'Não informado'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      Prioridade
-                    </label>
-                    <p className="text-base" style={{ color: 'var(--text-primary)' }}>
-                      {product.priority || 'Não informado'}
-                    </p>
-                  </div>
-                </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 font-medium truncate">
+              📱 {product.store}
+            </p>
 
-                {product.description && (
-                  <div>
-                    <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      Descrição
-                    </label>
-                    <p className="text-base" style={{ color: 'var(--text-primary)' }}>
-                      {product.description}
-                    </p>
-                  </div>
-                )}
+            {product.description && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                {product.description}
+              </p>
+            )}
+          </div>
+        </div>
 
-                {product.notes && (
-                  <div>
-                    <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      Notas
-                    </label>
-                    <p className="text-base" style={{ color: 'var(--text-primary)' }}>
-                      {product.notes}
-                    </p>
-                  </div>
-                )}
-
-                <div>
-                  <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                    Adicionado em
-                  </label>
-                  <p className="text-base" style={{ color: 'var(--text-primary)' }}>
-                    {new Date(product.createdAt).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Purchase Status */}
-              <div className="flex items-center gap-3">
+        {/* Actions Section */}
+        <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t"
+           style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+          <div className="flex flex-col sm:flex-row gap-2">
+            {!product.isPurchased ? (
+              <>
                 <button
-                  onClick={handlePurchaseToggle}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePurchaseToggle();
+                  }}
+                  className="w-full sm:flex-1 neomorphic-button-primary"
                   disabled={updateProductMutation.isPending}
-                  className={`px-4 py-2 rounded-lg neomorphic-button ${
-                    isPurchased ? 'neomorphic-button-primary' : ''
-                  }`}
                 >
-                  {isPurchased ? (
-                    <>
-                      <RotateCcw className="w-4 h-4 inline mr-2" style={{ color: 'white' }} />
-                      <span style={{ color: 'white' }}>Marcar como não comprado</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4 inline mr-2" style={{ color: 'var(--primary-action)' }} />
-                      <span style={{ color: 'var(--primary-action)' }}>Marcar como comprado</span>
-                    </>
-                  )}
+                  {updateProductMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
+                  {updateProductMutation.isPending ? "Comprando..." : "Comprar"}
                 </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditModalOpen(true);
+                    }}
+                    className="flex-1 sm:flex-none neomorphic-button"
+                  >
+                    <Edit className="w-4 h-4" style={{ color: 'var(--edit-color)' }} />
+                    <span className="sm:hidden">Editar</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete();
+                    }}
+                    className="neomorphic-button text-red-600"
+                    disabled={deleteProductMutation.isPending}
+                  >
+                    {deleteProductMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePurchaseToggle();
+                  }}
+                  className="w-full sm:flex-1 neomorphic-button"
+                  disabled={updateProductMutation.isPending}
+                >
+                  {updateProductMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                  {updateProductMutation.isPending ? "Desfazendo..." : "Desfazer"}
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditModalOpen(true);
+                    }}
+                    className="flex-1 sm:flex-none neomorphic-button"
+                  >
+                    <Edit className="w-4 h-4" style={{ color: 'var(--edit-color)' }} />
+                    <span className="sm:hidden">Editar</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete();
+                    }}
+                    className="neomorphic-button text-red-600"
+                    disabled={deleteProductMutation.isPending}
+                  >
+                    {deleteProductMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
 
-                {isPurchased && (
-                  <div className="category-tag" style={{ 
-                    backgroundColor: 'var(--success-color)', 
-                    color: 'white'
-                  }}>
-                    COMPRADO
+        <EditProductModal
+          product={product}
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onProductUpdated={onProductUpdated}
+        />
+
+        {/* Product Details Modal */}
+        <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">
+                {product.name}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Product Image */}
+              <div className="space-y-4">
+                {product.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="w-full h-64 object-cover rounded-lg"
+                    style={{ backgroundColor: 'var(--c-light)' }}
+                  />
+                ) : (
+                  <div className="w-full h-64 rounded-lg neomorphic-card flex items-center justify-center"
+                       style={{ backgroundColor: 'var(--c-light)' }}>
+                    <ShoppingCart className="w-20 h-20" style={{ color: 'var(--text-secondary)' }} />
                   </div>
                 )}
+
+                {/* Product Actions */}
+                <div className="flex gap-2">
+                  <a
+                    href={product.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 neomorphic-button px-4 py-2 rounded-lg text-center"
+                    style={{ color: 'var(--primary-action)' }}
+                  >
+                    <ExternalLink className="w-4 h-4 inline mr-2" />
+                    Ver Produto
+                  </a>
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="neomorphic-button px-4 py-2 rounded-lg"
+                    style={{ color: 'var(--edit-color)' }}
+                  >
+                    <Edit className="w-4 h-4 inline mr-2" />
+                    Editar
+                  </button>
+                </div>
+              </div>
+
+              {/* Product Details */}
+              <div className="space-y-6">
+                {/* Price Info */}
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    Preço
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold" style={{ color: 'var(--primary-action)' }}>
+                      {formatPrice(product.price)}
+                    </span>
+                    {product.originalPrice && product.originalPrice !== product.price && (
+                      <span className="text-lg line-through" style={{ color: 'var(--text-secondary)' }}>
+                        {formatPrice(product.originalPrice)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Product Info */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                        Loja
+                      </label>
+                      <p className="text-base" style={{ color: 'var(--text-primary)' }}>
+                        {product.store || 'Não informado'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                        Categoria
+                      </label>
+                      <p className="text-base" style={{ color: 'var(--text-primary)' }}>
+                        {getCategoryDisplay(product.category || 'Geral')}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                        Marca
+                      </label>
+                      <p className="text-base" style={{ color: 'var(--text-primary)' }}>
+                        {product.brand || 'Não informado'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                        Prioridade
+                      </label>
+                      <p className="text-base" style={{ color: 'var(--text-primary)' }}>
+                        {product.priority || 'Não informado'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {product.description && (
+                    <div>
+                      <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                        Descrição
+                      </label>
+                      <p className="text-base" style={{ color: 'var(--text-primary)' }}>
+                        {product.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {product.notes && (
+                    <div>
+                      <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                        Notas
+                      </label>
+                      <p className="text-base" style={{ color: 'var(--text-primary)' }}>
+                        {product.notes}
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      Adicionado em
+                    </label>
+                    <p className="text-base" style={{ color: 'var(--text-primary)' }}>
+                      {new Date(product.createdAt).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Purchase Status */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePurchaseToggle();
+                    }}
+                    disabled={updateProductMutation.isPending}
+                    className={`px-4 py-2 rounded-lg neomorphic-button ${
+                      isPurchased ? 'neomorphic-button-primary' : ''
+                    }`}
+                  >
+                    {isPurchased ? (
+                      <>
+                        <RotateCcw className="w-4 h-4 inline mr-2" style={{ color: 'white' }} />
+                        <span style={{ color: 'white' }}>Marcar como não comprado</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 inline mr-2" style={{ color: 'var(--primary-action)' }} />
+                        <span style={{ color: 'var(--primary-action)' }}>Marcar como comprado</span>
+                      </>
+                    )}
+                  </button>
+
+                  {isPurchased && (
+                    <div className="category-tag" style={{
+                      backgroundColor: 'var(--success-color)',
+                      color: 'white'
+                    }}>
+                      COMPRADO
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Price History Chart */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-              Histórico de Preços
-            </h3>
-            <PriceHistoryChart productId={product.id} />
-          </div>
-        </DialogContent>
-      </Dialog>
+            {/* Price History Chart */}
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                Histórico de Preços
+              </h3>
+              <PriceHistoryChart productId={product.id} />
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
