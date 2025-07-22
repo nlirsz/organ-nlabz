@@ -424,12 +424,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update payment data
-  app.put("/api/payments/:paymentId", authenticateToken, async (req, res) => {
+  app.put("/api/payments/:paymentId", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const paymentId = parseInt(req.params.paymentId);
+      const userId = parseInt(req.user.userId);
       const updates = req.body;
 
-      const success = await storage.updatePayment(paymentId, updates, req.user.id);
+      const success = await storage.updatePayment(paymentId, updates, userId);
 
       if (success) {
         res.json({ message: "Pagamento atualizado com sucesso" });
