@@ -53,13 +53,13 @@ export const payments = pgTable("payments", {
 
 export const installments = pgTable("installments", {
   id: serial("id").primaryKey(),
-  paymentId: integer("paymentId").references(() => payments.id).notNull(),
-  installmentNumber: integer("installmentNumber").notNull(),
+  payment_id: integer("payment_id").references(() => payments.id).notNull(),
+  installmentNumber: integer("installment_number").notNull(),
   dueDate: timestamp("due_date").notNull(),
   value: text("value").notNull(),
-  isPaid: boolean("isPaid").default(false),
-  paidAt: timestamp("paidAt"),
-  createdAt: timestamp("createdAt").defaultNow(),
+  isPaid: boolean("is_paid").default(false),
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({

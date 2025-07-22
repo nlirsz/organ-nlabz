@@ -197,7 +197,7 @@ export class DatabaseStorage implements IStorage {
       dueDate.setMonth(dueDate.getMonth() + i);
 
       installmentsData.push({
-        paymentId: createdPayment.id,
+        payment_id: createdPayment.id,
         installmentNumber: i + 1,
         dueDate: dueDate,
         value: payment.installmentValue.toString()
@@ -238,7 +238,7 @@ export class DatabaseStorage implements IStorage {
           dueDate: installments.dueDate,
         })
         .from(installments)
-        .innerJoin(payments, eq(installments.paymentId, payments.id))
+        .innerJoin(payments, eq(installments.payment_id, payments.id))
         .innerJoin(products, eq(payments.productId, products.id))
         .where(eq(products.userId, userId))
         .orderBy(installments.dueDate);
@@ -398,7 +398,7 @@ export class DatabaseStorage implements IStorage {
       // Se o número de parcelas mudou, recria as parcelas
       if (updates.installments && updates.firstDueDate) {
         // Remove parcelas antigas
-        await db.delete(installments).where(eq(installments.paymentId, paymentId));
+        await db.delete(installments).where(eq(installments.payment_id, paymentId));
 
         // Cria novas parcelas
         const installmentsData = [];
@@ -410,7 +410,7 @@ export class DatabaseStorage implements IStorage {
           dueDate.setMonth(dueDate.getMonth() + i);
 
           installmentsData.push({
-            paymentId: paymentId,
+            payment_id: paymentId,
             installmentNumber: i + 1,
             dueDate: dueDate,
             value: installmentValue.toString()

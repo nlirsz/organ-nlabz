@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -174,7 +173,7 @@ export function EditProductWithPaymentModal({
           <TabsTrigger value="produto">Dados do Produto</TabsTrigger>
           <TabsTrigger value="pagamento" disabled={!paymentData}>Dados do Pagamento</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="produto" className="space-y-4">
           <Card>
             <CardHeader>
