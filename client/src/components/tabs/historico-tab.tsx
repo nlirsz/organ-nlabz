@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { History, CheckCircle, Calendar, Store, Trash2, DollarSign, TrendingUp, ShoppingBag, PieChart, Clock, Plus, Edit, Eye, ExternalLink } from "lucide-react";
+import { History, CheckCircle, Calendar, Store, Trash2, DollarSign, TrendingUp, ShoppingBag, PieChart, Clock, Plus, Edit, Eye, ExternalLink, FileText, Tag, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { SelectProduct } from "@shared/schema";
 import { useState } from "react";
@@ -7,6 +7,8 @@ import { InstallmentsTimeline } from "@/components/installments-timeline";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EditProductModal } from "@/components/edit-product-modal";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TrendingDown } from 'lucide-react';
 interface HistoricoTabProps {
   refreshKey: number;
 }
@@ -19,6 +21,16 @@ interface FinanceEntry {
   userId: number;
   createdAt: string;
   updatedAt: string;
+}
+
+function formatDate(dateString: string | undefined): string {
+  if (!dateString) return 'Data não informada';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('pt-BR');
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount);
 }
 
 export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
@@ -628,7 +640,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
         <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold">
+              <DialogTitle className="text-xl md:text-2xl font-bold">
                 Detalhes da Compra
               </DialogTitle>
             </DialogHeader>
@@ -650,87 +662,38 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                   </div>
                 )}
 
-                {/* Ações do Produto */}
-                <div className="flex gap-2">
-                  <a
-                    href={selectedProduct.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 neomorphic-button px-4 py-2 rounded-lg text-center flex items-center justify-center gap-2"
-                    style={{ color: 'var(--primary-action)' }}
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    Ver Produto Original
-                  </a>
-                  <button
-                    onClick={() => {
-                      setShowDetailsModal(false);
-                      setShowEditModal(true);
-                    }}
-                    className="neomorphic-button px-4 py-2 rounded-lg flex items-center gap-2"
-                    style={{ color: 'var(--edit-color)' }}
-                  >
-                    <Edit className="w-4 h-4" />
-                    Editar
-                  </button>
+                {/* Status da compra */}
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <span className="font-medium text-green-800">Produto Comprado</span>
+                  </div>
+                  <div className="text-2xl font-bold text-green-600 mb-1">
+                    {formatCurrency(parseFloat(selectedProduct.price) || 0)}
+                  </div>
+                  <div className="text-sm text-green-700">
+                    Comprado em {formatDate(selectedProduct.purchaseDate)}
+                  </div>
                 </div>
               </div>
 
-              {/* Informações do Produto */}
-              <div className="space-y-4">
+              {/* Detalhes do Produto */}
+              <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+                  <h3 className="text-lg md:text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                     {selectedProduct.name}
                   </h3>
 
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span style={{ color: 'var(--text-secondary)' }}>Preço Pago:</span>
-                      <span className="font-bold text-lg" style={{ color: 'var(--primary-action)' }}>
-                        {selectedProduct.price ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(selectedProduct.price.toString())) : 'N/A'}
-                      </span>
-                    </div>
-
-                    {selectedProduct.originalPrice && (
-                      <div className="flex justify-between">
-                        <span style={{ color: 'var(--text-secondary)' }}>Preço Original:</span>
-                        <span className="line-through" style={{ color: 'var(--text-secondary)' }}>
-                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(selectedProduct.originalPrice.toString()))}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between">
-                      <span style={{ color: 'var(--text-secondary)' }}>Loja:</span>
-                      <span style={{ color: 'var(--text-primary)' }}>{selectedProduct.store}</span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span style={{ color: 'var(--text-secondary)' }}>Categoria:</span>
-                      <span style={{ color: 'var(--text-primary)' }}>{selectedProduct.category}</span>
-                    </div>
-
-                    {selectedProduct.brand && (
-                      <div className="flex justify-between">
-                        <span style={{ color: 'var(--text-secondary)' }}>Marca:</span>
-                        <span style={{ color: 'var(--text-primary)' }}>{selectedProduct.brand}</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between">
-                      <span style={{ color: 'var(--text-secondary)' }}>Data da Compra:</span>
-                      <span style={{ color: 'var(--text-primary)' }}>
-                        {new Date(selectedProduct.updatedAt || selectedProduct.createdAt || Date.now()).toLocaleDateString('pt-BR')}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between">
-                      <span style={{ color: 'var(--text-secondary)' }}>Status:</span>
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                        ✓ Comprado
-                      </span>
-                    </div>
-                  </div>
+                  {selectedProduct.category && (
+                    <span className="inline-block text-xs px-3 py-1 rounded-full mb-3"
+                          style={{ 
+                            backgroundColor: 'var(--primary-action)', 
+                            color: 'white',
+                            opacity: 0.8
+                          }}>
+                      {selectedProduct.category}
+                    </span>
+                  )}
                 </div>
 
                 {selectedProduct.description && (
@@ -738,45 +701,96 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                     <h4 className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
                       Descrição
                     </h4>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                       {selectedProduct.description}
                     </p>
                   </div>
                 )}
 
-                {/* Economia */}
-                {selectedProduct.originalPrice && selectedProduct.price && (
-                  <div className="p-4 neomorphic-card rounded-xl">
-                    <h4 className="font-semibold mb-2 text-green-600">
-                      💰 Economia Realizada
-                    </h4>
-                    <p className="text-lg font-bold text-green-600">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                        parseFloat(selectedProduct.originalPrice.toString()) - parseFloat(selectedProduct.price.toString())
-                      )}
-                    </p>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      {(((parseFloat(selectedProduct.originalPrice.toString()) - parseFloat(selectedProduct.price.toString())) / parseFloat(selectedProduct.originalPrice.toString())) * 100).toFixed(1)}% de desconto
-                    </p>
+                {/* Informações da Compra */}
+                <div>
+                  <h4 className="font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
+                    Informações da Compra
+                  </h4>
+
+                  <div className="space-y-3">
+                    {selectedProduct.store && (
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Store className="w-4 h-4 text-gray-600" />
+                        <div>
+                          <span className="text-sm font-medium text-gray-700">Loja</span>
+                          <p className="text-sm text-gray-900">{selectedProduct.store}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <Calendar className="w-4 h-4 text-gray-600" />
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">Data da Compra</span>
+                        <p className="text-sm text-gray-900">{formatDate(selectedProduct.purchaseDate)}</p>
+                      </div>
+                    </div>
+
+                    {selectedProduct.paymentMethod && (
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <CreditCard className="w-4 h-4 text-gray-600" />
+                        <div>
+                          <span className="text-sm font-medium text-gray-700">Forma de Pagamento</span>
+                          <p className="text-sm text-gray-900">{selectedProduct.paymentMethod}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedProduct.installments && selectedProduct.installments > 1 && (
+                      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                        <CreditCard className="w-4 h-4 text-blue-600" />
+                        <div>
+                          <span className="text-sm font-medium text-blue-700">Parcelamento</span>
+                          <p className="text-sm text-blue-900">
+                            {selectedProduct.installments}x de {formatCurrency(parseFloat(selectedProduct.price) / selectedProduct.installments)}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedProduct.brand && (
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Tag className="w-4 h-4 text-gray-600" />
+                        <div>
+                          <span className="text-sm font-medium text-gray-700">Marca</span>
+                          <p className="text-sm text-gray-900">{selectedProduct.brand}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedProduct.notes && (
+                      <div className="flex items-start gap-3 p-3 bg-yellow-50 rounded-lg">
+                        <FileText className="w-4 h-4 text-yellow-600 mt-0.5" />
+                        <div>
+                          <span className="text-sm font-medium text-yellow-700">Observações</span>
+                          <p className="text-sm text-yellow-900">{selectedProduct.notes}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Link do produto */}
+                {selectedProduct.url && (
+                  <div>
+                    <a 
+                      href={selectedProduct.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Ver Produto Original
+                    </a>
                   </div>
                 )}
               </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="neomorphic-button px-6 py-2 rounded-lg"
-              >
-                Fechar
-              </button>
-              <button
-                onClick={() => handleDeleteProduct2(selectedProduct.id)}
-                className="neomorphic-button px-6 py-2 rounded-lg text-red-600"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Remover do Histórico
-              </button>
             </div>
           </DialogContent>
         </Dialog>
@@ -827,69 +841,80 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
             {purchasedProducts
               .sort((a, b) => new Date(b.updatedAt || b.createdAt || Date.now()).getTime() - new Date(a.updatedAt || a.createdAt || Date.now()).getTime())
               .map((product) => (
-              <div key={product.id} className="flex items-center space-x-4 p-4 neomorphic-card rounded-xl">
-                {product.imageUrl && (
-                  <img 
-                    src={product.imageUrl} 
-                    alt={product.name}
-                    className="w-16 h-16 rounded-lg object-cover"
-                  />
-                )}
-
-                <div className="flex-1">
-                  <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    {product.name}
-                  </h4>
-                  <div className="flex items-center space-x-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    <span>{product.category}</span>
-                    <span>•</span>
-                    <span>{product.store}</span>
-                    <span>•</span>
-                    <span>{new Date(product.updatedAt || product.createdAt || Date.now()).toLocaleDateString('pt-BR')}</span>
-                  </div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                    💳 Pagamento ilustrativo registrado
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  <div className="text-right">
-                    <p className="font-bold text-lg" style={{ color: 'var(--primary-action)' }}>
-                      {product.price ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(product.price.toString())) : 'N/A'}
-                    </p>
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                      Comprado
-                    </span>
+              
+                <div className="product-card neomorphic-card p-3 md:p-4 mb-3 cursor-pointer hover:shadow-lg transition-shadow"
+                   onClick={() => {
+                     setSelectedProduct(product);
+                     setShowDetailsModal(true);
+                   }}>
+                <div className="flex items-start gap-3">
+                  {/* Imagem do produto */}
+                  <div className="flex-shrink-0">
+                    {product.imageUrl ? (
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-lg"
+                        style={{ backgroundColor: 'var(--c-light)' }}
+                      />
+                    ) : (
+                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg neomorphic-card flex items-center justify-center"
+                           style={{ backgroundColor: 'var(--c-light)' }}>
+                        <ShoppingBag className="w-4 h-4 md:w-6 md:h-6" style={{ color: 'var(--text-secondary)' }} />
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleViewDetails(product)}
-                      className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
-                      title="Ver detalhes da compra"
-                    >
-                      <Eye className="w-5 h-5" style={{ color: 'var(--primary-action)' }} />
-                    </button>
+                  {/* Informações essenciais */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm md:text-base line-clamp-1 mb-1" 
+                            style={{ color: 'var(--text-primary)' }}>
+                          {product.name}
+                        </h3>
 
-                    <button
-                      onClick={() => handleEditProduct(product)}
-                      className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
-                      title="Editar produto"
-                    >
-                      <Edit className="w-5 h-5" style={{ color: 'var(--edit-color)' }} />
-                    </button>
+                        <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                          {product.store && (
+                            <>
+                              <Store className="w-3 h-3" />
+                              <span className="truncate">{product.store}</span>
+                            </>
+                          )}
+                          {product.category && (
+                            <>
+                              <span>•</span>
+                              <span>{product.category}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
 
-                    <button
-                      onClick={() => handleDeleteProduct(product.id, product.name)}
-                      disabled={deleteProductMutation.isPending}
-                      className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center hover:text-red-500 transition-colors"
-                      title="Remover do histórico"
-                    >
-                      <Trash2 className="w-5 h-5" style={{ color: 'var(--error-color)' }} />
-                    </button>
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="text-sm md:text-base font-bold text-green-600">
+                          {formatCurrency(parseFloat(product.price) || 0)}
+                        </div>
+                        <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
+                          Comprado
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      <Calendar className="w-3 h-3" />
+                      <span>{formatDate(product.purchaseDate)}</span>
+                      {product.installments && product.installments > 1 && (
+                        <>
+                          <span>•</span>
+                          <CreditCard className="w-3 h-3" />
+                          <span>{product.installments}x</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
+              
             ))}
           </div>
         )}
