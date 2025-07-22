@@ -716,7 +716,19 @@
     }
 
     .main-content-mobile {
-      padding-bottom: 100px; /* Espaço para o botão mobile */
+      padding-bottom: 120px; /* Espaço maior para o botão mobile aumentado */
+      margin-bottom: env(safe-area-inset-bottom); /* Respeita área segura do navegador */
+    }
+
+    /* Garantir que o conteúdo principal tenha margem adequada */
+    body {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Container principal com margem para mobile */
+    .container {
+      padding-bottom: 120px;
+      margin-bottom: calc(env(safe-area-inset-bottom) + 20px);
     }
   }
 
@@ -734,6 +746,41 @@
 
     .stats-card {
       padding: 16px;
+    }
+
+    /* Ajustes específicos para mobile pequeno */
+    .main-content-mobile {
+      padding-bottom: 140px; /* Espaço ainda maior para telas menores */
+    }
+
+    .container {
+      padding-bottom: 140px;
+      margin-bottom: calc(env(safe-area-inset-bottom) + 30px);
+    }
+  }
+
+  /* Suporte para dispositivos com safe area (iPhone, etc.) */
+  @supports (padding: max(0px)) {
+    @media (max-width: 768px) {
+      .main-content-mobile {
+        padding-bottom: max(120px, calc(120px + env(safe-area-inset-bottom)));
+      }
+
+      .container {
+        padding-bottom: max(120px, calc(120px + env(safe-area-inset-bottom)));
+        margin-bottom: calc(env(safe-area-inset-bottom) + 20px);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .main-content-mobile {
+        padding-bottom: max(140px, calc(140px + env(safe-area-inset-bottom)));
+      }
+
+      .container {
+        padding-bottom: max(140px, calc(140px + env(safe-area-inset-bottom)));
+        margin-bottom: calc(env(safe-area-inset-bottom) + 30px);
+      }
     }
   }
 

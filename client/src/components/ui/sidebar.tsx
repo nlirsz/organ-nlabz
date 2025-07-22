@@ -157,7 +157,7 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
     <>
       {/* Overlay para mobile - clica fora para fechar */}
       <div 
-        className="fixed inset-0 bg-black/70 z-40 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/50 z-40 backdrop-blur-md"
         onClick={close}
       />
 
@@ -240,7 +240,7 @@ export function MobileMenuButton() {
       onClick={toggle}
       className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-30 md:hidden"
     >
-      <div className="w-14 h-14 bg-[#121212] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform p-3">
+      <div className="w-16 h-16 bg-[#121212] rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all duration-200 p-3 border-2 border-white/10">
         <img 
           src="/assets/logo.png" 
           alt="orgaN Logo" 

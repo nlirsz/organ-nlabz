@@ -99,7 +99,7 @@ export default function Home() {
           />
 
           {/* Main Content */}
-          <main className="flex-1 min-h-screen md:ml-20">
+          <main className="flex-1 min-h-screen md:ml-20 main-content-mobile">
             <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
               {/* Tab Content */}
               <div className="fade-in">
