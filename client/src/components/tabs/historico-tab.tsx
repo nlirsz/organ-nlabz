@@ -7,6 +7,7 @@ import { InstallmentsTimeline } from "@/components/installments-timeline";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EditProductModal } from "@/components/edit-product-modal";
+import { EditProductWithPaymentModal } from "@/components/edit-product-with-payment-modal";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingDown } from 'lucide-react';
 interface HistoricoTabProps {
@@ -675,6 +676,48 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                     Comprado em {formatDate(selectedProduct.purchaseDate)}
                   </div>
                 </div>
+
+                {/* Ações do Produto */}
+                <div className="space-y-3">
+                  {selectedProduct.url && (
+                    <a 
+                      href={selectedProduct.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Ver Produto Original
+                    </a>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {
+                        setShowDetailsModal(false);
+                        setShowEditModal(true);
+                      }}
+                      className="flex items-center justify-center gap-2 px-4 py-2 neomorphic-button rounded-lg text-sm"
+                      style={{ color: 'var(--edit-color)' }}
+                    >
+                      <Edit className="w-4 h-4" />
+                      Editar Produto
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Tem certeza que deseja excluir "${selectedProduct.name}" do histórico? Esta ação não pode ser desfeita.`)) {
+                          handleDeleteProduct(selectedProduct.id, selectedProduct.name);
+                          setShowDetailsModal(false);
+                        }
+                      }}
+                      className="flex items-center justify-center gap-2 px-4 py-2 neomorphic-button rounded-lg text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Excluir
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Detalhes do Produto */}
@@ -775,21 +818,6 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                     )}
                   </div>
                 </div>
-
-                {/* Link do produto */}
-                {selectedProduct.url && (
-                  <div>
-                    <a 
-                      href={selectedProduct.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      Ver Produto Original
-                    </a>
-                  </div>
-                )}
               </div>
             </div>
           </DialogContent>
@@ -798,16 +826,25 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
 
       {/* Modal de Edição */}
       {selectedProduct && showEditModal && (
-        <EditProductModal
-          product={selectedProduct}
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          onProductUpdated={() => {
-            queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-            setShowEditModal(false);
-            setSelectedProduct(null);
-          }}
-        />
+        <Dialog open={showEditModal} onOpenChange={() => setShowEditModal(false)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Produto e Pagamento</DialogTitle>
+            </DialogHeader>
+            <EditProductWithPaymentModal
+              product={selectedProduct}
+              paymentData={paymentData}
+              isOpen={showEditModal}
+              onClose={() => setShowEditModal(false)}
+              onProductUpdated={() => {
+                queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/finances"] });
+                setShowEditModal(false);
+                setSelectedProduct(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* Annual Installments Timeline */}
