@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Calendar, CreditCard, Clock, CheckCircle, AlertCircle, DollarSign, X, MapPin } from 'lucide-react';
+import { Calendar, CreditCard, Clock, CheckCircle, AlertCircle, DollarSign, X, MapPin, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface InstallmentData {
   id: number;
@@ -30,6 +32,8 @@ export function InstallmentsTimeline() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const months = [
     { num: 1, name: 'JAN', fullName: 'Janeiro' },
@@ -45,6 +49,43 @@ export function InstallmentsTimeline() {
     { num: 11, name: 'NOV', fullName: 'Novembro' },
     { num: 12, name: 'DEZ', fullName: 'Dezembro' }
   ];
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: async (productId: number) => {
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) throw new Error('Token não encontrado');
+
+      const response = await fetch(`/api/payments/product/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-auth-token': authToken,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao excluir pagamento');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/installments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      fetchInstallments();
+      toast({
+        title: "Sucesso",
+        description: "Pagamento excluído com sucesso!",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao excluir pagamento",
+        variant: "destructive",
+      });
+    },
+  });
 
   useEffect(() => {
     fetchInstallments();
@@ -269,10 +310,30 @@ export function InstallmentsTimeline() {
                             </div>
                           </div>
 
-                          <div className="text-right">
-                            <p className="text-lg font-bold" style={{ color: 'var(--primary-action)' }}>
-                              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(installment.amount)}
-                            </p>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="text-lg font-bold" style={{ color: 'var(--primary-action)' }}>
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(installment.amount)}
+                              </p>
+                            </div>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm(`Tem certeza que deseja excluir o pagamento de "${installment.productName}"? Todas as parcelas serão removidas.`)) {
+                                  deletePaymentMutation.mutate(installment.productId);
+                                }
+                              }}
+                              disabled={deletePaymentMutation.isPending}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              {deletePaymentMutation.isPending ? (
+                                <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </Button>
                           </div>
                         </div>
                       </div>

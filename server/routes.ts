@@ -442,6 +442,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+   // Delete payment by product ID
+   app.delete("/api/payments/product/:productId", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = parseInt(req.user.userId);
+      const productId = parseInt(req.params.productId);
+
+      console.log('[Payment Deletion] Excluindo pagamento do produto:', productId, 'usuário:', userId);
+
+      const success = await storage.deletePaymentByProductId(productId, userId);
+
+      if (success) {
+          res.json({ message: "Payment deleted successfully" });
+      } else {
+          res.status(404).json({ error: "Payment not found or could not be deleted" });
+      }
+    } catch (error) {
+      console.error('Erro ao excluir pagamento:', error);
+      res.status(500).json({ error: "Failed to delete payment" });
+    }
+  });
+
   // Finance routes
   app.get("/api/finances", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {

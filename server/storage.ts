@@ -67,6 +67,7 @@ export interface IStorage {
     },
     userId: number
   ): Promise<boolean>;
+    deletePaymentByProductId(productId: number, userId: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -431,6 +432,20 @@ export class DatabaseStorage implements IStorage {
       return !!result;
     } catch (error) {
       console.error("Error updating payment:", error);
+      return false;
+    }
+  }
+
+  async deletePaymentByProductId(productId: number, userId: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(payments)
+        .where(and(eq(payments.productId, productId), eq(products.userId, userId)))
+        .returning({ id: payments.id });
+
+      return !!result;
+    } catch (error) {
+      console.error("Error deleting payment by product ID:", error);
       return false;
     }
   }

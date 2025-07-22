@@ -175,13 +175,17 @@ export function EditProductWithPaymentModal({
     updatePaymentMutation.mutate(paymentForm);
   };
 
-  const handleSaveAll = () => {
-    updateProductMutation.mutate(productForm);
-    if (product.isPurchased) {
-      updatePaymentMutation.mutate(paymentForm);
+  const handleSaveAll = async () => {
+    try {
+      await updateProductMutation.mutateAsync(productForm);
+      if (product.isPurchased && paymentData) {
+        await updatePaymentMutation.mutateAsync(paymentForm);
+      }
+      onProductUpdated();
+      onClose();
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
     }
-    onProductUpdated();
-    onClose();
   };
 
   return (
