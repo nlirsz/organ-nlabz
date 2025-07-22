@@ -115,7 +115,7 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
   };
 
   return (
-    <div className="neomorphic-card p-4 md:p-6 product-card-hover card-entering">
+    <div className="product-card slide-in-up">
       <div className="flex flex-col h-full">
         {/* Image Section */}
         <div className="relative mb-3 md:mb-4">
