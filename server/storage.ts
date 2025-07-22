@@ -200,7 +200,8 @@ export class DatabaseStorage implements IStorage {
         payment_id: createdPayment.id,
         installmentNumber: i + 1,
         dueDate: dueDate,
-        value: payment.installmentValue.toString()
+        value: payment.installmentValue.toString(),
+        isPaid: false
       });
     }
 
@@ -413,7 +414,8 @@ export class DatabaseStorage implements IStorage {
             payment_id: paymentId,
             installmentNumber: i + 1,
             dueDate: dueDate,
-            value: installmentValue.toString()
+            value: installmentValue.toString(),
+            isPaid: false
           });
         }
 
