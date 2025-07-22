@@ -78,6 +78,7 @@ export function HistoricoTab() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedPaymentData, setSelectedPaymentData] = useState<any>(null);
 
   const authToken = localStorage.getItem("authToken");
   const userId = localStorage.getItem("userId");
@@ -204,8 +205,30 @@ export function HistoricoTab() {
     return [];
   };
 
-  const handleEditProduct = (product: Product) => {
+  const handleEditProduct = async (product: Product) => {
     setSelectedProduct(product);
+    
+    // Buscar dados de pagamento se o produto estiver comprado
+    if (product.isPurchased) {
+      try {
+        const response = await fetch(`/api/payments/product/${product.id}`, {
+          headers: { "x-auth-token": authToken || "" }
+        });
+        
+        if (response.ok) {
+          const paymentData = await response.json();
+          setSelectedPaymentData(paymentData);
+        } else {
+          setSelectedPaymentData(null);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados de pagamento:", error);
+        setSelectedPaymentData(null);
+      }
+    } else {
+      setSelectedPaymentData(null);
+    }
+    
     setEditModalOpen(true);
   };
 
@@ -540,10 +563,7 @@ export function HistoricoTab() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => {
-                                setSelectedProduct(product);
-                                setEditModalOpen(true);
-                              }}
+                              onClick={() => handleEditProduct(product)}
                               title="Gerenciar pagamento"
                               className="h-8 w-8 p-0"
                             >
@@ -597,10 +617,12 @@ export function HistoricoTab() {
       {selectedProduct && (
         <EditProductWithPaymentModal
           product={selectedProduct}
+          paymentData={selectedPaymentData}
           isOpen={editModalOpen}
           onClose={() => {
             setEditModalOpen(false);
             setSelectedProduct(null);
+            setSelectedPaymentData(null);
           }}
           onProductUpdated={handleProductUpdated}
         />
