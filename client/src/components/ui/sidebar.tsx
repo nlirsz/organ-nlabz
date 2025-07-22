@@ -157,15 +157,18 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
     <>
       {/* Overlay para mobile - clica fora para fechar */}
       <div 
-        className="fixed inset-0 bg-black/50 z-40 backdrop-blur-md"
+        className="fixed inset-0 bg-black/60 z-40 backdrop-blur-md"
         onClick={close}
       />
 
       {/* Menu suspenso centralizado */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div 
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        onClick={close}
+      >
         <div 
           className={cn(
-            "bg-[#2a2a2a] rounded-3xl p-6 shadow-2xl",
+            "bg-[#1a1a1a] rounded-3xl p-6 shadow-2xl border border-gray-700",
             "flex flex-col items-center space-y-6",
             "animate-in zoom-in-95 duration-200",
             "min-w-[280px]"
@@ -198,7 +201,7 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
                     "hover:scale-110",
                     isActive 
                       ? "bg-[#119423] text-white shadow-lg shadow-[#119423]/30" 
-                      : "bg-white text-gray-700 hover:bg-gray-100 shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 shadow-md"
                   )}
                 >
                   <Icon className="w-6 h-6" />
@@ -211,7 +214,7 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
           <div className="flex items-center space-x-6 mt-8 pt-6 border-t border-gray-600">
             <button 
               onClick={toggleTheme}
-              className="w-12 h-12 rounded-full bg-white text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-md"
+              className="w-12 h-12 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-md"
             >
               <span className="text-lg">{isDark ? '☀️' : '🌙'}</span>
             </button>
