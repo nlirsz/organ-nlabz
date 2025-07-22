@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, ShoppingCart, DollarSign, Calendar, Target, Store } from 'lucide-react';
+import { TrendingUp, TrendingDown, ShoppingCart, DollarSign, Calendar, Target, Store, RefreshCcw, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -36,10 +36,17 @@ export function SmartDashboard() {
     recommendations: []
   });
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    await loadDashboardData();
+    setIsRefreshing(false);
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -264,8 +271,7 @@ export function SmartDashboard() {
           {[1, 2, 3, 4].map(i => (
             <Card key={i}>
               <CardContent className="p-6">
-                <div```typescript
- className="animate-pulse">
+                <div className="animate-pulse">
                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                   <div className="h-8 bg-gray-200 rounded w-1/2"></div>
                 </div>
