@@ -38,6 +38,7 @@ export function EditProductWithPaymentModal({
   onClose, 
   onProductUpdated 
 }: EditProductWithPaymentModalProps) {
+  const [activeTab, setActiveTab] = useState("produto");
   const [productForm, setProductForm] = useState({
     name: product.name,
     price: product.price || '',
@@ -66,6 +67,13 @@ export function EditProductWithPaymentModal({
 
   useEffect(() => {
     if (isOpen) {
+      // Definir aba inicial baseada em dados de pagamento
+      if (product.isPurchased && paymentData) {
+        setActiveTab("pagamento");
+      } else {
+        setActiveTab("produto");
+      }
+
       setProductForm({
         name: product.name,
         price: product.price || '',
@@ -177,8 +185,16 @@ export function EditProductWithPaymentModal({
   };
 
   return (
-    <div className="space-y-6">
-      <Tabs defaultValue="produto" className="w-full">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {activeTab === "pagamento" ? "Gerenciar Pagamento" : "Editar Produto"}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="produto">Dados do Produto</TabsTrigger>
           <TabsTrigger value="pagamento" disabled={!product.isPurchased}>Dados do Pagamento</TabsTrigger>
@@ -573,13 +589,15 @@ export function EditProductWithPaymentModal({
       </Tabs>
 
       <div className="flex justify-end gap-2 pt-4 border-t">
-        <Button variant="outline" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button onClick={handleSaveAll} disabled={updateProductMutation.isPending || updatePaymentMutation.isPending}>
-          {(updateProductMutation.isPending || updatePaymentMutation.isPending) ? "Salvando..." : "Salvar Tudo"}
-        </Button>
-      </div>
-    </div>
+            <Button variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveAll} disabled={updateProductMutation.isPending || updatePaymentMutation.isPending}>
+              {(updateProductMutation.isPending || updatePaymentMutation.isPending) ? "Salvando..." : "Salvar Tudo"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -122,7 +122,7 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
       const response = await apiRequest("GET", `/api/payments/product/${product.id}`);
       return response.json();
     },
-    enabled: isPurchased && isEditModalOpen, // Só busca quando o modal estiver aberto e produto comprado
+    enabled: isPurchased, // Busca sempre que o produto estiver comprado
   });
 
   return (
@@ -299,6 +299,7 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
 
         <EditProductWithPaymentModal
           product={product}
+          paymentData={paymentData}
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onProductUpdated={onProductUpdated}
