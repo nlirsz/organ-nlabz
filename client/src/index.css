@@ -595,6 +595,94 @@
                 var(--gradient-primary) border-box;
   }
 
+  /* Sidebar específico */
+  .sidebar-container {
+    position: relative;
+    z-index: 50;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 40;
+  }
+
+  /* Animação do botão mobile */
+  .mobile-menu-button {
+    background: var(--gradient-primary);
+    box-shadow: 0 8px 32px rgba(17, 148, 35, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .mobile-menu-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 40px rgba(17, 148, 35, 0.4);
+  }
+
+  /* Layout ajustes */
+  .main-content-with-sidebar {
+    margin-left: 0;
+    transition: margin-left 0.3s ease;
+  }
+
+  @media (min-width: 768px) {
+    .main-content-with-sidebar {
+      margin-left: 256px;
+    }
+  }
+
+  /* Animações aprimoradas */
+  .slide-in-left {
+    animation: slideInLeft 0.3s ease-out;
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .slide-out-left {
+    animation: slideOutLeft 0.3s ease-in;
+  }
+
+  @keyframes slideOutLeft {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+  }
+
+  /* Glow effect para botões ativos */
+  .nav-button-active {
+    background: var(--gradient-primary);
+    box-shadow: 0 4px 20px rgba(17, 148, 35, 0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .nav-button-active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: shimmer 2s infinite;
+  }
+
   /* Mobile responsiveness */
   @media (max-width: 768px) {
     .stats-grid {
@@ -620,6 +708,15 @@
     .tab-button {
       padding: 10px 16px;
       font-size: 0.875rem;
+    }
+
+    /* Ajustes para sidebar mobile */
+    .sidebar-mobile {
+      width: 280px;
+    }
+
+    .main-content-mobile {
+      padding-bottom: 100px; /* Espaço para o botão mobile */
     }
   }
 

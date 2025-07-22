@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingCart, Settings, UserCircle, Moon, Sun, LogOut } from "lucide-react";
-import { TabNavigation } from "@/components/tab-navigation";
+import { SidebarProvider, Sidebar, MobileMenuButton } from "@/components/ui/sidebar";
 import { DashboardTab } from "@/components/tabs/dashboard-tab";
 import { ProdutosTab } from "@/components/tabs/produtos-tab";
 import { AddProdutosTab } from "@/components/tabs/add-produtos-tab";
 import { HistoricoTab } from "@/components/tabs/historico-tab";
-
 import { AuthForm } from "@/components/auth/login-form";
 import type { Product } from "@shared/schema";
 
@@ -87,78 +85,48 @@ export default function Home() {
   }
 
   return (
-    <div className={`min-h-screen transition-all duration-300 ${isDark ? 'dark' : ''}`} style={{ backgroundColor: 'var(--c-primary)' }}>
-      {/* Header Neumórfico */}
-      <header className="neomorphic-card sticky top-0 z-50 mx-4 mt-4 mb-6 rounded-2xl">
-        <div className="max-w-6xl mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 neomorphic-card rounded-full flex items-center justify-center p-2 bg-[#121212]">
-                <img 
-                  src="/assets/logo.png" 
-                  alt="orgaN Logo" 
-                  className="w-full h-full object-contain"
-                />
+    <SidebarProvider>
+      <div className={`min-h-screen transition-all duration-300 ${isDark ? 'dark' : ''}`} style={{ backgroundColor: 'var(--c-primary)' }}>
+        <div className="flex">
+          {/* Sidebar */}
+          <Sidebar
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            isDark={isDark}
+            toggleTheme={toggleTheme}
+          />
+
+          {/* Main Content */}
+          <main className="flex-1 min-h-screen md:ml-0">
+            <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+              {/* Tab Content */}
+              <div className="fade-in">
+                {activeTab === "dashboard" && (
+                  <DashboardTab refreshKey={refreshKey} />
+                )}
+                {activeTab === "produtos" && (
+                  <ProdutosTab 
+                    products={products || []} 
+                    isLoading={isLoading} 
+                    onProductUpdated={handleProductUpdated}
+                  />
+                )}
+                {activeTab === "add-produtos" && (
+                  <AddProdutosTab onProductAdded={handleProductAdded} />
+                )}
+                {activeTab === "historico" && (
+                  <HistoricoTab refreshKey={refreshKey} />
+                )}
               </div>
-              <h1 className="text-2xl font-bold" style={{ 
-                fontFamily: 'Almarai, sans-serif',
-                color: 'var(--text-primary)',
-                textShadow: '1px 1px 2px var(--c-light)'
-              }}>orgaN</h1>
             </div>
-            <div className="flex items-center space-x-3">
-              <button 
-                onClick={toggleTheme}
-                className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
-              >
-                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-              <button className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center">
-                <Settings className="w-5 h-5" />
-              </button>
-              <button className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center">
-                <UserCircle className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={handleLogout}
-                className="w-10 h-10 neomorphic-button rounded-full flex items-center justify-center"
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+          </main>
         </div>
-      </header>
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-3 md:px-4 space-y-4 md:space-y-8 pb-4 md:pb-8">
-        {/* Tab Navigation */}
-        <TabNavigation 
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
 
-        {/* Tab Content */}
-        <div className="fade-in">
-          {activeTab === "dashboard" && (
-            <DashboardTab refreshKey={refreshKey} />
-          )}
-          {activeTab === "produtos" && (
-            <ProdutosTab 
-              products={products || []} 
-              isLoading={isLoading} 
-              onProductUpdated={handleProductUpdated}
-            />
-          )}
-          {activeTab === "add-produtos" && (
-            <AddProdutosTab onProductAdded={handleProductAdded} />
-          )}
-          {activeTab === "historico" && (
-            <HistoricoTab refreshKey={refreshKey} />
-          )}
-
-        </div>
-      </main>
-    </div>
+        {/* Mobile Menu Button */}
+        <MobileMenuButton />
+      </div>
+    </SidebarProvider>
   );
 }
