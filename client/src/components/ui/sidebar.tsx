@@ -173,7 +173,7 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
         >
           {/* Logo no topo */}
           <div className="mb-4">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center p-2">
+            <div className="w-16 h-16 bg-[#121212] rounded-full flex items-center justify-center p-3">
               <img 
                 src="/assets/logo.png" 
                 alt="orgaN Logo" 
