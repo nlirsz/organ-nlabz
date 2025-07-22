@@ -237,6 +237,7 @@ export class DatabaseStorage implements IStorage {
           totalInstallments: payments.installments,
           amount: installments.value,
           dueDate: installments.dueDate,
+          isPaid: installments.isPaid,
         })
         .from(installments)
         .innerJoin(payments, eq(installments.payment_id, payments.id))
@@ -244,12 +245,15 @@ export class DatabaseStorage implements IStorage {
         .where(eq(products.userId, userId))
         .orderBy(installments.dueDate);
 
+      console.log(`[Storage] Parcelas encontradas para usuário ${userId}:`, result.length);
+
       return result.map(item => ({
         ...item,
         amount: parseFloat(item.amount),
         dueDate: typeof item.dueDate === 'string' ? item.dueDate : item.dueDate.toISOString(),
         month: typeof item.dueDate === 'string' ? new Date(item.dueDate).getMonth() + 1 : item.dueDate.getMonth() + 1,
         year: typeof item.dueDate === 'string' ? new Date(item.dueDate).getFullYear() : item.dueDate.getFullYear(),
+        isPaid: item.isPaid || false,
       }));
     } catch (error) {
       console.error("Error getting user installments:", error);

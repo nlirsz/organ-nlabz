@@ -392,11 +392,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user installments
   app.get("/api/installments", authenticateToken, async (req, res) => {
     try {
-      const installments = await storage.getUserInstallments(req.user.id);
+      console.log(`[API] Buscando parcelas para usuário: ${req.user.userId}`);
+      const installments = await storage.getUserInstallments(req.user.userId);
+      console.log(`[API] Parcelas retornadas: ${installments.length}`);
       res.json(installments);
     } catch (error) {
-      console.error("Error getting installments:", error);
-      res.status(500).json({ error: "Erro ao buscar parcelas" });
+      console.error("Error fetching installments:", error);
+      res.status(500).json({ error: "Failed to fetch installments" });
     }
   });
 
@@ -405,15 +407,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const productId = parseInt(req.params.productId);
       const userId = parseInt(req.user.userId);
-      
+
       console.log(`[Payment Route] Buscando pagamento para produto ${productId} do usuário ${userId}`);
-      
+
       const paymentData = await storage.getPaymentByProductId(productId, userId);
-      
+
       if (!paymentData) {
         return res.status(404).json({ error: "Nenhum pagamento encontrado para este produto" });
       }
-      
+
       res.json(paymentData);
     } catch (error) {
       console.error("Error getting payment data:", error);
