@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2, Edit, ExternalLink, Check, RotateCcw, ShoppingCart, Heart, TrendingUp, RefreshCw } from "lucide-react";
+import { Trash2, Edit, ExternalLink, Check, RotateCcw, ShoppingCart, Heart, TrendingUp, RefreshCw, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { EditProductWithPaymentModal } from "./edit-product-with-payment-modal";
@@ -213,10 +213,24 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
                       setIsEditModalOpen(true);
                     }}
                     className="flex-1 sm:flex-none neomorphic-button"
+                    title="Editar produto"
                   >
                     <Edit className="w-4 h-4" style={{ color: 'var(--edit-color)' }} />
                     <span className="sm:hidden">Editar</span>
                   </button>
+                  {isPurchased && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditModalOpen(true);
+                      }}
+                      className="flex-1 sm:flex-none neomorphic-button"
+                      title="Gerenciar pagamento"
+                    >
+                      <CreditCard className="w-4 h-4" style={{ color: 'var(--primary-action)' }} />
+                      <span className="sm:hidden">Pagamento</span>
+                    </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -249,10 +263,24 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
                       setIsEditModalOpen(true);
                     }}
                     className="flex-1 sm:flex-none neomorphic-button"
+                    title="Editar produto"
                   >
                     <Edit className="w-4 h-4" style={{ color: 'var(--edit-color)' }} />
                     <span className="sm:hidden">Editar</span>
                   </button>
+                  {isPurchased && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditModalOpen(true);
+                      }}
+                      className="flex-1 sm:flex-none neomorphic-button"
+                      title="Gerenciar pagamento"
+                    >
+                      <CreditCard className="w-4 h-4" style={{ color: 'var(--primary-action)' }} />
+                      <span className="sm:hidden">Pagamento</span>
+                    </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

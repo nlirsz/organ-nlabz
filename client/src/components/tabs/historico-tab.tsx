@@ -27,6 +27,7 @@ import { CategoryProductsModal } from '@/components/category-products-modal';
 import { StoreProductsModal } from '@/components/store-products-modal';
 import { EditProductModal } from '@/components/edit-product-modal';
 import { PriceHistoryChart } from '@/components/price-history-chart';
+import { InstallmentsTimeline } from '@/components/installments-timeline';
 
 interface Product {
   id: number;
@@ -445,6 +446,19 @@ export function HistoricoTab() {
         </Card>
       </div>
 
+      {/* Timeline de Parcelas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Timeline de Parcelas
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <InstallmentsTimeline />
+        </CardContent>
+      </Card>
+
       {/* Lista de Produtos Comprados */}
       <Card>
         <CardHeader>
@@ -493,7 +507,7 @@ export function HistoricoTab() {
                           <span className="text-lg font-bold text-green-600">
                             R$ {parseFloat(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1">
                             <Button
                               size="sm"
                               variant="ghost"
@@ -509,6 +523,17 @@ export function HistoricoTab() {
                               title="Editar produto"
                             >
                               <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setSelectedProduct(product);
+                                setEditModalOpen(true);
+                              }}
+                              title="Gerenciar pagamento"
+                            >
+                              <CreditCard className="h-4 w-4" />
                             </Button>
                             {product.url && (
                               <Button

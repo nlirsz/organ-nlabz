@@ -98,16 +98,16 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
 
       <StatsCards />
 
-      {/* Resumo Rápido */}
+      {/* Novos Cards Informativos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="neomorphic-card">
           <CardContent className="p-6 text-center">
-            <Package className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--primary-action)' }} />
+            <TrendingUp className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--primary-action)' }} />
             <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-              Total de Produtos
+              Taxa de Conversão
             </p>
             <p className="text-2xl font-bold" style={{ color: 'var(--primary-action)' }}>
-              {products.length}
+              {products.length > 0 ? Math.round((purchasedProducts.length / products.length) * 100) : 0}%
             </p>
           </CardContent>
         </Card>
@@ -116,34 +116,38 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
           <CardContent className="p-6 text-center">
             <ShoppingBag className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--success-color)' }} />
             <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-              Comprados
+              Última Compra
             </p>
-            <p className="text-2xl font-bold" style={{ color: 'var(--success-color)' }}>
-              {purchasedProducts.length}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="neomorphic-card">
-          <CardContent className="p-6 text-center">
-            <Calendar className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--warning-color)' }} />
-            <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-              Pendentes
-            </p>
-            <p className="text-2xl font-bold" style={{ color: 'var(--warning-color)' }}>
-              {pendingProducts.length}
+            <p className="text-lg font-bold" style={{ color: 'var(--success-color)' }}>
+              {purchasedProducts.length > 0 ? 'Hoje' : 'Nenhuma'}
             </p>
           </CardContent>
         </Card>
 
         <Card className="neomorphic-card">
           <CardContent className="p-6 text-center">
-            <TrendingUp className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--primary-action)' }} />
+            <Package className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--warning-color)' }} />
             <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-              Valor Total
+              Categoria Top
             </p>
-            <p className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
-              R$ {products.reduce((sum, p) => sum + parseFloat(p.price || '0'), 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            <p className="text-lg font-bold" style={{ color: 'var(--warning-color)' }}>
+              {topCategories.length > 0 ? topCategories[0][0] : 'Nenhuma'}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="neomorphic-card">
+          <CardContent className="p-6 text-center">
+            <Calendar className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--error-color)' }} />
+            <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              Economia Total
+            </p>
+            <p className="text-lg font-bold" style={{ color: 'var(--error-color)' }}>
+              R$ {purchasedProducts.reduce((sum, p) => {
+                const original = parseFloat(p.originalPrice || p.price || '0');
+                const current = parseFloat(p.price || '0');
+                return sum + (original - current);
+              }, 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </p>
           </CardContent>
         </Card>
