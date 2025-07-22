@@ -87,28 +87,10 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
     }
   };
 
-  if (!isOpen && isMobile) {
-    return null;
-  }
-
-  return (
-    <>
-      {/* Overlay para mobile */}
-      {isMobile && isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={close}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside className={cn(
-        "fixed left-0 top-0 h-full z-50 transition-all duration-300 ease-in-out",
-        "bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800",
-        "rounded-r-3xl shadow-lg",
-        isMobile ? "w-20" : "w-20",
-        !isMobile && "relative"
-      )}>
+  // Desktop sidebar
+  if (!isMobile) {
+    return (
+      <aside className="fixed left-0 top-0 h-full w-20 z-50 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 rounded-r-3xl shadow-lg">
         <div className="flex flex-col h-full items-center py-6">
           {/* Logo no topo */}
           <div className="mb-8">
@@ -162,17 +144,86 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
             </button>
           </div>
         </div>
-
-        {/* Close button para mobile */}
-        {isMobile && (
-          <button 
-            onClick={close}
-            className="absolute top-4 right-2 w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        )}
       </aside>
+    );
+  }
+
+  // Mobile menu suspenso
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <>
+      {/* Overlay para mobile */}
+      <div 
+        className="fixed inset-0 bg-black/70 z-40 backdrop-blur-sm"
+        onClick={close}
+      />
+
+      {/* Menu suspenso centralizado */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div 
+          className={cn(
+            "bg-[#2a2a2a] rounded-3xl p-6 shadow-2xl",
+            "flex flex-col items-center space-y-6",
+            "animate-in zoom-in-95 duration-200",
+            "min-w-[280px]"
+          )}
+        >
+          {/* Logo no topo */}
+          <div className="mb-4">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center p-2">
+              <img 
+                src="/assets/logo.png" 
+                alt="orgaN Logo" 
+                className="w-full h-full object-contain"
+              />
+            </div>
+          </div>
+
+          {/* Navigation Icons */}
+          <div className="flex flex-col items-center space-y-6">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleTabChange(item.id)}
+                  className={cn(
+                    "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200",
+                    "hover:scale-110",
+                    isActive 
+                      ? "bg-[#119423] text-white shadow-lg shadow-[#119423]/30" 
+                      : "bg-white text-gray-700 hover:bg-gray-100 shadow-md"
+                  )}
+                >
+                  <Icon className="w-6 h-6" />
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Bottom actions */}
+          <div className="flex items-center space-x-6 mt-8 pt-6 border-t border-gray-600">
+            <button 
+              onClick={toggleTheme}
+              className="w-12 h-12 rounded-full bg-white text-gray-700 hover:bg-gray-100 flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-md"
+            >
+              <span className="text-lg">{isDark ? '☀️' : '🌙'}</span>
+            </button>
+            
+            <button 
+              onClick={onLogout}
+              className="w-12 h-12 rounded-full bg-red-500 text-white hover:bg-red-600 flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-md"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
     </>
   );
 }
