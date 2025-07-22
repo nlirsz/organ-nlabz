@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UrlInput } from "@/components/url-input";
@@ -32,6 +33,7 @@ interface AddProdutosTabProps {
 
 export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
   const [isManualMode, setIsManualMode] = useState(false);
+  const [url, setUrl] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -122,6 +124,36 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
     };
 
     addProductMutation.mutate(productData);
+  };
+
+  const handleUrlSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!url.trim()) {
+      toast({
+        title: "Erro",
+        description: "Por favor, digite uma URL de produto",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      new URL(url);
+    } catch {
+      toast({
+        title: "Erro",
+        description: "Por favor, digite uma URL válida",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Aqui você pode adicionar a lógica de scraping
+    // Por enquanto, vamos apenas mostrar um feedback
+    toast({
+      title: "Processando",
+      description: "Analisando produto...",
+    });
   };
 
   if (isManualMode) {
@@ -336,38 +368,50 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
           Adicionar Produtos
         </h2>
         <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
-          Escolha como deseja adicionar produtos à sua lista
+          Cole o link do produto ou adicione manualmente
         </p>
       </div>
 
-      {/* Mode Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="neomorphic-card p-6 rounded-2xl text-center smooth-hover animated-border staggered-fade">
-          <Link className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--primary-action)' }} />
-          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-            Por URL (Automático)
-          </h3>
-          <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-            Cole o link do produto e nossa IA extrai todas as informações automaticamente
-          </p>
-          <div className="fade-in">
-            <UrlInput onProductAdded={onProductAdded} />
+      {/* Main Add Product Card */}
+      <div className="neomorphic-card p-8 rounded-2xl smooth-hover animated-border staggered-fade">
+        <form onSubmit={handleUrlSubmit} className="space-y-6">
+          {/* URL Input Section */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>
+              <Link className="w-4 h-4" />
+              URL do Produto
+            </label>
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="Cole a URL do produto aqui..."
+              className="w-full neomorphic-input text-base"
+              style={{ 
+                color: 'var(--text-primary)',
+                fontFamily: 'Inter, sans-serif'
+              }}
+            />
           </div>
-        </div>
 
-        <div className="neomorphic-card p-6 rounded-2xl text-center smooth-hover staggered-fade featured-card">
-          <Edit className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--primary-action)' }} />
-          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-            Manual
-          </h3>
-          <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-            Preencha os dados do produto manualmente
-          </p>
+          {/* Add Button */}
           <button
-            onClick={() => setIsManualMode(true)}
-            className="neomorphic-button-primary w-full icon-button"
+            type="submit"
+            className="w-full neomorphic-button-primary flex items-center justify-center gap-2 icon-button py-3"
           >
-            <Edit className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
+            Adicionar Produto
+          </button>
+        </form>
+
+        {/* Manual Option */}
+        <div className="mt-6 pt-6 border-t border-gray-200/20">
+          <button
+            type="button"
+            onClick={() => setIsManualMode(true)}
+            className="w-full neomorphic-button flex items-center justify-center gap-2 icon-button py-3"
+          >
+            <Edit className="w-5 h-5" />
             Adicionar Manualmente
           </button>
         </div>
