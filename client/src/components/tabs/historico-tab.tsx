@@ -141,14 +141,14 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
   // Mutations para finanças
   const saveFinanceMutation = useMutation({
     mutationFn: async (data: { mes_ano: string; receita: number; gastos: number; id?: number }) => {
-      const token = localStorage.getItem('token');
+      const authToken = localStorage.getItem('authToken');
       const url = data.id ? `/api/finances/${data.id}` : '/api/finances';
       const method = data.id ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method,
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'x-auth-token': authToken || '',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -182,11 +182,11 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
 
   const deleteFinanceMutation = useMutation({
     mutationFn: async (id: number) => {
-      const token = localStorage.getItem('token');
+      const authToken = localStorage.getItem('authToken');
       const response = await fetch(`/api/finances/${id}`, {
         method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'x-auth-token': authToken || '',
           'Content-Type': 'application/json'
         }
       });
