@@ -10,6 +10,8 @@ import { EditProductModal } from "@/components/edit-product-modal";
 import { EditProductWithPaymentModal } from "@/components/edit-product-with-payment-modal";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingDown } from 'lucide-react';
+import { CategoryProductsModal } from '@/components/category-products-modal';
+import { StoreProductsModal } from '@/components/store-products-modal';
 interface HistoricoTabProps {
   refreshKey: number;
 }
@@ -341,6 +343,26 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     }
   };
 
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedStore, setSelectedStore] = useState('');
+
+const handleProductClick = (product) => {
+    setSelectedProduct(product);
+    setIsProductModalOpen(true);
+  };
+
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleStoreClick = (store) => {
+    setSelectedStore(store);
+    setIsStoreModalOpen(true);
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -570,7 +592,11 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
           ) : (
             <div className="space-y-4">
               {topCategories.map(([category, amount]) => (
-                <div key={category} className="flex items-center justify-between p-4 neomorphic-card rounded-xl">
+                <div 
+                  key={category} 
+                  className="flex items-center justify-between p-4 neomorphic-card rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => handleCategoryClick(category)}
+                >
                   <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
                     {category}
                   </span>
@@ -616,7 +642,11 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
           ) : (
             <div className="space-y-4">
               {topStores.map(([store, amount]) => (
-                <div key={store} className="flex items-center justify-between p-4 neomorphic-card rounded-xl">
+                <div 
+                  key={store} 
+                  className="flex items-center justify-between p-4 neomorphic-card rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => handleStoreClick(store)}
+                >
                   <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
                     {store}
                   </span>
@@ -678,7 +708,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                 </div>
 
                 {/* Ações do Produto */}
-                <div className="space-y-3">
+                <div classNameм="space-y-3">
                   {selectedProduct.url && (
                     <a 
                       href={selectedProduct.url}
@@ -761,201 +791,4 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                       <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                         <Store className="w-4 h-4 text-gray-600" />
                         <div>
-                          <span className="text-sm font-medium text-gray-700">Loja</span>
-                          <p className="text-sm text-gray-900">{selectedProduct.store}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <Calendar className="w-4 h-4 text-gray-600" />
-                      <div>
-                        <span className="text-sm font-medium text-gray-700">Data da Compra</span>
-                        <p className="text-sm text-gray-900">{formatDate(selectedProduct.purchaseDate)}</p>
-                      </div>
-                    </div>
-
-                    {selectedProduct.paymentMethod && (
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                        <CreditCard className="w-4 h-4 text-gray-600" />
-                        <div>
-                          <span className="text-sm font-medium text-gray-700">Forma de Pagamento</span>
-                          <p className="text-sm text-gray-900">{selectedProduct.paymentMethod}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedProduct.installments && selectedProduct.installments > 1 && (
-                      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                        <CreditCard className="w-4 h-4 text-blue-600" />
-                        <div>
-                          <span className="text-sm font-medium text-blue-700">Parcelamento</span>
-                          <p className="text-sm text-blue-900">
-                            {selectedProduct.installments}x de {formatCurrency(parseFloat(selectedProduct.price) / selectedProduct.installments)}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedProduct.brand && (
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                        <Tag className="w-4 h-4 text-gray-600" />
-                        <div>
-                          <span className="text-sm font-medium text-gray-700">Marca</span>
-                          <p className="text-sm text-gray-900">{selectedProduct.brand}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedProduct.notes && (
-                      <div className="flex items-start gap-3 p-3 bg-yellow-50 rounded-lg">
-                        <FileText className="w-4 h-4 text-yellow-600 mt-0.5" />
-                        <div>
-                          <span className="text-sm font-medium text-yellow-700">Observações</span>
-                          <p className="text-sm text-yellow-900">{selectedProduct.notes}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Modal de Edição */}
-      {selectedProduct && showEditModal && (
-        <Dialog open={showEditModal} onOpenChange={() => setShowEditModal(false)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Editar Produto e Pagamento</DialogTitle>
-            </DialogHeader>
-            <EditProductWithPaymentModal
-              product={selectedProduct}
-              paymentData={paymentData}
-              isOpen={showEditModal}
-              onClose={() => setShowEditModal(false)}
-              onProductUpdated={() => {
-                queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-                queryClient.invalidateQueries({ queryKey: ["/api/finances"] });
-                setShowEditModal(false);
-                setSelectedProduct(null);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Annual Installments Timeline */}
-      <div className="neomorphic-card p-6 rounded-2xl">
-        <h3 className="text-xl font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>
-          Linha do Tempo de Parcelas {new Date().getFullYear()}
-        </h3>
-        <InstallmentsTimeline />
-      </div>
-
-      {/* Purchase History */}
-      <div className="neomorphic-card p-6 rounded-2xl">
-        <h3 className="text-xl font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>
-          Histórico de Compras
-        </h3>
-
-        {purchasedProducts.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 neomorphic-card rounded-full flex items-center justify-center">
-              <CheckCircle className="w-8 h-8" style={{ color: 'var(--text-secondary)' }} />
-            </div>
-            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
-              Nenhuma compra realizada
-            </h3>
-            <p style={{ color: 'var(--text-secondary)' }}>
-              Seus produtos comprados aparecerão aqui
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {purchasedProducts
-              .sort((a, b) => new Date(b.updatedAt || b.createdAt || Date.now()).getTime() - new Date(a.updatedAt || a.createdAt || Date.now()).getTime())
-              .map((product) => (
-
-                <div className="product-card neomorphic-card p-3 md:p-4 mb-3 cursor-pointer hover:shadow-lg transition-shadow"
-                   onClick={() => {
-                     setSelectedProduct(product);
-                     setShowDetailsModal(true);
-                   }}>
-                <div className="flex items-start gap-3">
-                  {/* Imagem do produto */}
-                  <div className="flex-shrink-0">
-                    {product.imageUrl ? (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-12 h-12 md:w-14 md:h-14 object-contain rounded-lg p-1"
-                        style={{ backgroundColor: 'white' }}
-                      />
-                    ) : (
-                      <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg neomorphic-card flex items-center justify-center"
-                           style={{ backgroundColor: 'white' }}>
-                        <ShoppingBag className="w-4 h-4 md:w-5 md:h-5" style={{ color: 'var(--text-secondary)' }} />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Informações essenciais */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm md:text-base line-clamp-1 mb-1" 
-                            style={{ color: 'var(--text-primary)' }}>
-                          {product.name}
-                        </h3>
-
-                        <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                          {product.store && (
-                            <>
-                              <Store className="w-3 h-3" />
-                              <span className="truncate">{product.store}</span>
-                            </>
-                          )}
-                          {product.category && (
-                            <>
-                              <span>•</span>
-                              <span>{product.category}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-1">
-                        <div className="text-sm md:text-base font-bold text-green-600">
-                          {formatCurrency(parseFloat(product.price) || 0)}
-                        </div>
-                        <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
-                          Comprado
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      <Calendar className="w-3 h-3" />
-                      <span>{formatDate(product.purchaseDate)}</span>
-                      {product.installments && product.installments > 1 && (
-                        <>
-                          <span>•</span>
-                          <CreditCard className="w-3 h-3" />
-                          <span>{product.installments}x</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+                          <span className="text
