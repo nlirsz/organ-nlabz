@@ -59,33 +59,46 @@ function optimizeImageUrl(imageUrl: string, domain: string): string {
     if (domain.includes('amazon.com') && url.hostname.includes('media-amazon.com')) {
       let pathname = url.pathname;
       
-      // CRÍTICO: Apenas otimiza se a URL tem problemas específicos
-      // Se já tem _AC_SX679_ ou _AC_UY400_, mantém como está
-      if (pathname.includes('_AC_SX679_') || pathname.includes('_AC_UY400_')) {
-        return imageUrl; // Retorna URL original se já está otimizada
+      // CRÍTICO: NÃO altera URLs que já funcionam perfeitamente
+      if (pathname.includes('_AC_SX679_') || pathname.includes('_AC_UY400_') || pathname.includes('_AC_SL679_')) {
+        console.log(`[Image Optimizer] Amazon URL já otimizada, mantendo: ${imageUrl}`);
+        return imageUrl; // Retorna URL original se já está funcionando
       }
       
-      // Apenas converte formatos problemáticos
-      pathname = pathname
-        .replace(/_AC_SL1500_/g, '_AC_SX679_')    // SL1500 é muito pesado
-        .replace(/_AC_SL\d{4,}_/g, '_AC_SX679_')  // Qualquer SL com 4+ dígitos
-        .replace(/_AC_UL\d+_/g, '_AC_SX679_')     // UL para SX679
-        .replace(/_AC_UY\d{4,}_/g, '_AC_UY400_'); // UY muito grande para 400
+      // Apenas converte formatos realmente problemáticos
+      if (pathname.includes('_AC_SL1500_') || pathname.includes('_AC_SL1000_')) {
+        pathname = pathname.replace(/_AC_SL\d{4,}_/g, '_AC_SX679_');
+        console.log(`[Image Optimizer] Amazon convertendo SL para SX679`);
+        return `https://${url.hostname}${pathname}`;
+      }
       
-      return `https://${url.hostname}${pathname}`;
+      // Para outras variações, mantém original
+      return imageUrl;
     }
     
     if (domain.includes('mercadolivre.com') && url.hostname.includes('mlstatic.com')) {
       let pathname = url.pathname;
       
-      // CRÍTICO: Remove .webp e substitui por .jpg para compatibilidade máxima
-      pathname = pathname
-        .replace(/\.webp$/i, '.jpg')
-        .replace(/-I\.jpg$/i, '-O.jpg')    // 500px → 1000px
-        .replace(/-W\.jpg$/i, '-O.jpg')    // webp retina → jpg alta
-        .replace(/-F\.jpg$/i, '-W.jpg')    // mantém alta resolução
-        .replace(/-S\.jpg$/i, '-O.jpg')    // small → original
-        .replace(/-T\.jpg$/i, '-O.jpg');   // tiny → original
+      // CRÍTICO: SEMPRE converte .webp para .jpg (compatibilidade)
+      if (pathname.includes('.webp')) {
+        pathname = pathname.replace(/\.webp$/i, '.jpg');
+        console.log(`[Image Optimizer] ML convertendo .webp para .jpg`);
+      }
+      
+      // Melhora resolução se necessário (mas mantém .jpg)
+      if (pathname.includes('-I.jpg')) {
+        pathname = pathname.replace(/-I\.jpg$/i, '-O.jpg');
+        console.log(`[Image Optimizer] ML melhorando resolução I → O`);
+      } else if (pathname.includes('-W.jpg')) {
+        pathname = pathname.replace(/-W\.jpg$/i, '-O.jpg');
+        console.log(`[Image Optimizer] ML convertendo W → O`);
+      } else if (pathname.includes('-S.jpg')) {
+        pathname = pathname.replace(/-S\.jpg$/i, '-O.jpg');
+        console.log(`[Image Optimizer] ML convertendo S → O`);
+      } else if (pathname.includes('-T.jpg')) {
+        pathname = pathname.replace(/-T\.jpg$/i, '-O.jpg');
+        console.log(`[Image Optimizer] ML convertendo T → O`);
+      }
       
       return `https://${url.hostname}${pathname}`;
     }
@@ -113,35 +126,35 @@ REGRAS CRÍTICAS PARA PREÇO:
 ${getSpecificPriceRules(domain)}
 
 ${domain.includes('amazon.com.br') ? `
-⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL:
+⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL (PROBLEMAS DE PREÇO E IMAGEM REPORTADOS):
 
-PREÇO (OBRIGATÓRIO - VALOR INCORRETO REPORTADO):
-- PRIORIDADE 1: span[data-a-offscreen] dentro de .a-price.a-text-price.a-size-medium (preço principal)
-- PRIORIDADE 2: .a-price-current .a-offscreen (texto oculto com preço completo)
-- PRIORIDADE 3: span.a-price-whole + span.a-price-fraction dentro de .a-price
-- PRIORIDADE 4: #price_inside_buybox .a-price-current
-- PRIORIDADE 5: meta[property="product:price:amount"]
-- FORMATO: "R$ 4.859,10" → 4859.10 (remova R$ e converta vírgula para ponto)
-- IGNORE COMPLETAMENTE: preços com "Prime", "frete", "parcelamento", "economia", "a partir de", "Pix"
-- IGNORE: valores muito baixos (< R$ 1000 para iPhones)
-- VALIDAÇÃO: preço deve ser razoável (iPhone 15 Plus > R$ 3500)
+PREÇO (ALTÍSSIMA PRIORIDADE - VALOR DEVE SER PRECISO):
+- PRIORIDADE 1: .a-price[data-a-color="price"] .a-price-current .a-offscreen (preço principal mais confiável)
+- PRIORIDADE 2: #corePrice_feature_div .a-price .a-offscreen (preço do produto)
+- PRIORIDADE 3: #price_inside_buybox .a-price-current .a-offscreen (preço na caixa de compra)
+- PRIORIDADE 4: span.a-price-whole + span.a-price-fraction (combine parte inteira + fração)
+- PRIORIDADE 5: meta[property="product:price:amount"] ou schema.org price
+- FORMATO CRÍTICO: "R$ 3.899,99" → 3899.99 (remova R$ e converta vírgula decimal)
+- VALIDAÇÃO: Para eletrônicos/games, preço deve ser > R$ 50 e < R$ 50000
+- IGNORE TOTALMENTE: preços de frete, Prime, parcelamento, economia, "a partir de"
+- TESTE: O preço deve fazer sentido para o produto (microfone gamer ~R$ 3000-5000)
 
-IMAGEM (OBRIGATÓRIA - MÁXIMA COMPATIBILIDADE):
-- PRIORIDADE 1: meta[property="og:image"] - SEMPRE funciona e é otimizada
-- PRIORIDADE 2: #landingImage[src] (imagem principal do produto)
-- PRIORIDADE 3: img[data-a-image-name="landingImage"] com src válido
-- PRIORIDADE 4: .a-dynamic-image[src] da primeira imagem válida
-- PRIORIDADE 5: JSON-LD com @type="Product" → "image"
-- VALIDAÇÃO CRÍTICA: URL deve começar com https:// e conter "media-amazon.com"
-- VALIDAÇÃO CRÍTICA: URL deve terminar com .jpg ou .jpeg (NUNCA .webp)
-- PREFERÊNCIA ABSOLUTA: URLs que já contêm "_AC_SX679_" (formato ideal)
-- EXEMPLO PERFEITO: https://m.media-amazon.com/images/I/51nHt+jXdjL._AC_SX679_.jpg
-- EVITE COMPLETAMENTE: URLs com "_SL1500_" (muito pesadas) ou dimensões >1000px
-- SEMPRE TESTE: A URL deve ser acessível e não retornar erro 403/404
+IMAGEM (OBRIGATÓRIA - COMPATIBILIDADE MÁXIMA):
+- PRIORIDADE 1: meta[property="og:image"] (SEMPRE funciona, mais confiável)
+- PRIORIDADE 2: #landingImage[src] (imagem principal interativa)
+- PRIORIDADE 3: img[data-a-image-name="landingImage"][src] (primeira imagem)
+- PRIORIDADE 4: .a-dynamic-image[src] (galeria principal)
+- PRIORIDADE 5: JSON-LD schema com "image" (primeira URL do array)
+- VALIDAÇÃO OBRIGATÓRIA: URL deve conter "media-amazon.com" e começar com https://
+- VALIDAÇÃO OBRIGATÓRIA: URL deve terminar com .jpg (NUNCA .webp ou sem extensão)
+- FORMATO IDEAL: URLs com "_AC_SX679_" ou "_AC_UY400_" (boa qualidade + compatível)
+- EXEMPLO FUNCIONANDO: https://m.media-amazon.com/images/I/71k-X-x-zKL._AC_SX679_.jpg
+- EVITAR: URLs com "_SL1500_", dimensões muito grandes, ou formatos não suportados
+- CRITICAL: Se a URL não terminar com .jpg, busque outra opção
 ` : ''}
 
 ${domain.includes('mercadolivre.com') ? `
-⚠️ INSTRUÇÕES CRÍTICAS PARA MERCADO LIVRE:
+⚠️ INSTRUÇÕES CRÍTICAS PARA MERCADO LIVRE (IMAGEM PROBLEMÁTICA REPORTADA):
 
 PREÇO (ALTÍSSIMA PRIORIDADE):
 - PRIORIDADE 1: .andes-money-amount__fraction dentro de [data-testid="price-part"]
@@ -149,26 +162,25 @@ PREÇO (ALTÍSSIMA PRIORIDADE):
 - PRIORIDADE 3: span[data-testid="price-part-integer"] + span[data-testid="price-part-decimal"]
 - PRIORIDADE 4: .ui-pdp-price__fraction (páginas de produto)
 - PRIORIDADE 5: JSON-LD com @type="Product" → "offers" → "price"
-- PRIORIDADE 6: meta[property="product:price:amount"]
 - COMBINAÇÃO INTELIGENTE: Se encontrar partes separadas, combine corretamente
-- FORMATO CORRETO: "8.320" + ",00" = 8320.00 (note a vírgula decimal)
-- IGNORE COMPLETAMENTE: preços com "frete", "entrega", "parcelamento", "a partir de", "Pix"
-- VALIDAÇÃO: iPhone 16 Pro Max deve estar entre R$ 7000-10000
+- FORMATO CORRETO: "1.800" + ",00" = 1800.00 (converta vírgula decimal)
+- IGNORE COMPLETAMENTE: preços de frete, entrega, parcelamento, "a partir de"
+- VALIDAÇÃO: Para volantes/games, preço entre R$ 500-5000 é razoável
 
-IMAGEM (OBRIGATÓRIA - MÁXIMA COMPATIBILIDADE):
-- PRIORIDADE 1: meta[property="og:image"] - SEMPRE funciona e é otimizada
-- PRIORIDADE 2: .ui-pdp-gallery__figure img[src] da primeira imagem da galeria
-- PRIORIDADE 3: img[data-zoom] ou img[data-testid="gallery-image"] 
-- PRIORIDADE 4: JSON-LD com @type="Product" → "image" (primeira imagem do array)
-- PRIORIDADE 5: figure img[src] com maior resolução disponível
-- VALIDAÇÃO CRÍTICA: URL deve conter "mlstatic.com" e começar com https://
-- OTIMIZAÇÃO CRÍTICA: SEMPRE termine a URL com ".jpg" (NUNCA .webp)
-- OTIMIZAÇÃO CRÍTICA: Substitua "-I.webp" por "-O.jpg" (500px webp → 1000px jpg)
-- OTIMIZAÇÃO CRÍTICA: Substitua "-W.webp" por "-O.jpg" (webp retina → jpg alta)
-- OTIMIZAÇÃO CRÍTICA: Substitua qualquer ".webp" por ".jpg" para compatibilidade
-- EXEMPLO PERFEITO: https://http2.mlstatic.com/D_NQ_NP_652166-MLA83590374671_042025-O.jpg
-- REJEITE SEMPRE: URLs que terminam com .webp, "/photos///" ou placeholder
-- TESTE FINAL: URL deve terminar com .jpg e ser acessível
+IMAGEM (OBRIGATÓRIA - PROBLEMA DE COMPATIBILIDADE CRÍTICO):
+- PRIORIDADE 1: meta[property="og:image"] (MAIS confiável para compatibilidade)
+- PRIORIDADE 2: .ui-pdp-gallery__figure img[src] (primeira imagem da galeria principal)
+- PRIORIDADE 3: figure.ui-pdp-gallery__figure img[src] (imagem em destaque)
+- PRIORIDADE 4: img[data-zoom][src] (imagem com zoom)
+- PRIORIDADE 5: JSON-LD schema "image" (primeira URL válida)
+- VALIDAÇÃO OBRIGATÓRIA: URL deve conter "mlstatic.com" e começar com https://
+- CONVERSÃO OBRIGATÓRIA: Se URL terminar com .webp, SUBSTITUA por .jpg
+- CONVERSÃO OBRIGATÓRIA: Se tiver "-I.webp", substitua por "-O.jpg"
+- CONVERSÃO OBRIGATÓRIA: Se tiver "-W.webp", substitua por "-O.jpg"
+- EXEMPLO FUNCIONANDO: https://http2.mlstatic.com/D_NQ_NP_731724-MLB5242628388_072023-O.jpg
+- CRITICAL RULE: A URL final DEVE terminar com .jpg (nunca .webp)
+- CRITICAL RULE: Se não conseguir converter para .jpg, busque outra imagem
+- TESTE FINAL: Verifique se a URL termina com .jpg antes de retornar
 ` : ''}
 
 REGRAS PARA IMAGEM:
