@@ -258,34 +258,34 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 max-w-5xl mx-auto">
             {/* Plano Gratuito - Principal com borda em movimento */}
             <TiltedCard className="group">
               <AnimatedBorder className="relative">
-                <div className="bg-gradient-to-br from-slate-800/95 to-gray-900/95 backdrop-blur-sm p-8 min-h-[600px] flex flex-col rounded-3xl border border-emerald-400/50 shadow-2xl">
-                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-20">
-                    <span className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-8 py-3 rounded-full text-sm font-bold shadow-2xl border border-emerald-400/30">
+                <div className="bg-gradient-to-br from-slate-800/95 to-gray-900/95 backdrop-blur-sm p-6 md:p-8 min-h-[550px] md:min-h-[600px] flex flex-col rounded-3xl border border-emerald-400/50 shadow-2xl">
+                  <div className="absolute -top-4 md:-top-6 left-1/2 transform -translate-x-1/2 z-20">
+                    <span className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-6 md:px-8 py-2 md:py-3 rounded-full text-xs md:text-sm font-bold shadow-2xl border border-emerald-400/30">
                       🔥 Recomendado
                     </span>
                   </div>
 
-                  <div className="text-center mb-8 mt-8">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mb-6 shadow-xl">
-                      <Package className="w-10 h-10 text-white" />
+                  <div className="text-center mb-6 md:mb-8 mt-6 md:mt-8">
+                    <div className="inline-flex items-center justify-center w-16 md:w-20 h-16 md:h-20 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mb-4 md:mb-6 shadow-xl">
+                      <Package className="w-8 md:w-10 h-8 md:h-10 text-white" />
                     </div>
-                    <h3 className="text-3xl font-bold text-white mb-3">Gratuito</h3>
-                    <div className="mb-6">
-                      <span className="text-5xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent drop-shadow-lg">
+                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 md:mb-3">Gratuito</h3>
+                    <div className="mb-4 md:mb-6">
+                      <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent drop-shadow-lg">
                         R$ 0
                       </span>
-                      <span className="text-gray-400 text-xl">/mês</span>
+                      <span className="text-gray-400 text-lg md:text-xl">/mês</span>
                     </div>
-                    <p className="text-gray-300 text-base leading-relaxed">
+                    <p className="text-gray-300 text-sm md:text-base leading-relaxed px-2">
                       Perfeito para começar e experimentar todas as funcionalidades básicas
                     </p>
                   </div>
 
-                  <ul className="space-y-4 mb-10 flex-grow">
+                  <ul className="space-y-3 md:space-y-4 mb-6 md:mb-10 flex-grow px-2">
                     {[
                       "Até 100 produtos ativos*",
                       "IA Gemini para extração",
@@ -294,44 +294,46 @@ export default function LandingPage() {
                       "1 usuário",
                       "Suporte por email"
                     ].map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-center text-base">
-                        <Check className="w-5 h-5 text-emerald-400 mr-4 flex-shrink-0" />
-                        <span className="text-gray-300">{feature}</span>
+                      <li key={featureIndex} className="flex items-start text-sm md:text-base">
+                        <Check className="w-4 md:w-5 h-4 md:h-5 text-emerald-400 mr-3 md:mr-4 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-300 leading-relaxed">{feature}</span>
                       </li>
                     ))}
                   </ul>
 
-                  <Button 
-                    className="w-full rounded-2xl py-4 bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-600 hover:from-emerald-700 hover:via-green-700 hover:to-emerald-700 text-white text-lg shadow-2xl transition-all duration-300 font-bold border border-emerald-400/30 mt-auto"
-                    onClick={() => window.location.href = '/auth'}
-                  >
-                    Começar Gratuitamente
-                  </Button>
-                  <p className="text-xs text-gray-400 text-center mt-3">
-                    *Produtos não comprados em suas listas
-                  </p>
+                  <div className="mt-auto px-2">
+                    <Button 
+                      className="w-full rounded-2xl py-3 md:py-4 bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-600 hover:from-emerald-700 hover:via-green-700 hover:to-emerald-700 text-white text-base md:text-lg shadow-2xl transition-all duration-300 font-bold border border-emerald-400/30"
+                      onClick={() => window.location.href = '/auth'}
+                    >
+                      Começar Gratuitamente
+                    </Button>
+                    <p className="text-xs text-gray-400 text-center mt-2 md:mt-3 leading-relaxed">
+                      *Produtos não comprados em suas listas
+                    </p>
+                  </div>
                 </div>
               </AnimatedBorder>
             </TiltedCard>
 
             {/* Plano orgaN MAX - Com cadeado e blur */}
             <TiltedCard className="group">
-              <div className="relative bg-gradient-to-br from-slate-800/60 to-gray-900/60 backdrop-blur-xl p-8 min-h-[600px] flex flex-col rounded-3xl border border-gray-600/30 shadow-2xl overflow-hidden">
+              <div className="relative bg-gradient-to-br from-slate-800/60 to-gray-900/60 backdrop-blur-xl p-6 md:p-8 min-h-[550px] md:min-h-[600px] flex flex-col rounded-3xl border border-gray-600/30 shadow-2xl overflow-hidden">
                 {/* Overlay de blur e cadeado */}
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 to-gray-900/95 backdrop-blur-lg rounded-3xl z-10 flex flex-col items-center justify-center">
-                  <div className="text-center px-8">
-                    <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-6 shadow-2xl">
-                      <Shield className="w-12 h-12 text-white" />
+                  <div className="text-center px-4 md:px-8">
+                    <div className="inline-flex items-center justify-center w-20 md:w-24 h-20 md:h-24 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-4 md:mb-6 shadow-2xl">
+                      <Shield className="w-10 md:w-12 h-10 md:h-12 text-white" />
                     </div>
-                    <h3 className="text-3xl font-bold text-white mb-4">orgaN MAX</h3>
-                    <p className="text-gray-300 text-base mb-6 leading-relaxed">
+                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-3 md:mb-4">orgaN MAX</h3>
+                    <p className="text-gray-300 text-sm md:text-base mb-4 md:mb-6 leading-relaxed">
                       Em desenvolvimento: Relatórios avançados de gastos e integração com assistentes de voz.
                     </p>
-                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                      <p className="text-white text-lg mb-4 font-bold">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/20">
+                      <p className="text-white text-base md:text-lg mb-3 md:mb-4 font-bold">
                         🚀 Em Breve!
                       </p>
-                      <p className="text-gray-300 text-sm">
+                      <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
                         Funcionalidades avançadas que vão revolucionar ainda mais sua experiência de compras.
                       </p>
                     </div>
@@ -411,23 +413,23 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative z-10 py-20 px-4">
+      <section className="relative z-10 py-16 md:py-20 px-4">
         <TiltedCard className="max-w-4xl mx-auto">
-          <div className="text-center bg-gradient-to-r from-gray-900/80 to-slate-900/80 backdrop-blur-sm p-12 rounded-3xl border border-emerald-400/30 shadow-2xl">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+          <div className="text-center bg-gradient-to-r from-gray-900/80 to-slate-900/80 backdrop-blur-sm p-8 md:p-12 rounded-3xl border border-emerald-400/30 shadow-2xl">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 md:mb-6 leading-tight">
               Pronto para revolucionar suas compras?
             </h2>
-            <p className="text-xl text-gray-300 mb-8">
+            <p className="text-lg md:text-xl text-gray-300 mb-6 md:mb-8 leading-relaxed">
               Junte-se a milhares de usuários que já transformaram sua experiência de compras
             </p>
             <PulseElement>
               <Button 
                 size="lg" 
-                className="bg-white text-gray-900 hover:bg-gray-100 px-10 py-4 text-lg font-bold rounded-2xl shadow-lg"
+                className="bg-white text-gray-900 hover:bg-gray-100 px-8 md:px-10 py-3 md:py-4 text-base md:text-lg font-bold rounded-2xl shadow-lg w-full md:w-auto"
                 onClick={() => window.location.href = '/auth'}
               >
                 Começar Gratuitamente Agora
-                <ArrowRight className="ml-2 w-5 h-5" />
+                <ArrowRight className="ml-2 w-4 md:w-5 h-4 md:h-5" />
               </Button>
             </PulseElement>
           </div>
