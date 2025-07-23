@@ -25,46 +25,73 @@ async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductRe
     const data = await response.json();
     console.log(`[Mercado Livre API] Produto encontrado: ${data.title}`);
 
-    // Busca a melhor imagem disponível com alta resolução
+    // NOVA ESTRATÉGIA: Simula "copiar link da imagem" do navegador
     let imageUrl = 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
     
     if (data.pictures && data.pictures.length > 0) {
-      // Prioriza secure_url, depois url
-      const baseUrl = data.pictures[0].secure_url || data.pictures[0].url;
-      if (baseUrl) {
-        // Abordagem mais conservadora - mantém URL original se possível
-        imageUrl = baseUrl;
+      // Prioriza secure_url (HTTPS), depois url
+      const originalUrl = data.pictures[0].secure_url || data.pictures[0].url;
+      
+      if (originalUrl) {
+        // ESTRATÉGIA: Mantém URL mais próxima do original (como copiar link funciona)
+        imageUrl = originalUrl;
         
-        // Apenas converte .webp para .jpg para compatibilidade
+        // Remove parâmetros que podem causar problemas
+        try {
+          const urlObj = new URL(imageUrl);
+          // Remove parâmetros de cache/tracking
+          ['timestamp', 'cache', 'v', '_', 't'].forEach(param => {
+            urlObj.searchParams.delete(param);
+          });
+          imageUrl = urlObj.toString();
+        } catch (e) {
+          // Se der erro no parse, mantém URL original
+          console.warn('[ML API] Erro ao limpar URL, mantendo original:', e);
+        }
+        
+        // Otimizações mínimas apenas para compatibilidade
         if (imageUrl.includes('.webp')) {
-          imageUrl = imageUrl.replace(/\.webp$/i, '.jpg');
+          // Cria fallback .jpg apenas como backup
+          const jpgUrl = imageUrl.replace(/\.webp$/i, '.jpg');
+          console.log(`[ML API] WebP detectado, criando fallback: ${imageUrl} → ${jpgUrl}`);
+          imageUrl = jpgUrl;
         }
         
-        // Melhora resolução apenas se necessário
-        if (imageUrl.includes('-I.')) {
-          imageUrl = imageUrl.replace(/-I\.(jpg|webp)$/i, '-O.jpg');
-        } else if (imageUrl.includes('-S.')) {
-          imageUrl = imageUrl.replace(/-S\.(jpg|webp)$/i, '-O.jpg');
-        } else if (imageUrl.includes('-T.')) {
-          imageUrl = imageUrl.replace(/-T\.(jpg|webp)$/i, '-O.jpg');
+        // Melhora resolução apenas se for muito baixa
+        if (imageUrl.includes('-I.jpg')) {
+          imageUrl = imageUrl.replace(/-I\.jpg$/i, '-O.jpg');
+          console.log(`[ML API] Melhorando resolução: -I.jpg → -O.jpg`);
+        } else if (imageUrl.includes('-S.jpg')) {
+          imageUrl = imageUrl.replace(/-S\.jpg$/i, '-O.jpg');
+          console.log(`[ML API] Melhorando resolução: -S.jpg → -O.jpg`);
         }
         
-        console.log(`[ML API] Imagem processada: ${baseUrl} → ${imageUrl}`);
+        console.log(`[ML API] Imagem final: ${originalUrl} → ${imageUrl}`);
       }
     } else if (data.thumbnail) {
-      // Processa thumbnail de forma similar
+      // Aplica mesma lógica para thumbnail
       imageUrl = data.thumbnail;
       
+      // Remove parâmetros problemáticos
+      try {
+        const urlObj = new URL(imageUrl);
+        ['timestamp', 'cache', 'v', '_', 't'].forEach(param => {
+          urlObj.searchParams.delete(param);
+        });
+        imageUrl = urlObj.toString();
+      } catch (e) {
+        console.warn('[ML API] Erro ao limpar thumbnail URL:', e);
+      }
+      
+      // Otimizações mínimas
       if (imageUrl.includes('.webp')) {
         imageUrl = imageUrl.replace(/\.webp$/i, '.jpg');
       }
       
-      if (imageUrl.includes('-I.')) {
-        imageUrl = imageUrl.replace(/-I\.(jpg|webp)$/i, '-O.jpg');
-      } else if (imageUrl.includes('-S.')) {
-        imageUrl = imageUrl.replace(/-S\.(jpg|webp)$/i, '-O.jpg');
-      } else if (imageUrl.includes('-T.')) {
-        imageUrl = imageUrl.replace(/-T\.(jpg|webp)$/i, '-O.jpg');
+      if (imageUrl.includes('-I.jpg')) {
+        imageUrl = imageUrl.replace(/-I\.jpg$/i, '-O.jpg');
+      } else if (imageUrl.includes('-S.jpg')) {
+        imageUrl = imageUrl.replace(/-S\.jpg$/i, '-O.jpg');
       }
       
       console.log(`[ML API] Thumbnail processada: ${data.thumbnail} → ${imageUrl}`);
@@ -144,26 +171,37 @@ async function fetchFromMercadoLivre(searchTerm: string): Promise<APIProductResu
     const results: APIProductResult[] = [];
 
     for (const item of data.results.slice(0, 3)) {
-      // Busca imagem de melhor qualidade
+      // ESTRATÉGIA: Link direto como copiar no navegador
       let imageUrl = 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
       
       if (item.thumbnail) {
-        // Processamento mais conservador para manter compatibilidade
         imageUrl = item.thumbnail;
         
-        // Converte webp para jpg
+        // Remove parâmetros que podem quebrar o link
+        try {
+          const urlObj = new URL(imageUrl);
+          ['timestamp', 'cache', 'v', '_', 't', 'cb'].forEach(param => {
+            urlObj.searchParams.delete(param);
+          });
+          imageUrl = urlObj.toString();
+        } catch (e) {
+          // Mantém original se der erro
+          console.warn('[ML Search] Mantendo URL original devido a erro:', e);
+        }
+        
+        // Apenas converte .webp para .jpg (melhor compatibilidade)
         if (imageUrl.includes('.webp')) {
           imageUrl = imageUrl.replace(/\.webp$/i, '.jpg');
         }
         
-        // Melhora resolução se for baixa
-        if (imageUrl.includes('-I.')) {
-          imageUrl = imageUrl.replace(/-I\.(jpg|webp)$/i, '-O.jpg');
-        } else if (imageUrl.includes('-S.')) {
-          imageUrl = imageUrl.replace(/-S\.(jpg|webp)$/i, '-O.jpg');
+        // Melhora resolução apenas se muito baixa
+        if (imageUrl.includes('-I.jpg')) {
+          imageUrl = imageUrl.replace(/-I\.jpg$/i, '-O.jpg');
+        } else if (imageUrl.includes('-S.jpg')) {
+          imageUrl = imageUrl.replace(/-S\.jpg$/i, '-O.jpg');
         }
         
-        console.log(`[ML Search] Imagem processada: ${item.thumbnail} → ${imageUrl}`);
+        console.log(`[ML Search] Link direto: ${item.thumbnail} → ${imageUrl}`);
       }
 
       // Normaliza preço

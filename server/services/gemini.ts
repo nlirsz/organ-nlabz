@@ -55,36 +55,53 @@ function optimizeImageUrl(imageUrl: string, domain: string): string {
   try {
     const url = new URL(imageUrl);
 
+    // ESTRATÉGIA: Simula o "copiar link da imagem" do navegador
+    // Remove parâmetros desnecessários que podem quebrar a imagem
+    const cleanUrl = new URL(imageUrl);
+    
+    // Remove parâmetros de tracking e cache que podem causar problemas
+    const paramsToRemove = ['cache', 'v', 'timestamp', 't', '_', 'cb', 'nocache'];
+    paramsToRemove.forEach(param => cleanUrl.searchParams.delete(param));
+
     // Otimizações específicas por domínio
     if (domain.includes('amazon.com') && url.hostname.includes('media-amazon.com')) {
-      let pathname = url.pathname;
+      let pathname = cleanUrl.pathname;
 
-      // Otimiza para melhor compatibilidade (SX679 é mais estável que SL1500)
+      // Otimiza para melhor compatibilidade e carregamento
       pathname = pathname
-        .replace(/_AC_SL\d+_/g, '_AC_SX679_')
-        .replace(/_AC_UY\d+_/g, '_AC_UY400_')
-        .replace(/_AC_UL\d+_/g, '_AC_SX679_');
+        .replace(/_AC_SL\d+_/g, '_AC_SX679_')     // Tamanho mais compatível
+        .replace(/_AC_UY\d+_/g, '_AC_UY400_')     // Altura otimizada
+        .replace(/_AC_UL\d+_/g, '_AC_SX679_')     // Lista para produto
+        .replace(/_SL\d+_/g, '_SX679_');          // Remove SL alto
 
+      // Reconstrói URL limpa
       return `https://${url.hostname}${pathname}`;
     }
 
     if (domain.includes('mercadolivre.com') && url.hostname.includes('mlstatic.com')) {
-      let pathname = url.pathname;
+      let pathname = cleanUrl.pathname;
 
-      // CRÍTICO: Remove .webp e substitui por .jpg para compatibilidade máxima
-      pathname = pathname
-        .replace(/\.webp$/i, '.jpg')
-        .replace(/-I\.jpg$/i, '-O.jpg')    // 500px → 1000px
-        .replace(/-W\.jpg$/i, '-O.jpg')    // webp retina → jpg alta
-        .replace(/-F\.jpg$/i, '-W.jpg')    // mantém alta resolução
-        .replace(/-S\.jpg$/i, '-O.jpg')    // small → original
-        .replace(/-T\.jpg$/i, '-O.jpg');   // tiny → original
+      // ESTRATÉGIA NOVA: Mantém a URL mais original possível, apenas melhora formato
+      // Remove .webp apenas se presente (para compatibilidade máxima)
+      if (pathname.includes('.webp')) {
+        pathname = pathname.replace(/\.webp$/i, '.jpg');
+      }
+      
+      // Melhora resolução apenas se for muito baixa
+      if (pathname.includes('-I.')) {
+        pathname = pathname.replace(/-I\.(jpg|webp)$/i, '-O.jpg');
+      } else if (pathname.includes('-S.')) {
+        pathname = pathname.replace(/-S\.(jpg|webp)$/i, '-O.jpg');
+      }
 
-      return `https://${url.hostname}${pathname}`;
+      // Reconstrói URL sem parâmetros problemáticos
+      const finalUrl = `https://${url.hostname}${pathname}`;
+      console.log(`[ML Image] Original: ${imageUrl} → Otimizada: ${finalUrl}`);
+      return finalUrl;
     }
 
-    // Para outros domínios, retorna a URL original se for válida
-    return imageUrl;
+    // Para outros domínios, remove apenas parâmetros problemáticos
+    return cleanUrl.toString();
 
   } catch (error) {
     console.warn(`[Image Optimizer] Erro ao processar URL: ${imageUrl}`, error);
@@ -139,20 +156,26 @@ PREÇO (ALTÍSSIMA PRIORIDADE):
 - IGNORE COMPLETAMENTE: preços com "frete", "entrega", "parcelamento", "a partir de", "Pix"
 - VALIDAÇÃO: iPhone 16 Pro Max deve estar entre R$ 7000-10000
 
-IMAGEM (OBRIGATÓRIA - MÁXIMA COMPATIBILIDADE):
-- PRIORIDADE 1: meta[property="og:image"] - SEMPRE funciona e é otimizada
-- PRIORIDADE 2: .ui-pdp-gallery__figure img[src] da primeira imagem da galeria
-- PRIORIDADE 3: img[data-zoom] ou img[data-testid="gallery-image"] 
-- PRIORIDADE 4: JSON-LD com @type="Product" → "image" (primeira imagem do array)
-- PRIORIDADE 5: figure img[src] com maior resolução disponível
-- VALIDAÇÃO CRÍTICA: URL deve conter "mlstatic.com" e começar com https://
-- OTIMIZAÇÃO CRÍTICA: SEMPRE termine a URL com ".jpg" (NUNCA .webp)
-- OTIMIZAÇÃO CRÍTICA: Substitua "-I.webp" por "-O.jpg" (500px webp → 1000px jpg)
-- OTIMIZAÇÃO CRÍTICA: Substitua "-W.webp" por "-O.jpg" (webp retina → jpg alta)
-- OTIMIZAÇÃO CRÍTICA: Substitua qualquer ".webp" por ".jpg" para compatibilidade
-- EXEMPLO PERFEITO: https://http2.mlstatic.com/D_NQ_NP_652166-MLA83590374671_042025-O.jpg
-- REJEITE SEMPRE: URLs que terminam com .webp, "/photos///" ou placeholder
-- TESTE FINAL: URL deve terminar com .jpg e ser acessível
+IMAGEM (ESTRATÉGIA LINK DIRETO - COMO COPIAR LINK NO NAVEGADOR):
+- PRIORIDADE 1: meta[property="og:image"] - URL direta e sempre acessível
+- PRIORIDADE 2: .ui-pdp-gallery__figure img[src] - imagem principal da galeria
+- PRIORIDADE 3: img[data-zoom][src] - imagem com zoom (alta resolução)
+- PRIORIDADE 4: img[data-testid*="gallery"][src] - primeira imagem da galeria
+- PRIORIDADE 5: JSON-LD @type="Product" → "image" (primeira do array)
+- PRIORIDADE 6: figure img[src] - imagem do produto principal
+
+VALIDAÇÃO CRÍTICA DE IMAGEM:
+- URL DEVE começar com https:// e conter "mlstatic.com"
+- URL DEVE ser acessível diretamente (como copiar link da imagem no navegador)
+- PREFIRA URLs que terminam com -O.jpg ou -W.jpg (alta resolução)
+- SE encontrar .webp, mantenha mas adicione fallback .jpg
+- EVITE URLs com parâmetros ?timestamp ou &cache (podem expirar)
+
+EXEMPLOS DE URLs PERFEITAS:
+- https://http2.mlstatic.com/D_NQ_NP_652166-MLA83590374671_042025-O.jpg
+- https://http2.mlstatic.com/D_NQ_NP_2X_731724-MLB5242628388_112023-O.jpg
+
+TESTE FINAL: A URL deve carregar a imagem diretamente no navegador
 ` : ''}
 
 REGRAS PARA IMAGEM:
