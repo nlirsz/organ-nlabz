@@ -536,12 +536,12 @@ export function HistoricoTab() {
                           </div>
                         </div>
                         
-                        <div className="flex items-center justify-between pt-2 border-t border-border">
+                        <div className="pt-2 border-t border-border space-y-2">
                           <div className="flex items-center text-xs text-muted-foreground">
                             <Calendar className="w-3 h-3 mr-1" />
                             Comprado em {new Date(product.createdAt).toLocaleDateString('pt-BR')}
                           </div>
-                          <div className="flex gap-1">
+                          <div className="flex justify-center gap-1">
                             <Button
                               size="sm"
                               variant="ghost"
