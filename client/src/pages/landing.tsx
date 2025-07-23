@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { ShoppingCart, Sparkles, BarChart3, Zap, Users, Shield, Star, ArrowRight, Check } from "lucide-react";
+import { ShoppingCart, Sparkles, BarChart3, Zap, Users, Shield, Star, ArrowRight, Check, TrendingUp, Package, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Tilted Card Component from ReactBits
@@ -39,64 +39,75 @@ const TiltedCard = ({ children, className = "", ...props }: any) => {
   );
 };
 
+// Floating Animation Component
+const FloatingElement = ({ children, delay = 0, className = "" }: any) => {
+  return (
+    <div 
+      className={`animate-bounce ${className}`}
+      style={{ 
+        animationDelay: `${delay}s`,
+        animationDuration: '3s',
+        animationIterationCount: 'infinite'
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
+// Pulse Animation Component
+const PulseElement = ({ children, delay = 0, className = "" }: any) => {
+  return (
+    <div 
+      className={`animate-pulse ${className}`}
+      style={{ 
+        animationDelay: `${delay}s`,
+        animationDuration: '2s',
+        animationIterationCount: 'infinite'
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
 export default function LandingPage() {
   const features = [
     {
-      icon: <Sparkles className="w-8 h-8 text-blue-500" />,
+      icon: <Sparkles className="w-8 h-8 text-purple-400" />,
       title: "IA Inteligente",
       description: "Adicione produtos apenas colando URLs. Nossa IA extrai automaticamente nome, preço, imagens e categoria usando Gemini AI.",
-      gradient: "from-blue-500 to-purple-600"
+      gradient: "from-purple-500 to-pink-600"
     },
     {
-      icon: <BarChart3 className="w-8 h-8 text-green-500" />,
+      icon: <BarChart3 className="w-8 h-8 text-blue-400" />,
       title: "Dashboard Financeiro",
       description: "Acompanhe seus gastos com análises detalhadas por categoria, loja e período. Visualize seu histórico de compras.",
-      gradient: "from-green-500 to-emerald-600"
+      gradient: "from-blue-500 to-cyan-600"
     },
     {
-      icon: <ShoppingCart className="w-8 h-8 text-orange-500" />,
+      icon: <ShoppingCart className="w-8 h-8 text-emerald-400" />,
       title: "Lista Inteligente",
       description: "Organize produtos por categoria, marque como comprados, e tenha controle total da sua lista de compras.",
+      gradient: "from-emerald-500 to-teal-600"
+    },
+    {
+      icon: <CreditCard className="w-8 h-8 text-orange-400" />,
+      title: "Parcelamento",
+      description: "Configure pagamentos parcelados e acompanhe suas prestações com notificações de vencimento.",
       gradient: "from-orange-500 to-red-600"
     },
     {
-      icon: <Zap className="w-8 h-8 text-yellow-500" />,
-      title: "Parcelamento",
-      description: "Configure pagamentos parcelados e acompanhe suas prestações com notificações de vencimento.",
-      gradient: "from-yellow-500 to-orange-600"
-    },
-    {
-      icon: <Users className="w-8 h-8 text-indigo-500" />,
+      icon: <Users className="w-8 h-8 text-indigo-400" />,
       title: "Multi-usuário",
       description: "Cada usuário tem sua lista pessoal e dados privados com sistema de autenticação seguro.",
       gradient: "from-indigo-500 to-purple-600"
     },
     {
-      icon: <Shield className="w-8 h-8 text-emerald-500" />,
-      title: "Design Neumórfico",
-      description: "Interface moderna com design neumórfico, tema escuro/claro e experiência visual única.",
-      gradient: "from-emerald-500 to-teal-600"
-    }
-  ];
-
-  const testimonials = [
-    {
-      name: "João Silva",
-      role: "Usuário Premium",
-      content: "Revolucionou minha forma de fazer compras online. A IA é impressionante!",
-      rating: 5
-    },
-    {
-      name: "Maria Santos",
-      role: "Empresária",
-      content: "O dashboard financeiro me ajuda a controlar gastos de forma inteligente.",
-      rating: 5
-    },
-    {
-      name: "Pedro Costa",
-      role: "Desenvolvedor",
-      content: "Interface moderna e funcionalidades incríveis. Parabéns ao time!",
-      rating: 5
+      icon: <Shield className="w-8 h-8 text-rose-400" />,
+      title: "Design Moderno",
+      description: "Interface elegante com design neumórfico, tema escuro/claro e experiência visual única.",
+      gradient: "from-rose-500 to-pink-600"
     }
   ];
 
@@ -146,76 +157,112 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <FloatingElement delay={0} className="absolute top-20 left-10 opacity-20">
+          <div className="w-32 h-32 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-xl"></div>
+        </FloatingElement>
+        <FloatingElement delay={1} className="absolute top-40 right-20 opacity-20">
+          <div className="w-24 h-24 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full blur-xl"></div>
+        </FloatingElement>
+        <FloatingElement delay={2} className="absolute bottom-40 left-1/4 opacity-20">
+          <div className="w-40 h-40 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full blur-xl"></div>
+        </FloatingElement>
+        <PulseElement delay={0.5} className="absolute top-1/2 right-10 opacity-10">
+          <div className="w-20 h-20 bg-gradient-to-r from-orange-400 to-red-400 rounded-full blur-lg"></div>
+        </PulseElement>
+      </div>
+
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 px-4">
+      <section className="relative z-10 py-20 px-4">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center mb-8">
-            <img 
-              src="/assets/logo.png" 
-              alt="Smart Shopping Logo" 
-              className="w-16 h-16 mr-4"
-            />
-            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Smart Shopping List
+            <div className="w-20 h-20 bg-[#121212] rounded-full flex items-center justify-center mr-6 shadow-2xl border-4 border-purple-400/30">
+              <img 
+                src="/assets/logo.png" 
+                alt="orgaN Logo" 
+                className="w-12 h-12 object-contain"
+              />
+            </div>
+            <h1 className="text-6xl md:text-8xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent animate-pulse">
+              orgaN
             </h1>
           </div>
           
-          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto">
-            A lista de compras mais inteligente do Brasil. Use IA para adicionar produtos automaticamente e controle seus gastos como nunca antes.
+          <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+            A lista de compras mais inteligente e organizada do Brasil. Use IA para adicionar produtos automaticamente e controle seus gastos como nunca antes.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 text-lg">
-              Começar Gratuitamente
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <Button variant="outline" size="lg" className="px-8 py-3 text-lg">
-              Ver Demonstração
-            </Button>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+            <TiltedCard>
+              <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-10 py-4 text-lg rounded-2xl shadow-2xl border border-purple-400/30">
+                Começar Gratuitamente
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </TiltedCard>
+            <TiltedCard>
+              <Button variant="outline" size="lg" className="px-10 py-4 text-lg rounded-2xl bg-transparent border-2 border-purple-400/50 text-purple-300 hover:bg-purple-400/10">
+                Ver Demonstração
+              </Button>
+            </TiltedCard>
           </div>
 
-          {/* Stats */}
+          {/* Animated Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-blue-600 mb-2">10k+</div>
-              <div className="text-gray-600 dark:text-gray-400">Usuários Ativos</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-green-600 mb-2">1M+</div>
-              <div className="text-gray-600 dark:text-gray-400">Produtos Adicionados</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-purple-600 mb-2">99%</div>
-              <div className="text-gray-600 dark:text-gray-400">Precisão da IA</div>
-            </div>
+            <TiltedCard className="group">
+              <div className="text-center p-6 bg-gradient-to-br from-purple-900/50 to-pink-900/50 rounded-2xl backdrop-blur-sm border border-purple-400/20 group-hover:border-purple-400/40 transition-all duration-300">
+                <PulseElement>
+                  <div className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">10k+</div>
+                </PulseElement>
+                <div className="text-gray-300">Usuários Ativos</div>
+              </div>
+            </TiltedCard>
+            <TiltedCard className="group">
+              <div className="text-center p-6 bg-gradient-to-br from-blue-900/50 to-cyan-900/50 rounded-2xl backdrop-blur-sm border border-blue-400/20 group-hover:border-blue-400/40 transition-all duration-300">
+                <PulseElement delay={0.5}>
+                  <div className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">1M+</div>
+                </PulseElement>
+                <div className="text-gray-300">Produtos Adicionados</div>
+              </div>
+            </TiltedCard>
+            <TiltedCard className="group">
+              <div className="text-center p-6 bg-gradient-to-br from-emerald-900/50 to-teal-900/50 rounded-2xl backdrop-blur-sm border border-emerald-400/20 group-hover:border-emerald-400/40 transition-all duration-300">
+                <PulseElement delay={1}>
+                  <div className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent mb-2">99%</div>
+                </PulseElement>
+                <div className="text-gray-300">Precisão da IA</div>
+              </div>
+            </TiltedCard>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4">
+      <section className="relative z-10 py-20 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-              Funcionalidades Revolucionárias
+            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">
+              Funcionalidades <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Revolucionárias</span>
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
               Descubra como nossa tecnologia pode transformar sua experiência de compras online
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <TiltedCard key={index} className="h-full">
-                <div className="neomorphic-card p-8 h-full flex flex-col">
-                  <div className={`w-16 h-16 rounded-xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6`}>
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              <TiltedCard key={index} className="h-full group">
+                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm p-8 h-full rounded-2xl border border-gray-700/50 group-hover:border-purple-400/30 transition-all duration-300 shadow-2xl">
+                  <FloatingElement delay={index * 0.2}>
+                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6 shadow-lg`}>
+                      {feature.icon}
+                    </div>
+                  </FloatingElement>
+                  <h3 className="text-xl font-bold text-white mb-4">
                     {feature.title}
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-300 flex-grow">
+                  <p className="text-gray-300 flex-grow leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
@@ -225,81 +272,49 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-20 px-4 bg-white/50 dark:bg-slate-800/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-              O que nossos usuários dizem
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <TiltedCard key={index} className="h-full">
-                <div className="neomorphic-card p-8 h-full">
-                  <div className="flex mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 text-yellow-500 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6 italic">
-                    "{testimonial.content}"
-                  </p>
-                  <div>
-                    <div className="font-bold text-gray-900 dark:text-white">
-                      {testimonial.name}
-                    </div>
-                    <div className="text-gray-500 dark:text-gray-400 text-sm">
-                      {testimonial.role}
-                    </div>
-                  </div>
-                </div>
-              </TiltedCard>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Pricing Section */}
-      <section className="py-20 px-4">
+      <section className="relative z-10 py-20 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-              Escolha seu plano
+            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">
+              Escolha seu <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">plano</span>
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
+            <p className="text-xl text-gray-300">
               Planos flexíveis para todos os tipos de usuário
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {plans.map((plan, index) => (
-              <TiltedCard key={index} className="h-full">
-                <div className={`neomorphic-card p-8 h-full relative ${
-                  plan.highlighted ? 'ring-2 ring-blue-500' : ''
+              <TiltedCard key={index} className="h-full group">
+                <div className={`bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm p-8 h-full relative rounded-2xl border transition-all duration-300 shadow-2xl ${
+                  plan.highlighted 
+                    ? 'border-purple-400/50 ring-2 ring-purple-400/20' 
+                    : 'border-gray-700/50 group-hover:border-purple-400/30'
                 }`}>
                   {plan.highlighted && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold">
-                        Mais Popular
-                      </span>
-                    </div>
+                    <PulseElement>
+                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
+                          Mais Popular
+                        </span>
+                      </div>
+                    </PulseElement>
                   )}
                   
                   <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    <h3 className="text-2xl font-bold text-white mb-2">
                       {plan.name}
                     </h3>
                     <div className="mb-2">
-                      <span className="text-4xl font-bold text-gray-900 dark:text-white">
+                      <span className="text-4xl font-bold text-white">
                         {plan.price}
                       </span>
-                      <span className="text-gray-500 dark:text-gray-400">
+                      <span className="text-gray-400">
                         {plan.period}
                       </span>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-300">
+                    <p className="text-gray-300">
                       {plan.description}
                     </p>
                   </div>
@@ -307,8 +322,8 @@ export default function LandingPage() {
                   <ul className="space-y-4 mb-8">
                     {plan.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-center">
-                        <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                        <span className="text-gray-600 dark:text-gray-300">
+                        <Check className="w-5 h-5 text-emerald-400 mr-3 flex-shrink-0" />
+                        <span className="text-gray-300">
                           {feature}
                         </span>
                       </li>
@@ -316,10 +331,10 @@ export default function LandingPage() {
                   </ul>
 
                   <Button 
-                    className={`w-full ${
+                    className={`w-full rounded-xl py-3 transition-all duration-300 ${
                       plan.highlighted 
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
-                        : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white'
+                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg'
+                        : 'bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white border border-gray-600'
                     }`}
                   >
                     {plan.name === 'Gratuito' ? 'Começar Grátis' : 'Assinar Agora'}
@@ -332,33 +347,39 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Pronto para revolucionar suas compras?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Junte-se a milhares de usuários que já transformaram sua experiência de compras
-          </p>
-          <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3 text-lg font-bold">
-            Começar Gratuitamente Agora
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
-        </div>
+      <section className="relative z-10 py-20 px-4">
+        <TiltedCard className="max-w-4xl mx-auto">
+          <div className="text-center bg-gradient-to-r from-purple-900/80 to-pink-900/80 backdrop-blur-sm p-12 rounded-3xl border border-purple-400/30 shadow-2xl">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Pronto para revolucionar suas compras?
+            </h2>
+            <p className="text-xl text-purple-100 mb-8">
+              Junte-se a milhares de usuários que já transformaram sua experiência de compras
+            </p>
+            <PulseElement>
+              <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 px-10 py-4 text-lg font-bold rounded-2xl shadow-lg">
+                Começar Gratuitamente Agora
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </PulseElement>
+          </div>
+        </TiltedCard>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 bg-gray-900 text-white">
+      <footer className="relative z-10 py-12 px-4 bg-slate-900/50 backdrop-blur-sm border-t border-gray-700/50">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center mb-6">
-            <img src="/assets/logo.png" alt="Smart Shopping Logo" className="w-8 h-8 mr-2" />
-            <span className="text-xl font-bold">Smart Shopping List</span>
+            <div className="w-12 h-12 bg-[#121212] rounded-full flex items-center justify-center mr-3 border-2 border-purple-400/30">
+              <img src="/assets/logo.png" alt="orgaN Logo" className="w-8 h-8 object-contain" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">orgaN</span>
           </div>
           <p className="text-gray-400 mb-4">
-            A lista de compras mais inteligente do Brasil
+            A lista de compras mais inteligente e organizada do Brasil
           </p>
           <p className="text-gray-500 text-sm">
-            © 2025 Smart Shopping List. Todos os direitos reservados.
+            © 2025 orgaN. Todos os direitos reservados.
           </p>
         </div>
       </footer>
