@@ -32,32 +32,42 @@ async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductRe
       // Prioriza secure_url, depois url
       const baseUrl = data.pictures[0].secure_url || data.pictures[0].url;
       if (baseUrl) {
-        // CRÍTICO: Otimização para máxima compatibilidade
-        imageUrl = baseUrl
-          .replace(/_2X/gi, '')              // Remove indicadores de retina PRIMEIRO
-          .replace(/2X/g, '')                // Remove outros indicadores de retina
-          .replace(/-F\.webp$/i, '-O.jpg')   // Remove webp retina
-          .replace(/-W\.webp$/i, '-O.jpg')   // Remove webp alta para jpg
-          .replace(/-I\.webp$/i, '-O.jpg')   // webp baixa → jpg alta
-          .replace(/-I\.jpg$/i, '-O.jpg')    // 500px → 1000px
-          .replace(/-S\.jpg$/i, '-O.jpg')    // 300px → 1000px
-          .replace(/-T\.jpg$/i, '-O.jpg')    // 180px → 1000px
-          .replace(/-F\.jpg$/i, '-O.jpg')    // Melhora resolução
-          .replace(/\.webp$/i, '.jpg')       // SEMPRE remove .webp por .jpg
-          .replace(/\.webp/gi, '.jpg');      // Extra: garante que não sobrou webp
+        // Abordagem mais conservadora - mantém URL original se possível
+        imageUrl = baseUrl;
+        
+        // Apenas converte .webp para .jpg para compatibilidade
+        if (imageUrl.includes('.webp')) {
+          imageUrl = imageUrl.replace(/\.webp$/i, '.jpg');
+        }
+        
+        // Melhora resolução apenas se necessário
+        if (imageUrl.includes('-I.')) {
+          imageUrl = imageUrl.replace(/-I\.(jpg|webp)$/i, '-O.jpg');
+        } else if (imageUrl.includes('-S.')) {
+          imageUrl = imageUrl.replace(/-S\.(jpg|webp)$/i, '-O.jpg');
+        } else if (imageUrl.includes('-T.')) {
+          imageUrl = imageUrl.replace(/-T\.(jpg|webp)$/i, '-O.jpg');
+        }
+        
+        console.log(`[ML API] Imagem processada: ${baseUrl} → ${imageUrl}`);
       }
     } else if (data.thumbnail) {
-      // Melhora a thumbnail também
-      imageUrl = data.thumbnail
-        .replace(/_2X/gi, '')              // Remove indicadores de retina PRIMEIRO
-        .replace(/2X/g, '')                // Remove outros indicadores de retina
-        .replace(/-F\.webp$/i, '-O.jpg')   // Remove webp retina
-        .replace(/-I\.webp$/i, '-O.jpg')   // webp baixa → jpg alta
-        .replace(/-I\.jpg$/i, '-O.jpg')    // 500px → 1000px
-        .replace(/-S\.jpg$/i, '-O.jpg')    // 300px → 1000px
-        .replace(/-T\.jpg$/i, '-O.jpg')    // 180px → 1000px
-        .replace(/\.webp$/i, '.jpg')       // SEMPRE substitui .webp por .jpg
-        .replace(/\.webp/gi, '.jpg');      // Extra: garante que não sobrou webp
+      // Processa thumbnail de forma similar
+      imageUrl = data.thumbnail;
+      
+      if (imageUrl.includes('.webp')) {
+        imageUrl = imageUrl.replace(/\.webp$/i, '.jpg');
+      }
+      
+      if (imageUrl.includes('-I.')) {
+        imageUrl = imageUrl.replace(/-I\.(jpg|webp)$/i, '-O.jpg');
+      } else if (imageUrl.includes('-S.')) {
+        imageUrl = imageUrl.replace(/-S\.(jpg|webp)$/i, '-O.jpg');
+      } else if (imageUrl.includes('-T.')) {
+        imageUrl = imageUrl.replace(/-T\.(jpg|webp)$/i, '-O.jpg');
+      }
+      
+      console.log(`[ML API] Thumbnail processada: ${data.thumbnail} → ${imageUrl}`);
     }
 
     // Normaliza preço
@@ -138,18 +148,22 @@ async function fetchFromMercadoLivre(searchTerm: string): Promise<APIProductResu
       let imageUrl = 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
       
       if (item.thumbnail) {
-        // CRÍTICO: Otimização máxima para compatibilidade
-        imageUrl = item.thumbnail
-          .replace(/_2X/gi, '')              // Remove indicadores de retina PRIMEIRO
-          .replace(/2X/g, '')                // Remove outros indicadores de retina
-          .replace(/-F\.webp$/i, '-O.jpg')   // Remove webp retina
-          .replace(/-W\.webp$/i, '-O.jpg')   // Remove webp alta
-          .replace(/-I\.webp$/i, '-O.jpg')   // webp baixa → jpg alta
-          .replace(/-I\.jpg$/i, '-O.jpg')    // 500px → 1000px
-          .replace(/-S\.jpg$/i, '-O.jpg')    // 300px → 1000px
-          .replace(/-T\.jpg$/i, '-O.jpg')    // 180px → 1000px
-          .replace(/\.webp$/i, '.jpg')       // SEMPRE substitui .webp por .jpg
-          .replace(/\.webp/gi, '.jpg');      // Extra: garante que não sobrou webp
+        // Processamento mais conservador para manter compatibilidade
+        imageUrl = item.thumbnail;
+        
+        // Converte webp para jpg
+        if (imageUrl.includes('.webp')) {
+          imageUrl = imageUrl.replace(/\.webp$/i, '.jpg');
+        }
+        
+        // Melhora resolução se for baixa
+        if (imageUrl.includes('-I.')) {
+          imageUrl = imageUrl.replace(/-I\.(jpg|webp)$/i, '-O.jpg');
+        } else if (imageUrl.includes('-S.')) {
+          imageUrl = imageUrl.replace(/-S\.(jpg|webp)$/i, '-O.jpg');
+        }
+        
+        console.log(`[ML Search] Imagem processada: ${item.thumbnail} → ${imageUrl}`);
       }
 
       // Normaliza preço

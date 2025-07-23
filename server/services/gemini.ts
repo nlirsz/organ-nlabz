@@ -244,18 +244,16 @@ Retorne JSON válido:
 - TESTE FINAL: Certifique-se que a URL não retorna 403 ou 404`;
   }
   if (domain.includes('mercadolivre.com')) {
-    return `- PRIORIDADE 1: meta[property="og:image"] (sempre funciona e é otimizada)
-- PRIORIDADE 2: .ui-pdp-gallery__figure img[src] (primeira imagem da galeria principal)
-- PRIORIDADE 3: img[data-zoom][src] (imagem com zoom da galeria)
-- PRIORIDADE 4: figure.ui-pdp-gallery__figure img[src] (imagem destacada)
-- VALIDAÇÃO CRÍTICA: URL deve conter mlstatic.com e começar com https://
-- OTIMIZAÇÃO CRÍTICA: SEMPRE substitua ".webp" por ".jpg" para compatibilidade máxima
-- OTIMIZAÇÃO CRÍTICA: Substitua "-I.webp" por "-O.jpg" (de 500px webp para 1000px jpg)
-- OTIMIZAÇÃO CRÍTICA: Substitua "-W.webp" por "-O.jpg" (de webp retina para jpg alta)
-- OTIMIZAÇÃO CRÍTICA: Substitua "-F.webp" por "-W.jpg" (mantém alta resolução sem webp)
-- EXEMPLO PERFEITO: https://http2.mlstatic.com/D_NQ_NP_652166-MLA83590374671_042025-O.jpg
-- REJEITAR SEMPRE: URLs que terminam com .webp (problemas de compatibilidade)
-- TESTE FINAL: Certifique-se que a URL termina com .jpg e não .webp`;
+    return `- PRIORIDADE 1: meta[property="og:image"] - SEMPRE funciona e é a mais confiável
+- PRIORIDADE 2: .ui-pdp-gallery__figure img[src] (primeira imagem da galeria)
+- PRIORIDADE 3: img[data-zoom][src] ou img[data-testid="gallery-image"][src]
+- PRIORIDADE 4: JSON-LD com @type="Product" → "image" (primeira imagem)
+- VALIDAÇÃO CRÍTICA: URL deve começar com https:// e conter "mlstatic.com"
+- IMPORTANTE: Mantenha URL original sempre que possível
+- CONVERSÃO APENAS SE NECESSÁRIO: .webp → .jpg (para compatibilidade)
+- MELHORIA APENAS SE BAIXA RESOLUÇÃO: -I → -O, -S → -O, -T → -O
+- EVITE mudanças desnecessárias na URL original
+- TESTE: Certifique-se que a URL final carrega a imagem corretamente`;
   }
   if (domain.includes('nike.com')) {
     return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: img[data-qa="product-image"]';
