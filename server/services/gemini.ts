@@ -54,23 +54,23 @@ function optimizeImageUrl(imageUrl: string, domain: string): string {
 
   try {
     const url = new URL(imageUrl);
-    
+
     // Otimizações específicas por domínio
     if (domain.includes('amazon.com') && url.hostname.includes('media-amazon.com')) {
       let pathname = url.pathname;
-      
+
       // Otimiza para melhor compatibilidade (SX679 é mais estável que SL1500)
       pathname = pathname
         .replace(/_AC_SL\d+_/g, '_AC_SX679_')
         .replace(/_AC_UY\d+_/g, '_AC_UY400_')
         .replace(/_AC_UL\d+_/g, '_AC_SX679_');
-      
+
       return `https://${url.hostname}${pathname}`;
     }
-    
+
     if (domain.includes('mercadolivre.com') && url.hostname.includes('mlstatic.com')) {
       let pathname = url.pathname;
-      
+
       // CRÍTICO: Remove .webp e substitui por .jpg para compatibilidade máxima
       pathname = pathname
         .replace(/\.webp$/i, '.jpg')
@@ -79,13 +79,13 @@ function optimizeImageUrl(imageUrl: string, domain: string): string {
         .replace(/-F\.jpg$/i, '-W.jpg')    // mantém alta resolução
         .replace(/-S\.jpg$/i, '-O.jpg')    // small → original
         .replace(/-T\.jpg$/i, '-O.jpg');   // tiny → original
-      
+
       return `https://${url.hostname}${pathname}`;
     }
-    
+
     // Para outros domínios, retorna a URL original se for válida
     return imageUrl;
-    
+
   } catch (error) {
     console.warn(`[Image Optimizer] Erro ao processar URL: ${imageUrl}`, error);
     return 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
@@ -108,28 +108,20 @@ ${getSpecificPriceRules(domain)}
 ${domain.includes('amazon.com.br') ? `
 ⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL:
 
-PREÇO (OBRIGATÓRIO - VALOR INCORRETO REPORTADO):
-- PRIORIDADE 1: span[data-a-offscreen] dentro de .a-price.a-text-price.a-size-medium (preço principal)
-- PRIORIDADE 2: .a-price-current .a-offscreen (texto oculto com preço completo)
-- PRIORIDADE 3: span.a-price-whole + span.a-price-fraction dentro de .a-price
-- PRIORIDADE 4: #price_inside_buybox .a-price-current
+PREÇO (OBRIGATÓRIO):
+- PRIORIDADE 1: .a-price-current .a-offscreen (texto oculto com preço completo)
+- PRIORIDADE 2: span.a-price-whole + span.a-price-fraction dentro de .a-price
+- PRIORIDADE 3: #price_inside_buybox .a-price-current
+- PRIORIDADE 4: span[data-a-offscreen] com texto de preço
 - PRIORIDADE 5: meta[property="product:price:amount"]
 - FORMATO: "R$ 4.859,10" → 4859.10 (remova R$ e converta vírgula para ponto)
-- IGNORE COMPLETAMENTE: preços com "Prime", "frete", "parcelamento", "economia", "a partir de", "Pix"
-- IGNORE: valores muito baixos (< R$ 1000 para iPhones)
-- VALIDAÇÃO: preço deve ser razoável (iPhone 15 Plus > R$ 3500)
+- IGNORE: preços com "Prime", "frete", "parcelamento", "economia", "a partir de"
 
-IMAGEM (OBRIGATÓRIA - COMPATIBILIDADE MÁXIMA):
-- PRIORIDADE 1: meta[property="og:image"] - SEMPRE funciona e é otimizada
-- PRIORIDADE 2: #landingImage[src] (imagem principal do produto)
-- PRIORIDADE 3: img[data-a-image-name="landingImage"] com src válido
-- PRIORIDADE 4: .a-dynamic-image[src] com resolução moderada
-- PRIORIDADE 5: JSON-LD com @type="Product" → "image"
-- VALIDAÇÃO CRÍTICA: URL deve começar com https:// e conter "media-amazon.com"
-- VALIDAÇÃO: URL deve terminar com .jpg ou .jpeg (evite .webp)
-- OTIMIZAÇÃO: Prefira URLs com "_AC_SX679_" ou "_AC_UY400_" (boa qualidade + compatível)
-- EXEMPLO PERFEITO: https://m.media-amazon.com/images/I/51nHt+jXdjL._AC_SX679_.jpg
-- REJEITE: URLs com "_SL1500_" (muito pesadas), placeholder ou quebradas
+IMAGEM (OBRIGATÓRIA):
+- PRIORIDADE 1: meta[property="og:image"]
+- PRIORIDADE 2: #landingImage[src]
+- PRIORIDADE 3: .a-dynamic-image[src] da primeira imagem
+- VALIDAÇÃO: URL deve começar com https:// e conter "media-amazon.com"
 ` : ''}
 
 ${domain.includes('mercadolivre.com') ? `
