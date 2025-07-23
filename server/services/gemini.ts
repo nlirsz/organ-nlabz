@@ -28,23 +28,46 @@ function normalizePrice(price: any): number | null {
   if (typeof price === 'number') return price;
   if (typeof price !== 'string') return null;
 
-  // Remove símbolos de moeda e espaços
-  let priceStr = price.replace(/[R$€£¥\s]/g, '');
+  console.log(`[Price Normalize] Entrada: "${price}"`);
 
-  // Para preços brasileiros (R$ 1.234,56), converte para formato americano
+  // Remove símbolos de moeda e espaços extras
+  let priceStr = price.replace(/[R$€£¥\s]/g, '').trim();
+  
+  console.log(`[Price Normalize] Após limpar símbolos: "${priceStr}"`);
+
+  // Para preços brasileiros (formato: 1.234,56 ou 1234,56)
   if (priceStr.includes(',')) {
-    // Se tem vírgula, assume formato brasileiro
     const parts = priceStr.split(',');
-    if (parts.length === 2) {
-      // Remove pontos como separadores de milhares
+    if (parts.length === 2 && parts[1].length <= 2) {
+      // Remove pontos como separadores de milhares da parte inteira
       const integerPart = parts[0].replace(/\./g, '');
-      const decimalPart = parts[1];
+      const decimalPart = parts[1].padEnd(2, '0'); // Garante 2 dígitos decimais
       priceStr = `${integerPart}.${decimalPart}`;
+      console.log(`[Price Normalize] Formato brasileiro convertido: "${priceStr}"`);
+    }
+  }
+  // Para preços sem vírgula mas com pontos (ex: 1.234 → pode ser 1234.00)
+  else if (priceStr.includes('.')) {
+    const parts = priceStr.split('.');
+    // Se tem só uma parte após o ponto e são 3+ dígitos, provavelmente é separador de milhares
+    if (parts.length === 2 && parts[1].length >= 3) {
+      priceStr = parts.join('') + '.00';
+      console.log(`[Price Normalize] Assumindo separador de milhares: "${priceStr}"`);
     }
   }
 
   const priceNum = parseFloat(priceStr);
-  return isNaN(priceNum) ? null : priceNum;
+  const finalPrice = isNaN(priceNum) ? null : priceNum;
+  
+  console.log(`[Price Normalize] Resultado final: ${finalPrice}`);
+  
+  // Validação de sanidade
+  if (finalPrice && (finalPrice < 1 || finalPrice > 50000)) {
+    console.warn(`[Price Normalize] Preço suspeito: ${finalPrice}, retornando null`);
+    return null;
+  }
+  
+  return finalPrice;
 }
 
 function optimizeImageUrl(imageUrl: string, domain: string): string {
@@ -125,20 +148,35 @@ ${getSpecificPriceRules(domain)}
 ${domain.includes('amazon.com.br') ? `
 ⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL:
 
-PREÇO (OBRIGATÓRIO):
-- PRIORIDADE 1: .a-price-current .a-offscreen (texto oculto com preço completo)
-- PRIORIDADE 2: span.a-price-whole + span.a-price-fraction dentro de .a-price
-- PRIORIDADE 3: #price_inside_buybox .a-price-current
-- PRIORIDADE 4: span[data-a-offscreen] com texto de preço
-- PRIORIDADE 5: meta[property="product:price:amount"]
-- FORMATO: "R$ 4.859,10" → 4859.10 (remova R$ e converta vírgula para ponto)
-- IGNORE: preços com "Prime", "frete", "parcelamento", "economia", "a partir de"
+PREÇO (ALTÍSSIMA PRIORIDADE - SIGA EXATAMENTE):
+- PRIORIDADE 1: span.a-price-whole seguido de span.a-price-fraction dentro de .a-price[data-a-color="price"]
+- PRIORIDADE 2: .a-price-current .a-offscreen (texto oculto completo, ex: "R$ 3.899,99")
+- PRIORIDADE 3: #corePrice_feature_div .a-price .a-offscreen
+- PRIORIDADE 4: #price_inside_buybox .a-price-current .a-offscreen
+- PRIORIDADE 5: span[aria-hidden="true"] dentro de .a-price que contenha "R$"
+- PRIORIDADE 6: JSON-LD @type="Product" → "offers" → "price"
+- PRIORIDADE 7: meta[property="product:price:amount"]
+
+VALIDAÇÃO CRÍTICA DE PREÇO:
+- DEVE estar entre R$ 100,00 e R$ 15.000,00 para ser válido
+- FORMATO CORRETO: "R$ 3.899,99" → 3899.99 (remova R$, mantenha pontos como milhares, vírgula como decimal)
+- IGNORE COMPLETAMENTE: preços com "Prime", "frete", "parcelamento", "economia", "a partir de", "até"
+- IGNORE: preços muito baixos (< R$ 50) ou muito altos (> R$ 20.000) que podem ser códigos ou erros
+- SE encontrar partes separadas (ex: "3.899" + ",99"), combine corretamente
+
+CONTEXTO IMPORTANTE:
+- Foque no preço principal do produto individual na página
+- Amazon exibe preço em elementos com classe .a-price[data-a-color="price"] ou .a-price[data-a-color="base"]
+- Preço está frequentemente em <span class="a-offscreen">R$ X.XXX,XX</span>
 
 IMAGEM (OBRIGATÓRIA):
 - PRIORIDADE 1: meta[property="og:image"]
 - PRIORIDADE 2: #landingImage[src]
 - PRIORIDADE 3: .a-dynamic-image[src] da primeira imagem
 - VALIDAÇÃO: URL deve começar com https:// e conter "media-amazon.com"
+
+EXEMPLO ESPERADO:
+Se a página contém "R$ 3.899,99", retorne price: 3899.99
 ` : ''}
 
 ${domain.includes('mercadolivre.com') ? `
@@ -234,15 +272,15 @@ Retorne JSON válido:
 
     if (domain.includes('amazon.com')) {
       return `- PRIORIDADE 1: span.a-price-whole + span.a-price-fraction dentro de .a-price[data-a-color="price"]
-- PRIORIDADE 2: .a-price-current .a-offscreen (preço em texto oculto)
-- PRIORIDADE 3: #price_inside_buybox, #corePrice_feature_div .a-price
-- PRIORIDADE 4: JSON-LD com @type="Product" → "offers" → "price"
-- PRIORIDADE 5: meta[property="product:price:amount"]
-- PRIORIDADE 6: span contendo "R$" seguido de números
-- Formato: R$ 3.899,99 → 3899.99
-- IGNORE: preços Prime, frete, parcelamento, cashback
-- IGNORE: preços com "a partir de", "até", "economia"
-- PROCURE: preço principal do produto, não promoções`;
+- PRIORIDADE 2: .a-price-current .a-offscreen (texto oculto com preço completo "R$ X.XXX,XX")
+- PRIORIDADE 3: #corePrice_feature_div .a-price .a-offscreen
+- PRIORIDADE 4: #price_inside_buybox .a-price-current .a-offscreen
+- PRIORIDADE 5: JSON-LD com @type="Product" → "offers" → "price"
+- PRIORIDADE 6: meta[property="product:price:amount"]
+- FORMATO CRÍTICO: "R$ 3.899,99" → 3899.99 (pontos são milhares, vírgula é decimal)
+- VALIDAÇÃO: preço deve estar entre R$ 50,00 e R$ 20.000,00
+- IGNORE TOTALMENTE: preços Prime, frete, parcelamento, cashback, economia, "a partir de"
+- FOQUE: no preço principal em destaque do produto individual`;
     }
 
     return `- Procure pelo preço PRINCIPAL do produto individual

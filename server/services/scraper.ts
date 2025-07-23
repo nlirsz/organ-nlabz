@@ -1,4 +1,3 @@
-
 import { extractProductInfo, type ScrapedProduct } from "./gemini.js";
 import { scrapingCache } from './cache';
 import { priceHistoryService } from './priceHistory';
@@ -20,10 +19,10 @@ const generationConfig = {
 function normalizePrice(price: any): number | null {
   if (typeof price === 'number') return price;
   if (typeof price !== 'string') return null;
-  
+
   // Remove símbolos de moeda e espaços
   let priceStr = price.replace(/[R$€£¥\s]/g, '');
-  
+
   // Para preços brasileiros (R$ 1.234,56), converte para formato americano
   if (priceStr.includes(',')) {
     // Se tem vírgula, assume formato brasileiro
@@ -35,7 +34,7 @@ function normalizePrice(price: any): number | null {
       priceStr = `${integerPart}.${decimalPart}`;
     }
   }
-  
+
   const priceNum = parseFloat(priceStr);
   return isNaN(priceNum) ? null : priceNum;
 }
@@ -53,7 +52,7 @@ const USER_AGENTS = [
 function getRandomHeaders(url: string) {
   const userAgent = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
   const domain = new URL(url).hostname;
-  
+
   // Headers específicos por site
   const siteSpecificHeaders: Record<string, Record<string, string>> = {
     'mercadolivre.com.br': {
@@ -69,7 +68,7 @@ function getRandomHeaders(url: string) {
       'X-Requested-With': 'XMLHttpRequest'
     }
   };
-  
+
   const baseHeaders = {
     'User-Agent': userAgent,
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
@@ -91,13 +90,13 @@ function getRandomHeaders(url: string) {
     'Sec-CH-UA-Platform': '"Windows"',
     'Viewport-Width': '1920'
   };
-  
+
   // Adiciona headers específicos do site
   const specificHeaders = Object.keys(siteSpecificHeaders).find(key => domain.includes(key));
   if (specificHeaders) {
     Object.assign(baseHeaders, siteSpecificHeaders[specificHeaders]);
   }
-  
+
   return baseHeaders;
 }
 
@@ -108,12 +107,12 @@ function getDelayForDomain(domain: string): number {
   const baseDelay = 1000; // 1 segundo base
   const lastRequest = domainDelays.get(domain) || 0;
   const timeSinceLastRequest = Date.now() - lastRequest;
-  
+
   // Se passou menos de 3 segundos, aguarda mais
   if (timeSinceLastRequest < 3000) {
     return 3000 - timeSinceLastRequest;
   }
-  
+
   return Math.random() * 1000 + baseDelay; // Entre 1-2 segundos
 }
 
@@ -121,51 +120,51 @@ function getDelayForDomain(domain: string): number {
 async function robustFetch(url: string, maxRetries = 3): Promise<Response> {
   const domain = new URL(url).hostname;
   const delay = getDelayForDomain(domain);
-  
+
   if (delay > 0) {
     console.log(`[Fetch] Aguardando ${delay}ms para evitar rate limiting...`);
     await new Promise(resolve => setTimeout(resolve, delay));
   }
-  
+
   domainDelays.set(domain, Date.now());
-  
+
   let lastError: Error | null = null;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`[Fetch] Tentativa ${attempt}/${maxRetries} para: ${url}`);
-      
+
       const headers = getRandomHeaders(url);
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-      
+
       const response = await fetch(url, {
         headers,
         signal: controller.signal,
         redirect: 'follow',
         method: 'GET'
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       if (response.ok) {
         console.log(`[Fetch] ✅ Sucesso na tentativa ${attempt}: ${response.status}`);
         return response;
       }
-      
+
       // Se recebeu 403/429, aguarda antes de tentar novamente
       if (response.status === 403 || response.status === 429) {
         const waitTime = attempt * 2000; // 2s, 4s, 6s
         console.log(`[Fetch] Status ${response.status}, aguardando ${waitTime}ms...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
-      
+
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      
+
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Erro desconhecido');
       console.log(`[Fetch] ❌ Tentativa ${attempt} falhou: ${lastError.message}`);
-      
+
       // Se não é a última tentativa, aguarda antes de tentar novamente
       if (attempt < maxRetries) {
         const waitTime = attempt * 1000; // 1s, 2s
@@ -173,20 +172,20 @@ async function robustFetch(url: string, maxRetries = 3): Promise<Response> {
       }
     }
   }
-  
+
   throw lastError || new Error('Todas as tentativas de fetch falharam');
 }
 
 // MÉTODO 1: Analisa o HTML diretamente com Gemini
 async function scrapeByAnalyzingHtml(productUrl: string): Promise<ScrapedProduct> {
   console.log(`[Gemini HTML Mode] Iniciando para: ${productUrl}`);
-  
+
   const response = await robustFetch(productUrl);
   const htmlContent = await response.text();
 
   const domain = new URL(productUrl).hostname;
   const isKnownSite = getKnownSiteConfig(domain);
-  
+
   const prompt = `Analise esta página de e-commerce para extrair informações de produto.
 
 URL: ${productUrl}
@@ -272,7 +271,7 @@ function getKnownSiteConfig(domain: string) {
       hints: 'Preço em .price, imagem principal'
     }
   };
-  
+
   for (const [key, config] of Object.entries(configs)) {
     if (domain.includes(key)) return config;
   }
@@ -299,6 +298,15 @@ function getSpecificPriceInstructions(domain: string): string {
   }
   if (domain.includes('dafiti.com') || domain.includes('netshoes.com')) {
     return '- Procure por: .price, .price-value, .product-price\n- Ignore preços parcelados';
+  }
+  if (domain.includes('amazon.com') || domain.includes('amazon.com.br')) {
+    return `- PRIORIDADE 1: .a-price-current .a-offscreen (texto oculto com preço completo)
+- PRIORIDADE 2: span.a-price-whole + span.a-price-fraction em .a-price[data-a-color="price"]
+- PRIORIDADE 3: #corePrice_feature_div .a-price .a-offscreen
+- PRIORIDADE 4: JSON-LD @type="Product" → "offers" → "price"
+- FORMATO: "R$ 3.899,99" → 3899.99 (pontos=milhares, vírgula=decimal)
+- VALIDAÇÃO: deve estar entre R$ 50 e R$ 20.000
+- IGNORE: Prime, frete, parcelamento, "a partir de", economia`;
   }
   return '- Procure elementos com classes: price, valor, preco, cost\n- Ignore preços de frete e parcelamento';
 }
@@ -349,7 +357,7 @@ FILOSOFIA: Simula exatamente "copiar link da imagem" do navegador
   }
   return '- PRIORIDADE 1: meta[property="og:image"] - URL exata como botão direito > copiar link\n- PRIORIDADE 2: img de produto - URL direta sem alterações';
 }
-  
+
   if (!model) {
     throw new Error('Modelo Gemini não disponível');
   }
@@ -358,28 +366,28 @@ FILOSOFIA: Simula exatamente "copiar link da imagem" do navegador
     contents: [{ role: "user", parts: [{ text: prompt }] }], 
     generationConfig 
   });
-  
+
   let responseText = result.response.text();
-  
+
   // Limpa markdown se presente
   if (responseText.includes('```')) {
     responseText = responseText.replace(/```json\s*|\s*```/g, '');
   }
-  
+
   let jsonData = JSON.parse(responseText);
-  
+
   if (jsonData && jsonData.price) {
     jsonData.price = normalizePrice(jsonData.price);
   }
   if (jsonData && jsonData.originalPrice) {
     jsonData.originalPrice = normalizePrice(jsonData.originalPrice);
   }
-  
+
   // Corrige store se vazio
   if (!jsonData.store) {
     jsonData.store = getStoreNameFromDomain(domain);
   }
-  
+
   return jsonData;
 }
 
@@ -411,19 +419,19 @@ Retorne um objeto JSON com:
 }
 
 Categorias válidas: Eletrônicos, Roupas, Casa, Livros, Games, Automotivo, Esportes, Outros`;
-  
+
   const result = await model.generateContent({ 
     contents: [{ role: "user", parts: [{ text: prompt }] }], 
     generationConfig 
   });
-  
+
   let responseText = result.response.text();
-  
+
   // Limpa markdown se presente
   if (responseText.includes('```')) {
     responseText = responseText.replace(/```json\s*|\s*```/g, '');
   }
-  
+
   let jsonData = JSON.parse(responseText);
 
   if (jsonData && jsonData.price) {
@@ -441,12 +449,12 @@ function createBasicFallback(url: string): ScrapedProduct {
   const urlObj = new URL(url);
   const domain = urlObj.hostname;
   const pathname = urlObj.pathname;
-  
+
   // Extrai informações mais inteligentes da URL
   const storeName = getStoreNameFromDomain(domain);
   const productName = extractProductNameFromUrl(pathname, domain);
   const category = guessCategory(pathname, domain);
-  
+
   return {
     name: productName,
     price: null,
@@ -475,11 +483,11 @@ function getStoreNameFromDomain(domain: string): string {
     'homenge.com.br': 'Homenge',
     'cockpitextremeracing.com.br': 'Extreme SimRacing'
   };
-  
+
   for (const [key, name] of Object.entries(storeMap)) {
     if (domain.includes(key)) return name;
   }
-  
+
   // Fallback: capitaliza primeira palavra do domínio
   const baseDomain = domain.replace('www.', '').split('.')[0];
   return baseDomain.charAt(0).toUpperCase() + baseDomain.slice(1);
@@ -492,13 +500,13 @@ function extractProductNameFromUrl(pathname: string, domain: string): string {
     // Exemplo: /sunrise-on-the-red-sand-dunes-intense-edp-100-ml--3-38-fl--oz--p20220319.html
     const cleanPath = pathname.replace(/--p\d+\.html.*$/, ''); // Remove código do produto
     const cleanPath2 = cleanPath.replace(/^\/[^\/]*\/[^\/]*\//, ''); // Remove idioma/país
-    
+
     // Remove medidas e códigos técnicos comuns
     const cleanPath3 = cleanPath2.replace(/--\d+-\d+.*$/, ''); // Remove --3-38-fl--oz
     const cleanPath4 = cleanPath3.replace(/-\d+\s*ml/gi, ''); // Remove -100-ml
-    
+
     const segments = cleanPath4.split('-').filter(s => s.length > 1);
-    
+
     if (segments.length > 0) {
       return segments
         .slice(0, 10) // Aumenta para capturar nome completo
@@ -506,33 +514,33 @@ function extractProductNameFromUrl(pathname: string, domain: string): string {
         .join(' ');
     }
   }
-  
+
   // Remove extensões e divide por separadores
   const cleanPath = pathname.replace(/\.[^/.]+$/, '');
   const segments = cleanPath.split(/[\/\-_]/).filter(s => s.length > 2);
-  
+
   if (segments.length === 0) {
     return `Produto de ${getStoreNameFromDomain(domain)}`;
   }
-  
+
   // Pega os segmentos mais descritivos (evita 'produto', 'item', etc)
   const descriptiveSegments = segments.filter(s => 
     !['produto', 'item', 'p', 'products', 'pd'].includes(s.toLowerCase())
   );
-  
+
   if (descriptiveSegments.length > 0) {
     return descriptiveSegments
       .slice(0, 4) // Máximo 4 palavras
       .map(s => s.charAt(0).toUpperCase() + s.slice(1))
       .join(' ');
   }
-  
+
   return `Produto de ${getStoreNameFromDomain(domain)}`;
 }
 
 function guessCategory(pathname: string, domain: string): string {
   const path = pathname.toLowerCase();
-  
+
   const categoryMap = [
     { keywords: ['tenis', 'sapato', 'calcado', 'shoes', 'sneaker'], category: 'Roupas' },
     { keywords: ['roupa', 'camisa', 'calca', 'vestido', 'clothing'], category: 'Roupas' },
@@ -544,24 +552,24 @@ function guessCategory(pathname: string, domain: string): string {
     { keywords: ['esporte', 'fitness', 'sport'], category: 'Esportes' },
     { keywords: ['carro', 'auto', 'moto', 'automotive'], category: 'Automotivo' }
   ];
-  
+
   for (const { keywords, category } of categoryMap) {
     if (keywords.some(keyword => path.includes(keyword))) {
       return category;
     }
   }
-  
+
   // Categoria por domínio
   if (domain.includes('nike.com') || domain.includes('adidas.com') || domain.includes('dafiti.com')) return 'Roupas';
   if (domain.includes('americanas.com') || domain.includes('submarino.com')) return 'Eletrônicos';
   if (domain.includes('zara.com')) return 'Roupas';
-  
+
   return 'Outros';
 }
 
 export async function scrapeProductFromUrl(url: string, productId?: number): Promise<ScrapedProduct> {
   console.log(`[Scraper] Iniciando scraping para: ${url}`);
-  
+
   // Verifica cache primeiro
   const cacheKey = `scrape_${url}`;
   const cached = scrapingCache.get(cacheKey);
@@ -569,18 +577,18 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
     console.log(`[Scraper] Retornando dados do cache para: ${url}`);
     return cached;
   }
-  
+
   // ESTRATÉGIA 1: Tenta Google Shopping API primeiro (mais confiável)
   try {
     console.log(`[Scraper] Tentando Google Shopping API primeiro...`);
     const googleResults = await fetchFromGoogleShopping(url);
-    
+
     if (googleResults && googleResults.length > 0) {
       const bestResult = googleResults.find(r => r.price && r.price > 0) || googleResults[0];
-      
+
       if (bestResult && (bestResult.price > 0 || bestResult.name !== 'Produto encontrado')) {
         console.log(`[Scraper] ✅ Google Shopping API bem-sucedida: ${bestResult.name}`);
-        
+
         const productInfo: ScrapedProduct = {
           name: bestResult.name,
           price: bestResult.price || null,
@@ -591,22 +599,22 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
           category: bestResult.category || 'Outros',
           brand: bestResult.brand
         };
-        
+
         // Adiciona ao cache
         scrapingCache.set(cacheKey, productInfo, 60 * 60 * 1000); // 1 hora para dados de API
-        
+
         // Adiciona ao histórico de preços
         if (productId && productInfo.price) {
           const oldEntries = priceHistoryService.getPriceHistory(productId);
           const lastPrice = oldEntries.length > 0 ? oldEntries[oldEntries.length - 1].price : null;
-          
+
           priceHistoryService.addPriceEntry(productId, productInfo.price, 'google-api');
-          
+
           if (lastPrice && lastPrice !== productInfo.price) {
             notificationService.checkPriceChange(productId, lastPrice, productInfo.price);
           }
         }
-        
+
         return productInfo;
       }
     }
@@ -618,10 +626,10 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
   try {
     console.log(`[Scraper] Tentando API específica da plataforma...`);
     const apiResult = await tryAPIFirst(url);
-    
+
     if (apiResult && apiResult.price > 0) {
       console.log(`[Scraper] ✅ API específica bem-sucedida: ${apiResult.name}`);
-      
+
       const productInfo: ScrapedProduct = {
         name: apiResult.name,
         price: apiResult.price,
@@ -632,30 +640,30 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
         category: apiResult.category || 'Outros',
         brand: apiResult.brand
       };
-      
+
       // Adiciona ao cache
       scrapingCache.set(cacheKey, productInfo, 60 * 60 * 1000); // 1 hora para dados de API
-      
+
       // Adiciona ao histórico de preços
       if (productId && productInfo.price) {
         const oldEntries = priceHistoryService.getPriceHistory(productId);
         const lastPrice = oldEntries.length > 0 ? oldEntries[oldEntries.length - 1].price : null;
-        
+
         priceHistoryService.addPriceEntry(productId, productInfo.price, 'platform-api');
-        
+
         if (lastPrice && lastPrice !== productInfo.price) {
           notificationService.checkPriceChange(productId, lastPrice, productInfo.price);
         }
       }
-      
+
       return productInfo;
     }
   } catch (error) {
     console.log(`[Scraper] API específica falhou: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
-  
+
   const errors: string[] = [];
-  
+
   try {
     // Validate URL
     const urlObj = new URL(url);
@@ -668,38 +676,38 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
       console.log(`[Scraper] Tentando método padrão (extractProductInfo)`);
       const response = await robustFetch(url);
       const html = await response.text();
-      
+
       if (html && html.length >= 100) {
         const productInfo = await extractProductInfo(url, html);
-        
+
         // Valida se o resultado é válido (não é fallback genérico)
         const isValidResult = productInfo.name && 
                             !productInfo.name.includes('Produto extraído da URL') &&
                             (productInfo.price || productInfo.imageUrl);
-        
+
         if (isValidResult) {
           // Adiciona ao cache (30 minutos)
           scrapingCache.set(cacheKey, productInfo, 30 * 60 * 1000);
-          
+
           // Adiciona ao histórico de preços se necessário
           if (productId && productInfo.price) {
             const oldEntries = priceHistoryService.getPriceHistory(productId);
             const lastPrice = oldEntries.length > 0 ? oldEntries[oldEntries.length - 1].price : null;
-            
+
             priceHistoryService.addPriceEntry(productId, productInfo.price, 'scraping');
-            
+
             if (lastPrice && lastPrice !== productInfo.price) {
               notificationService.checkPriceChange(productId, lastPrice, productInfo.price);
             }
           }
-          
+
           console.log(`[Scraper] Método padrão bem-sucedido: ${productInfo.name}`);
           return productInfo;
         } else {
           throw new Error('Resultado não contém dados válidos do produto');
         }
       }
-      
+
       throw new Error('HTML muito pequeno ou vazio');
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Erro desconhecido';
@@ -712,10 +720,10 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
       try {
         console.log(`[Scraper] Tentando método fallback (HTML analysis)`);
         const productInfo = await scrapeByAnalyzingHtml(url);
-        
+
         // Adiciona ao cache
         scrapingCache.set(cacheKey, productInfo, 30 * 60 * 1000);
-        
+
         console.log(`[Scraper] Método HTML analysis bem-sucedido: ${productInfo.name}`);
         return productInfo;
       } catch (error) {
@@ -728,10 +736,10 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
       try {
         console.log(`[Scraper] Tentando método fallback (AI search)`);
         const productInfo = await scrapeBySearching(url);
-        
+
         // Adiciona ao cache
         scrapingCache.set(cacheKey, productInfo, 30 * 60 * 1000);
-        
+
         console.log(`[Scraper] Método AI search bem-sucedido: ${productInfo.name}`);
         return productInfo;
       } catch (error) {
@@ -744,17 +752,17 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
     // MÉTODO 4: Fallback básico - sempre retorna alguma coisa
     console.log(`[Scraper] Todos os métodos falharam, usando fallback básico`);
     const fallbackProduct = createBasicFallback(url);
-    
+
     // Adiciona ao cache mesmo sendo fallback
     scrapingCache.set(cacheKey, fallbackProduct, 10 * 60 * 1000); // 10 minutos para fallback
-    
+
     console.log(`[Scraper] Fallback básico criado: ${fallbackProduct.name}`);
     return fallbackProduct;
-    
+
   } catch (error) {
     console.error("Scraping failed completely:", error);
     errors.push(`Erro geral: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-    
+
     // Último recurso: retorna produto básico mesmo em caso de erro
     const fallbackProduct = createBasicFallback(url);
     console.log(`[Scraper] Retornando produto básico de último recurso`);
