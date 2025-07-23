@@ -165,7 +165,7 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-tight">
-            Sua lista de compras criada por <span className="bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">IA</span>.
+            Sua lista de compras gerenciada por <span className="bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">IA</span>.
             <br />
             Apenas cole o link.
           </h1>
