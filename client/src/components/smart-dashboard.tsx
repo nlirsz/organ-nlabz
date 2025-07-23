@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -115,7 +114,7 @@ export function SmartDashboard() {
         if (productsRes.ok && statsRes.ok) {
           const productsData = await productsRes.json();
           const statsData = await statsRes.json();
-          
+
           setProducts(productsData);
           setStats(statsData);
         }
@@ -173,7 +172,7 @@ export function SmartDashboard() {
   // Cálculos das métricas
   const purchasedProducts = products.filter(p => p.isPurchased);
   const pendingProducts = products.filter(p => !p.isPurchased);
-  
+
   const totalValue = products.reduce((sum, p) => sum + parseFloat(p.price || '0'), 0);
   const purchasedValue = purchasedProducts.reduce((sum, p) => sum + parseFloat(p.price || '0'), 0);
   const pendingValue = pendingProducts.reduce((sum, p) => sum + parseFloat(p.price || '0'), 0);
@@ -185,11 +184,38 @@ export function SmartDashboard() {
   );
   const currentMonthValue = currentMonthProducts.reduce((sum, p) => sum + parseFloat(p.price || '0'), 0);
 
-  // Parcelas do mês atual
-  const currentMonthInstallments = installments.filter(inst => 
-    inst.due_date && inst.due_date.startsWith(currentMonth)
-  );
-  const currentMonthInstallmentsValue = currentMonthInstallments.reduce((sum, inst) => sum + inst.value, 0);
+  // Cálculos derivados
+  const currentMonthNum = new Date().getMonth() + 1;
+  const currentYearNum = new Date().getFullYear();
+
+  console.log('Current month/year:', { currentMonthNum, currentYearNum });
+  console.log('All installments:', installments);
+
+  const currentMonthInstallments = installments.filter(installment => {
+    const dueDate = new Date(installment.due_date);
+    const installmentMonth = dueDate.getMonth() + 1;
+    const installmentYear = dueDate.getFullYear();
+
+    console.log('Checking installment:', {
+      productName: installment.productName,
+      dueDate: installment.due_date,
+      installmentMonth,
+      installmentYear,
+      matches: installmentMonth === currentMonthNum && installmentYear === currentYearNum
+    });
+
+    return installmentMonth === currentMonthNum && installmentYear === currentYearNum;
+  });
+
+  console.log('Current month installments:', currentMonthInstallments);
+
+  const currentMonthInstallmentsValue = currentMonthInstallments.reduce((sum, installment) => {
+    const amount = parseFloat(installment.value);
+    console.log('Adding installment amount:', amount);
+    return sum + amount;
+  }, 0);
+
+  console.log('Current month total value:', currentMonthInstallmentsValue);
 
   // Última compra
   const lastPurchase = purchasedProducts
@@ -209,10 +235,10 @@ export function SmartDashboard() {
     if (!acc[category]) {
       acc[category] = { total: 0, purchased: 0, pending: 0, totalValue: 0, purchasedValue: 0, pendingValue: 0 };
     }
-    
+
     acc[category].total++;
     acc[category].totalValue += parseFloat(product.price || '0');
-    
+
     if (product.isPurchased) {
       acc[category].purchased++;
       acc[category].purchasedValue += parseFloat(product.price || '0');
@@ -220,7 +246,7 @@ export function SmartDashboard() {
       acc[category].pending++;
       acc[category].pendingValue += parseFloat(product.price || '0');
     }
-    
+
     return acc;
   }, {});
 
@@ -242,10 +268,10 @@ export function SmartDashboard() {
     if (!acc[store]) {
       acc[store] = { total: 0, purchased: 0, pending: 0, totalValue: 0, purchasedValue: 0, pendingValue: 0 };
     }
-    
+
     acc[store].total++;
     acc[store].totalValue += parseFloat(product.price || '0');
-    
+
     if (product.isPurchased) {
       acc[store].purchased++;
       acc[store].purchasedValue += parseFloat(product.price || '0');
@@ -253,7 +279,7 @@ export function SmartDashboard() {
       acc[store].pending++;
       acc[store].pendingValue += parseFloat(product.price || '0');
     }
-    
+
     return acc;
   }, {});
 
