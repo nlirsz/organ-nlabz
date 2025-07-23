@@ -76,11 +76,11 @@ const PulseElement = ({ children, delay = 0, className = "" }: any) => {
 const AnimatedBorder = ({ children, className = "" }: any) => {
   return (
     <MovingBorderButton
-      borderRadius="1.5rem"
+      borderRadius="1.75rem"
       containerClassName={`w-full h-auto ${className}`}
-      borderClassName="h-20 w-20 bg-[radial-gradient(#10b981_40%,transparent_60%)] opacity-[0.8]"
-      duration={4000}
-      className="border-emerald-400/30 bg-slate-900/90 backdrop-blur-sm text-white"
+      borderClassName="h-24 w-24 bg-[radial-gradient(#10b981_30%,#22c55e_50%,#16a34a_70%,transparent_90%)] opacity-[0.9] shadow-2xl"
+      duration={3000}
+      className="border-emerald-400/50 bg-slate-900/95 backdrop-blur-md text-white shadow-2xl"
       as="div"
     >
       {children}
@@ -254,34 +254,34 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
             {/* Plano Gratuito - Principal com borda em movimento */}
             <TiltedCard className="h-full group transform lg:scale-105">
               <AnimatedBorder className="relative">
-                <div className="bg-gradient-to-br from-slate-800/95 to-gray-900/95 backdrop-blur-sm p-8 h-full rounded-2xl border border-emerald-400/50 shadow-2xl">
+                <div className="bg-gradient-to-br from-slate-800/95 to-gray-900/95 backdrop-blur-sm p-8 h-full rounded-3xl border border-emerald-400/50 shadow-2xl">
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
-                      Recomendado
+                    <span className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-8 py-3 rounded-full text-sm font-bold shadow-2xl border border-emerald-400/30">
+                      🔥 Recomendado
                     </span>
                   </div>
 
-                  <div className="text-center mb-8 mt-4">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mb-4">
-                      <Package className="w-8 h-8 text-white" />
+                  <div className="text-center mb-8 mt-6">
+                    <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mb-6 shadow-xl">
+                      <Package className="w-10 h-10 text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">Gratuito</h3>
-                    <div className="mb-4">
-                      <span className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                    <h3 className="text-3xl font-bold text-white mb-3">Gratuito</h3>
+                    <div className="mb-6">
+                      <span className="text-5xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent drop-shadow-lg">
                         R$ 0
                       </span>
-                      <span className="text-gray-400 text-lg">/mês</span>
+                      <span className="text-gray-400 text-xl">/mês</span>
                     </div>
-                    <p className="text-gray-300 text-sm">
+                    <p className="text-gray-300 text-base leading-relaxed">
                       Perfeito para começar e experimentar todas as funcionalidades básicas
                     </p>
                   </div>
 
-                  <ul className="space-y-3 mb-8">
+                  <ul className="space-y-4 mb-10">
                     {[
                       "Até 100 produtos",
                       "IA Gemini para extração",
@@ -290,40 +290,57 @@ export default function LandingPage() {
                       "1 usuário",
                       "Suporte por email"
                     ].map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-center text-sm">
-                        <Check className="w-4 h-4 text-emerald-400 mr-3 flex-shrink-0" />
+                      <li key={featureIndex} className="flex items-center text-base">
+                        <Check className="w-5 h-5 text-emerald-400 mr-4 flex-shrink-0" />
                         <span className="text-gray-300">{feature}</span>
                       </li>
                     ))}
                   </ul>
 
-                  <Button className="w-full rounded-xl py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-lg transition-all duration-300 font-semibold">
+                  <Button className="w-full rounded-2xl py-4 bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-600 hover:from-emerald-700 hover:via-green-700 hover:to-emerald-700 text-white text-lg shadow-2xl transition-all duration-300 font-bold border border-emerald-400/30">
                     Começar Gratuitamente
                   </Button>
                 </div>
               </AnimatedBorder>
             </TiltedCard>
 
-            {/* Plano Pro */}
-            <TiltedCard className="h-full group">
-              <div className="bg-gradient-to-br from-slate-800/90 to-gray-900/90 backdrop-blur-sm p-8 h-full rounded-2xl border border-gray-700/50 shadow-2xl group-hover:border-emerald-400/30 transition-all duration-300">
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mb-4">
-                    <TrendingUp className="w-8 h-8 text-white" />
+            {/* Plano MAX (antigo Pro) - Com cadeado e blur */}
+            <TiltedCard className="h-full group relative">
+              <div className="relative bg-gradient-to-br from-slate-800/60 to-gray-900/60 backdrop-blur-xl p-8 h-full rounded-3xl border border-gray-600/30 shadow-2xl overflow-hidden">
+                {/* Overlay de blur e cadeado */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-gray-900/80 backdrop-blur-sm rounded-3xl z-10 flex flex-col items-center justify-center">
+                  <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-6 shadow-2xl">
+                      <Shield className="w-12 h-12 text-white" />
+                    </div>
+                    <h3 className="text-3xl font-bold text-white mb-4">Em Breve</h3>
+                    <p className="text-gray-300 text-lg max-w-xs mx-auto leading-relaxed">
+                      Funcionalidades avançadas chegando em breve. Cadastre-se para ser notificado!
+                    </p>
+                    <Button className="mt-6 rounded-2xl py-3 px-8 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold shadow-xl transition-all duration-300">
+                      Ser Notificado
+                    </Button>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
-                      R$ 19,90
+                </div>
+
+                {/* Conteúdo original (blur de fundo) */}
+                <div className="text-center mb-8 blur-sm">
+                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-6">
+                    <TrendingUp className="w-10 h-10 text-white" />
+                  </div>
+                  <h3 className="text-3xl font-bold text-white mb-3">MAX</h3>
+                  <div className="mb-6">
+                    <span className="text-5xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+                      R$ 29,90
                     </span>
-                    <span className="text-gray-400 text-lg">/mês</span>
+                    <span className="text-gray-400 text-xl">/mês</span>
                   </div>
-                  <p className="text-gray-300 text-sm">
+                  <p className="text-gray-300 text-base">
                     Para usuários que querem aproveitar todo o potencial da plataforma
                   </p>
                 </div>
 
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-4 mb-10 blur-sm">
                   {[
                     "Produtos ilimitados",
                     "IA Gemini avançada",
@@ -331,64 +348,26 @@ export default function LandingPage() {
                     "Parcelamento inteligente",
                     "Histórico de preços",
                     "Notificações personalizadas",
-                    "Múltiplos usuários (até 5)",
-                    "Suporte prioritário"
+                    "Múltiplos usuários (até 10)",
+                    "Suporte prioritário 24/7",
+                    "Relatórios avançados",
+                    "Integração com APIs"
                   ].map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center text-sm">
-                      <Check className="w-4 h-4 text-emerald-400 mr-3 flex-shrink-0" />
+                    <li key={featureIndex} className="flex items-center text-base">
+                      <Check className="w-5 h-5 text-amber-400 mr-4 flex-shrink-0" />
                       <span className="text-gray-300">{feature}</span>
                     </li>
                   ))}
                 </ul>
 
-                <Button className="w-full rounded-xl py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-lg transition-all duration-300 font-semibold">
-                  Começar Teste Grátis
-                </Button>
-                <p className="text-xs text-gray-400 text-center mt-2">
-                  14 dias grátis, cancele quando quiser
-                </p>
-              </div>
-            </TiltedCard>
-
-            {/* Plano Enterprise */}
-            <TiltedCard className="h-full group">
-              <div className="bg-gradient-to-br from-slate-800/90 to-gray-900/90 backdrop-blur-sm p-8 h-full rounded-2xl border border-purple-400/30 shadow-2xl group-hover:border-purple-400/50 transition-all duration-300">
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full mb-4">
-                    <Users className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">Enterprise</h3>
-                  <div className="mb-4">
-                    <span className="text-2xl font-bold text-gray-300">
-                      Sob consulta
-                    </span>
-                  </div>
-                  <p className="text-gray-300 text-sm">
-                    Soluções personalizadas para empresas e equipes grandes
+                <div className="blur-sm">
+                  <Button className="w-full rounded-2xl py-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-lg shadow-2xl transition-all duration-300 font-bold">
+                    Começar Teste Grátis
+                  </Button>
+                  <p className="text-xs text-gray-400 text-center mt-3">
+                    14 dias grátis, cancele quando quiser
                   </p>
                 </div>
-
-                <ul className="space-y-3 mb-8">
-                  {[
-                    "Tudo do plano Pro",
-                    "Usuários ilimitados",
-                    "API personalizada",
-                    "Integração com sistemas",
-                    "Dashboard personalizado",
-                    "Relatórios avançados",
-                    "Suporte dedicado 24/7",
-                    "Treinamento da equipe"
-                  ].map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center text-sm">
-                      <Check className="w-4 h-4 text-purple-400 mr-3 flex-shrink-0" />
-                      <span className="text-gray-300">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Button className="w-full rounded-xl py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg transition-all duration-300 font-semibold">
-                  Falar com Vendas
-                </Button>
               </div>
             </TiltedCard>
           </div>
