@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google-generative-ai";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
@@ -258,17 +258,79 @@ Retorne JSON válido:
 - Ignore preços de parcelamento ou frete`;
     }
 
-    if (domain.includes('mercadolivre.com')) {
-      return `- PRIORIDADE 1: Procure por classes .price-tag-fraction, .price-tag-cents, .andes-money-amount__fraction
-- PRIORIDADE 2: span[data-testid="price-part"] ou elementos com "price" no data-testid
-- PRIORIDADE 3: JSON-LD com @type="Product" → "offers" → "price"
-- PRIORIDADE 4: meta[property="product:price:amount"]
-- PRIORIDADE 5: Elementos com classes contendo "price", "valor", "preco"
-- Combine parte inteira + centavos se separados
-- Formato: R$ 8.320,00 → 8320.00
-- IGNORE: preços de frete, parcelamento, ou valores muito baixos (< R$ 10)
-- IGNORE: preços com texto "a partir de", "até", "frete"`;
-    }
+    
+if (domain.includes('amazon.com.br')) {
+    return `⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL - PREÇO:
+
+ESTRATÉGIA DE BUSCA POR PREÇO (ORDEM DE PRIORIDADE):
+1. **PRIORIDADE MÁXIMA**: .a-offscreen dentro de .a-price-current ou .a-price
+   - Procure por texto oculto completo como "R$ 4.859,10"
+   - Localização: <span class="a-offscreen">R$ X.XXX,XX</span>
+
+2. **PRIORIDADE 2**: Combinação span.a-price-whole + span.a-price-fraction
+   - Exemplo: <span class="a-price-whole">4.859</span><span class="a-price-fraction">,10</span>
+   - Combine: "4.859" + ",10" = "4.859,10"
+
+3. **PRIORIDADE 3**: Elementos com classes contendo "price" e texto "R$"
+   - Procure por: .a-price-current, .a-price[data-a-color="price"]
+   - Deve conter "R$" seguido de números
+
+4. **PRIORIDADE 4**: JSON-LD @type="Product" → "offers" → "price"
+   - Valide se o valor está em formato brasileiro
+
+5. **PRIORIDADE 5**: Meta tags product:price:amount
+
+REGRAS CRÍTICAS DE VALIDAÇÃO:
+- FORMATO ESPERADO: "R$ 4.859,10" deve retornar 4859.10
+- IGNORE COMPLETAMENTE: 
+  * Textos contendo "Prime", "frete", "entrega"
+  * Valores com "parcelado", "de R$", "por R$"
+  * Preços em seções de "Outros vendedores"
+  * Valores muito baixos (< R$ 10) ou muito altos (> R$ 50.000)
+
+CONTEXTO IMPORTANTE:
+- Foque APENAS no preço principal do produto individual
+- Amazon exibe preço principal em elementos .a-price com data-a-color="price"
+- Ignore preços de marketplace/terceiros que aparecem abaixo
+
+EXEMPLO DE CONVERSÃO:
+- HTML: "R$ 3.899,99" → JSON: 3899.99
+- HTML: "R$1.234,56" → JSON: 1234.56
+- HTML: "2.599,00" → JSON: 2599.00`;
+  }
+
+if (domain.includes('mercadolivre.com')) {
+    return `⚠️ INSTRUÇÕES CRÍTICAS PARA MERCADO LIVRE:
+
+PREÇO (ALTÍSSIMA PRIORIDADE):
+- PRIORIDADE 1: .andes-money-amount__fraction dentro do preço principal
+- PRIORIDADE 2: Combinação de elementos separados:
+  * span[data-testid="price-part-integer"] para parte inteira
+  * span[data-testid="price-part-decimal"] para centavos
+  * Combine: "8.320" + ",00" = "8.320,00"
+
+- PRIORIDADE 3: .ui-pdp-price__fraction (preço na página do produto)
+- PRIORIDADE 4: .price-tag-fraction (classe legada)
+- PRIORIDADE 5: JSON-LD @type="Product" → "offers" → "price"
+
+REGRAS CRÍTICAS DE IDENTIFICAÇÃO:
+- PROCURE o preço que esteja DESTACADO visualmente (maior, colorido)
+- IGNORE preços em seções: "Outros vendedores", "Anúncios relacionados"
+- IGNORE valores com texto: "frete", "entrega", "parcelado", "à vista", "no Pix"
+- IGNORE preços com "a partir de R$" ou "até R$"
+
+FORMATO E VALIDAÇÃO:
+- FORMATO BRASILEIRO: "R$ 8.320,00" → 8320.00
+- Combine partes separadas corretamente: "8.320" + ",00" = 8320.00
+- VALIDAÇÃO: Preço deve estar entre R$ 50,00 e R$ 50.000,00
+- SE encontrar múltiplos preços, pegue o PRINCIPAL (não o menor ou maior)
+
+CONTEXTO ESPECÍFICO:
+- ML separa frequentemente o preço em integer + decimal
+- Preço principal geralmente está próximo ao título do produto
+- Cores indicativas: preços principais em verde ou azul escuro
+`;
+  }
 
     if (domain.includes('amazon.com') || domain.includes('amazon.com.br')) {
     return `⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL - PREÇO:

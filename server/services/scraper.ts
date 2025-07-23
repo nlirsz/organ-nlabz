@@ -22,40 +22,68 @@ function normalizePrice(price: any): number | null {
 
   console.log(`[Price Normalize] Input: "${price}"`);
 
-  // Remove símbolos de moeda e espaços
-  let priceStr = price.replace(/[R$€£¥\s]/g, '').trim();
+  // Remove símbolos de moeda, espaços e caracteres especiais
+  let priceStr = price.replace(/[R$€£¥\s\u00A0]/g, '').trim();
+  
+  // Remove textos descritivos comuns
+  priceStr = priceStr.replace(/^(por|de|apenas|até|a partir de|desde):/gi, '');
+  priceStr = priceStr.replace(/(com desconto|à vista|no pix|parcelado)$/gi, '');
+  
   console.log(`[Price Normalize] After symbol removal: "${priceStr}"`);
 
-  // Para preços brasileiros (4.859,10), converte para formato americano
+  // ESTRATÉGIA PRINCIPAL: Detectar formato brasileiro (vírgula decimal)
   if (priceStr.includes(',')) {
-    // Se tem vírgula, assume formato brasileiro
     const parts = priceStr.split(',');
-    if (parts.length === 2) {
-      // Remove pontos como separadores de milhares apenas da parte inteira
+    if (parts.length === 2 && parts[1].length <= 2) {
+      // Remove pontos como separadores de milhares APENAS da parte inteira
       const integerPart = parts[0].replace(/\./g, '');
-      const decimalPart = parts[1];
+      const decimalPart = parts[1].padEnd(2, '0');
+      
+      // Validação: verifica se as partes são numéricas
+      if (!/^\d+$/.test(integerPart) || !/^\d{1,2}$/.test(parts[1])) {
+        console.warn(`[Price Normalize] Invalid comma format: "${priceStr}"`);
+        return null;
+      }
+      
       priceStr = `${integerPart}.${decimalPart}`;
       console.log(`[Price Normalize] Brazilian format converted: "${integerPart}" + "." + "${decimalPart}" = "${priceStr}"`);
     }
-  } else if (priceStr.includes('.')) {
-    // Se tem apenas ponto, verifica se é decimal ou separador de milhares
+  } 
+  // Para preços apenas com pontos
+  else if (priceStr.includes('.')) {
     const parts = priceStr.split('.');
-    if (parts.length === 2 && parts[1].length <= 2) {
-      // Provável decimal (ex: 4859.10)
-      console.log(`[Price Normalize] Decimal format detected: "${priceStr}"`);
-    } else if (parts.length > 2 || (parts.length === 2 && parts[1].length > 2)) {
-      // Provável separador de milhares (ex: 4.859.10 ou 4.85900)
-      priceStr = priceStr.replace(/\./g, '');
+    
+    // Se último segmento tem 1-2 dígitos, provavelmente é decimal
+    if (parts.length >= 2 && parts[parts.length - 1].length <= 2) {
+      console.log(`[Price Normalize] American decimal format detected: "${priceStr}"`);
+    }
+    // Se último segmento tem 3+ dígitos, provavelmente são separadores de milhares
+    else if (parts.length >= 2 && parts[parts.length - 1].length >= 3) {
+      priceStr = parts.join('');
       console.log(`[Price Normalize] Thousands separator removed: "${priceStr}"`);
     }
   }
 
   const priceNum = parseFloat(priceStr);
-  const isValid = !isNaN(priceNum) && priceNum > 0;
   
-  console.log(`[Price Normalize] Final result: ${isValid ? priceNum : 'null'}`);
+  // Validações mais rigorosas
+  if (isNaN(priceNum)) {
+    console.warn(`[Price Normalize] Could not parse: "${priceStr}"`);
+    return null;
+  }
   
-  return isValid ? priceNum : null;
+  if (priceNum < 0.01) {
+    console.warn(`[Price Normalize] Price too low: ${priceNum}`);
+    return null;
+  }
+  
+  if (priceNum > 100000) {
+    console.warn(`[Price Normalize] Price too high: ${priceNum}`);
+    return null;
+  }
+  
+  console.log(`[Price Normalize] Final result: ${priceNum}`);
+  return priceNum;
 }
 
 // Lista de User-Agents rotativos para evitar detecção
