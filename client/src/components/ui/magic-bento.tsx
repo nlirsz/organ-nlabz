@@ -310,34 +310,37 @@ const ParticleCard = ({
     <div
       ref={cardRef}
       className={cn(
-        "magic-bento-card relative overflow-hidden",
-        "before:absolute before:inset-0 before:rounded-inherit",
-        "before:bg-gradient-to-br before:from-emerald-500/5 before:via-green-500/3 before:to-emerald-600/5",
-        "before:opacity-0 before:transition-opacity before:duration-500",
+        "magic-bento-card relative overflow-hidden rounded-lg border border-gray-200 bg-white",
+        "before:absolute before:inset-0 before:rounded-inherit before:p-[1px]",
+        "before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent",
+        "before:opacity-0 before:transition-opacity before:duration-300",
         "hover:before:opacity-100",
         "after:absolute after:inset-0 after:rounded-inherit",
-        "after:bg-gradient-to-r after:from-transparent after:via-emerald-400/10 after:to-transparent",
-        "after:translate-x-[-100%] after:transition-transform after:duration-700 after:ease-out",
-        "hover:after:translate-x-[100%]",
+        "after:bg-[radial-gradient(600px_circle_at_var(--mouse-x)_var(--mouse-y),rgba(var(--glow-color),0.15),transparent_40%)]",
+        "after:opacity-0 after:transition-opacity after:duration-300",
+        "hover:after:opacity-100",
         className
       )}
-      style={{ 
-        ...style, 
-        position: "relative", 
+      style={{
+        ...style,
+        position: "relative",
         overflow: "hidden",
         "--glow-color": glowColor,
-        "--glow-x": "50%",
-        "--glow-y": "50%",
-        "--glow-intensity": "0",
-        "--glow-radius": "200px",
+        "--mouse-x": "50%",
+        "--mouse-y": "50%",
       } as React.CSSProperties}
+      onMouseMove={(e) => {
+        if (!cardRef.current) return;
+        const rect = cardRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        cardRef.current.style.setProperty("--mouse-x", `${x}px`);
+        cardRef.current.style.setProperty("--mouse-y", `${y}px`);
+      }}
     >
-      <div className="relative z-10">
+      <div className="relative z-10 h-full">
         {children}
       </div>
-      
-      {/* Enhanced glow effect */}
-      <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-green-500/15 to-emerald-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm -z-10" />
     </div>
   );
 };
@@ -379,7 +382,7 @@ export function MagicBento({
   className,
   textAutoHide = true,
   enableStars = true,
-  enableSpotlight = false,
+  enableSpotlight = true,
   enableBorderGlow = true,
   disableAnimations = false,
   spotlightRadius = DEFAULT_SPOTLIGHT_RADIUS,
@@ -392,18 +395,11 @@ export function MagicBento({
   const isMobile = useMobileDetection();
   const shouldDisableAnimations = disableAnimations || isMobile;
 
-  if (enableStars) {
+  if (enableStars || enableSpotlight) {
     return (
       <ParticleCard
         className={cn(
           "group transition-all duration-300",
-          enableBorderGlow && [
-            "before:absolute before:inset-0 before:rounded-inherit before:p-[2px]",
-            "before:bg-gradient-to-r before:from-emerald-400/30 before:via-green-400/20 before:to-emerald-400/30",
-            "before:mask-[linear-gradient(#fff_0_0)_content-box,linear-gradient(#fff_0_0)]",
-            "before:mask-composite-subtract before:opacity-0 before:transition-opacity before:duration-300",
-            "hover:before:opacity-100"
-          ],
           className
         )}
         disableAnimations={shouldDisableAnimations}
@@ -419,7 +415,7 @@ export function MagicBento({
   }
 
   return (
-    <div className={cn("magic-bento-simple group", className)}>
+    <div className={cn("magic-bento-simple group rounded-lg border border-gray-200 bg-white", className)}>
       {children}
     </div>
   );
