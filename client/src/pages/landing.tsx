@@ -260,7 +260,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
             {/* Plano Gratuito - Principal com borda em movimento */}
-            <TiltedCard className="group transform lg:scale-105">
+            <TiltedCard className="group">
               <AnimatedBorder className="relative">
                 <div className="bg-gradient-to-br from-slate-800/95 to-gray-900/95 backdrop-blur-sm p-8 min-h-[600px] flex flex-col rounded-3xl border border-emerald-400/50 shadow-2xl">
                   <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-20">
@@ -314,8 +314,8 @@ export default function LandingPage() {
               </AnimatedBorder>
             </TiltedCard>
 
-            {/* Plano MAX (antigo Pro) - Com cadeado e blur */}
-            <TiltedCard className="group relative">
+            {/* Plano orgaN MAX - Com cadeado e blur */}
+            <TiltedCard className="group">
               <div className="relative bg-gradient-to-br from-slate-800/60 to-gray-900/60 backdrop-blur-xl p-8 min-h-[600px] flex flex-col rounded-3xl border border-gray-600/30 shadow-2xl overflow-hidden">
                 {/* Overlay de blur e cadeado */}
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 to-gray-900/95 backdrop-blur-lg rounded-3xl z-10 flex flex-col items-center justify-center">
@@ -323,24 +323,17 @@ export default function LandingPage() {
                     <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-6 shadow-2xl">
                       <Shield className="w-12 h-12 text-white" />
                     </div>
-                    <h3 className="text-3xl font-bold text-white mb-4">Organ PRO</h3>
+                    <h3 className="text-3xl font-bold text-white mb-4">orgaN MAX</h3>
                     <p className="text-gray-300 text-base mb-6 leading-relaxed">
                       Em desenvolvimento: Relatórios avançados de gastos e integração com assistentes de voz.
                     </p>
                     <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                      <p className="text-white text-sm mb-4 font-medium">
-                        Quer ser o primeiro a saber do Plano PRO?
+                      <p className="text-white text-lg mb-4 font-bold">
+                        🚀 Em Breve!
                       </p>
-                      <div className="flex flex-col gap-3">
-                        <input 
-                          type="email" 
-                          placeholder="Seu melhor e-mail"
-                          className="w-full px-4 py-3 rounded-xl bg-white/20 border border-white/30 text-white placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                        />
-                        <Button className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold py-3 rounded-xl">
-                          Avise-me!
-                        </Button>
-                      </div>
+                      <p className="text-gray-300 text-sm">
+                        Funcionalidades avançadas que vão revolucionar ainda mais sua experiência de compras.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -350,7 +343,7 @@ export default function LandingPage() {
                   <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-6">
                     <TrendingUp className="w-10 h-10 text-white" />
                   </div>
-                  <h3 className="text-3xl font-bold text-white mb-3">MAX</h3>
+                  <h3 className="text-3xl font-bold text-white mb-3">orgaN MAX</h3>
                   <div className="mb-6">
                     <span className="text-5xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
                       R$ 29,90
