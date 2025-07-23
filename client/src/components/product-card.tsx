@@ -125,6 +125,9 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
     enabled: isPurchased, // Busca sempre que o produto estiver comprado
   });
 
+    // Verificação de problemas no produto (exemplo)
+    const hasIssues = product.brand === "Zara" || product.brand === "Adidas" || product.imageUrl === "invalida";
+
   return (
     <div className="product-card slide-in-up">
       <div className="flex flex-col h-full">
@@ -213,7 +216,7 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
                       setIsEditModalOpen(true);
                     }}
                     className="flex-1 sm:flex-none neomorphic-button"
-                    title="Editar produto"
+                    title={hasIssues ? "Editar produto (problemas detectados - verificar dados)" : "Editar produto"}
                   >
                     <Edit className="w-4 h-4" style={{ color: 'var(--edit-color)' }} />
                     <span className="sm:hidden">Editar</span>
@@ -263,7 +266,7 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
                       setIsEditModalOpen(true);
                     }}
                     className="flex-1 sm:flex-none neomorphic-button"
-                    title="Editar produto"
+                    title={hasIssues ? "Editar produto (problemas detectados - verificar dados)" : "Editar produto"}
                   >
                     <Edit className="w-4 h-4" style={{ color: 'var(--edit-color)' }} />
                     <span className="sm:hidden">Editar</span>
@@ -347,6 +350,7 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
                     onClick={() => setIsEditModalOpen(true)}
                     className="neomorphic-button px-4 py-2 rounded-lg"
                     style={{ color: 'var(--edit-color)' }}
+                    title={hasIssues ? "Editar produto (problemas detectados - verificar dados)" : "Editar produto"}
                   >
                     <Edit className="w-4 h-4 inline mr-2" />
                     Editar

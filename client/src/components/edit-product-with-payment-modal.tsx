@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { CalendarDays, CreditCard, Package, AlertTriangle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { detectProductIssues, hasAnyIssues, hasCriticalIssues } from "@/lib/product-validation";
 import type { Product } from "@shared/schema";
 
 interface PaymentData {
@@ -192,11 +195,58 @@ export function EditProductWithPaymentModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {activeTab === "pagamento" ? "Gerenciar Pagamento" : "Editar Produto"}
+          <DialogTitle className="flex items-center gap-2">
+            <Package className="w-5 h-5" />
+            Editar Produto
+            {product.isPurchased && (
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                Comprado
+              </Badge>
+            )}
+            {hasAnyIssues(product) && (
+              <Badge variant="secondary" className={
+                hasCriticalIssues(product) 
+                  ? "bg-red-100 text-red-800" 
+                  : "bg-yellow-100 text-yellow-800"
+              }>
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                {hasCriticalIssues(product) ? "Problemas Críticos" : "Verificar Dados"}
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
-        
+
+        {/* Alerta de Problemas */}
+        {hasAnyIssues(product) && (
+          <div className={`p-4 rounded-lg border-l-4 ${
+            hasCriticalIssues(product) 
+              ? 'bg-red-50 border-red-400 text-red-800' 
+              : 'bg-yellow-50 border-yellow-400 text-yellow-800'
+          }`}>
+            <div className="flex items-start">
+              <AlertTriangle className={`w-5 h-5 mr-2 mt-0.5 ${
+                hasCriticalIssues(product) ? 'text-red-500' : 'text-yellow-500'
+              }`} />
+              <div>
+                <h4 className="font-semibold mb-2">
+                  Problemas Detectados na Extração Automática
+                </h4>
+                <ul className="text-sm space-y-1">
+                  {detectProductIssues(product).map((issue, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="mr-2">•</span>
+                      <span>{issue.message}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs mt-2 opacity-80">
+                  Por favor, verifique e corrija os dados abaixo conforme necessário.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
