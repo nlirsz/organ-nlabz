@@ -493,7 +493,8 @@ export async function extractProductInfo(url: string, htmlContent?: string): Pro
         console.log(`[Gemini] Trying HTML method...`);
         const htmlResult = await scrapeByAnalyzingHtml(url, htmlContent);
 
-        console.log(`[Gemini] ✓ Success with HTML method - Price: R$ ${htmlResult.price}`);
+        if (htmlResult.price && htmlResult.price > 0) {
+          console.log(`[Gemini] ✓ Success with HTML method - Price: R$ ${htmlResult.price}`);
 
           // Pós-processamento de imagens para melhor compatibilidade
           if (htmlResult.imageUrl) {
@@ -501,6 +502,7 @@ export async function extractProductInfo(url: string, htmlContent?: string): Pro
           }
 
           return htmlResult;
+        }
 
         if (htmlResult.name && htmlResult.name !== "Produto Desconhecido") {
           console.log(`[Gemini] HTML method found product without price: ${htmlResult.name}`);
