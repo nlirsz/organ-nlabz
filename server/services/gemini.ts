@@ -1,4 +1,3 @@
-
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -50,9 +49,9 @@ function normalizePrice(price: any): number | null {
 
 async function scrapeByAnalyzingHtml(productUrl: string, htmlContent: string): Promise<ScrapedProduct> {
   console.log(`[Gemini HTML Mode] Starting for: ${productUrl}`);
-  
+
   const domain = new URL(productUrl).hostname;
-  
+
   const prompt = `Analise esta página de produto brasileira e extraia informações estruturadas.
 
 URL: ${productUrl}
@@ -153,13 +152,13 @@ Retorne JSON válido:
 - Exemplo: se encontrar "89,95 €", calcule: 89.95 * 6.2 = 557.69
 - Ignore preços de frete, taxas ou valores promocionais pequenos`;
     }
-    
+
     if (domain.includes('nike.com')) {
       return `- Procure por classes: .price-current, .product-price, .price-reduced
 - Meta tags: meta[property="product:price:amount"]
 - Ignore preços de parcelamento ou frete`;
     }
-    
+
     if (domain.includes('mercadolivre.com')) {
       return `- PRIORIDADE 1: Procure por classes .price-tag-fraction, .price-tag-cents, .andes-money-amount__fraction
 - PRIORIDADE 2: span[data-testid="price-part"] ou elementos com "price" no data-testid
@@ -171,7 +170,7 @@ Retorne JSON válido:
 - IGNORE: preços de frete, parcelamento, ou valores muito baixos (< R$ 10)
 - IGNORE: preços com texto "a partir de", "até", "frete"`;
     }
-    
+
     if (domain.includes('amazon.com')) {
       return `- PRIORIDADE 1: span.a-price-whole + span.a-price-fraction dentro de .a-price[data-a-color="price"]
 - PRIORIDADE 2: .a-price-current .a-offscreen (preço em texto oculto)
@@ -184,7 +183,7 @@ Retorne JSON válido:
 - IGNORE: preços com "a partir de", "até", "economia"
 - PROCURE: preço principal do produto, não promoções`;
     }
-    
+
     return `- Procure pelo preço PRINCIPAL do produto individual
 - Ignore preços de combo, frete ou parcelamento
 - Priorize: preços em destaque, classes "price", "valor", "preco-principal"
@@ -194,44 +193,46 @@ Retorne JSON válido:
   }
 
   function getSpecificImageRules(domain: string): string {
-    if (domain.includes('zara.com')) {
-      return `- PRIORIDADE 1: meta[property="og:image"] com URL completa
-- PRIORIDADE 2: picture source[media] com maior resolução  
-- PRIORIDADE 3: .media__wrapper img ou .product-detail-images img
-- PRIORIDADE 4: img[src*="zara.com/assets"] com width=2048 ou similar
-- URL deve ser completa (https://) e acessível`;
-    }
-    
-    if (domain.includes('mercadolivre.com')) {
-      return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
-- PRIORIDADE 2: .gallery img[src] com maior resolução (prefira URLs com "-W.jpg" ou "-O.jpg")
-- PRIORIDADE 3: img[data-zoom] ou img[data-testid="gallery-image"]
-- PRIORIDADE 4: JSON-LD com @type="Product" → "image"
-- PRIORIDADE 5: img[src*="mlstatic.com"] com dimensões maiores
-- VALIDAÇÃO: URL deve começar com https:// e conter mlstatic.com
-- VALIDAÇÃO: Prefira URLs que terminem com "-W.webp", "-O.jpg", ou similares (alta resolução)
-- VALIDAÇÃO: Evite URLs com "-I.jpg" (baixa resolução)
-- EXEMPLO VÁLIDO: https://http2.mlstatic.com/D_NQ_NP_758297-MLB51362436710_072023-W.webp`;
-    }
-    
-    if (domain.includes('amazon.com')) {
-      return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e de alta resolução
-- PRIORIDADE 2: #landingImage[src] (imagem principal do produto)
-- PRIORIDADE 3: img[data-a-image-name="landingImage"] ou similar
-- PRIORIDADE 4: .a-dynamic-image[src] com maior resolução
-- PRIORIDADE 5: JSON-LD com @type="Product" → "image"
-- PRIORIDADE 6: img[src*="media-amazon.com/images/I"] com "_AC_" (alta qualidade)
+  if (domain.includes('amazon.com')) {
+    return `- PRIORIDADE 1: #landingImage[src] (imagem principal interativa do produto)
+- PRIORIDADE 2: img[data-a-image-name="landingImage"][src] (imagem principal)
+- PRIORIDADE 3: .a-dynamic-image[src] da primeira imagem da galeria
+- PRIORIDADE 4: meta[property="og:image"] apenas se as anteriores falharem
 - VALIDAÇÃO: URL deve começar com https:// e conter media-amazon.com
-- VALIDAÇÃO: Prefira URLs com "_AC_UY218_", "_AC_SX425_", ou dimensões maiores
-- VALIDAÇÃO: Evite URLs muito pequenas (< 200px)
-- EXEMPLO VÁLIDO: https://m.media-amazon.com/images/I/616p2eYk-iL._AC_UY218_.jpg`;
-    }
-    
-    return `- PRIORIDADE 1: meta[property="og:image"] com URL completa
-- PRIORIDADE 2: meta[name="twitter:image"]
-- PRIORIDADE 3: img com classes "product-image", "main-image", "zoom"
-- URL deve ser completa e acessível (https://)`;
+- MELHORIA AUTOMÁTICA: Troque "_AC_SX" por "_AC_SL1500_" para máxima resolução
+- MELHORIA AUTOMÁTICA: Troque "_AC_UY" por "_AC_SL1500_" para máxima resolução
+- EXEMPLO IDEAL: https://m.media-amazon.com/images/I/51nHt+jXdjL._AC_SL1500_.jpg`;
   }
+  if (domain.includes('mercadolivre.com')) {
+    return `- PRIORIDADE 1: .ui-pdp-gallery__figure img[src] (primeira imagem da galeria principal)
+- PRIORIDADE 2: img[data-zoom][src] (imagem com zoom da galeria)
+- PRIORIDADE 3: figure.ui-pdp-gallery__figure img[src] (imagem destacada)
+- PRIORIDADE 4: meta[property="og:image"] apenas como fallback
+- VALIDAÇÃO: URL deve conter mlstatic.com e começar com https://
+- MELHORIA AUTOMÁTICA: Substitua "-I.jpg" por "-O.jpg" (muda de 500px para 1000px)
+- MELHORIA AUTOMÁTICA: Substitua "-F.webp" por "-O.jpg" para melhor compatibilidade
+- EXEMPLO IDEAL: https://http2.mlstatic.com/D_NQ_NP_652166-MLA83590374671_042025-O.jpg`;
+  }
+  if (domain.includes('nike.com')) {
+    return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: img[data-qa="product-image"]';
+  }
+  if (domain.includes('zara.com')) {
+    return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
+- PRIORIDADE 2: meta[name="twitter:image"]
+- PRIORIDADE 3: JSON-LD procure por "image" dentro de @type="Product"
+- PRIORIDADE 4: picture source com maior resolução (procure por width=2048 ou similar)
+- PRIORIDADE 5: img[src*="static.zara.net/assets/public"] (prefira URLs com /assets/public/)
+- PRIORIDADE 6: img[src*="static.zara.net"] que NÃO contenha "/photos///" (evite URLs com barras triplas)
+- IMPORTANTE: URL deve começar com https:// e ser acessível
+- IMPORTANTE: Evite URLs que contenham "/photos///" ou barras duplas/triplas
+- IMPORTANTE: Prefira URLs que contenham "/assets/public/" e parâmetros como "&w=1500"
+- TESTE: Valide se a URL não contém "/photos///" que indica URL quebrada`;
+  }
+  if (domain.includes('dafiti.com') || domain.includes('netshoes.com')) {
+    return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: .product-image img';
+  }
+  return '- PRIORIDADE 1: meta[property="og:image"]\n- PRIORIDADE 2: img dentro de divs de produto com maior resolução';
+}
 
   const result = await model.generateContent({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -239,12 +240,12 @@ Retorne JSON válido:
   });
 
   let responseText = result.response.text();
-  
+
   // Limpa markdown se presente
   if (responseText.includes('```')) {
     responseText = responseText.replace(/```json\s*|\s*```/g, '');
   }
-  
+
   let jsonData = JSON.parse(responseText);
 
   if (jsonData && jsonData.price) {
@@ -270,7 +271,7 @@ Retorne JSON válido:
 
 async function scrapeBySearching(productUrl: string): Promise<ScrapedProduct> {
   console.log(`[Gemini Search Mode] Starting for: ${productUrl}`);
-  
+
   const prompt = `Busque informações precisas sobre o produto nesta URL: "${productUrl}".
 
 FOQUE NO PREÇO CORRETO:
@@ -305,12 +306,12 @@ Categorias: Eletrônicos, Roupas, Casa, Livros, Games, Automotivo, Esportes, Out
   });
 
   let responseText = result.response.text();
-  
+
   // Limpa markdown se presente
   if (responseText.includes('```')) {
     responseText = responseText.replace(/```json\s*|\s*```/g, '');
   }
-  
+
   let jsonData = JSON.parse(responseText);
 
   if (jsonData && jsonData.price) {
@@ -325,25 +326,25 @@ Categorias: Eletrônicos, Roupas, Casa, Livros, Games, Automotivo, Esportes, Out
 
 export async function extractProductInfo(url: string, htmlContent?: string): Promise<ScrapedProduct> {
   console.log(`[Gemini] Starting extraction for: ${url}`);
-  
+
   try {
     if (htmlContent) {
       try {
         console.log(`[Gemini] Trying HTML method...`);
         const htmlResult = await scrapeByAnalyzingHtml(url, htmlContent);
-        
+
         if (htmlResult.price && htmlResult.price > 0) {
           console.log(`[Gemini] ✓ Success with HTML method - Price: R$ ${htmlResult.price}`);
           return htmlResult;
         }
-        
+
         if (htmlResult.name && htmlResult.name !== "Produto Desconhecido") {
           console.log(`[Gemini] HTML method found product without price: ${htmlResult.name}`);
-          
+
           try {
             console.log(`[Gemini] Trying Search method for price...`);
             const searchResult = await scrapeBySearching(url);
-            
+
             if (searchResult.price && searchResult.price > 0) {
               console.log(`[Gemini] ✓ Found price with Search method: R$ ${searchResult.price}`);
               return {
@@ -355,7 +356,7 @@ export async function extractProductInfo(url: string, htmlContent?: string): Pro
           } catch (searchError) {
             console.warn(`[Gemini] Search method failed:`, searchError);
           }
-          
+
           return htmlResult;
         }
       } catch (htmlError) {
@@ -366,12 +367,12 @@ export async function extractProductInfo(url: string, htmlContent?: string): Pro
     try {
       console.log(`[Gemini] Trying Search method as fallback...`);
       const searchResult = await scrapeBySearching(url);
-      
+
       if (searchResult.price && searchResult.price > 0) {
         console.log(`[Gemini] ✓ Success with Search method - Price: R$ ${searchResult.price}`);
         return searchResult;
       }
-      
+
       if (searchResult.name && searchResult.name !== "Produto Desconhecido") {
         console.log(`[Gemini] Search method found product without price: ${searchResult.name}`);
         return searchResult;
@@ -381,10 +382,10 @@ export async function extractProductInfo(url: string, htmlContent?: string): Pro
     }
 
     throw new Error("Both extraction methods failed");
-    
+
   } catch (error) {
     console.error(`[Gemini] Complete extraction failed for ${url}:`, error);
-    
+
     return {
       name: "Produto extraído da URL: " + url.substring(0, 50) + "...",
       price: null,

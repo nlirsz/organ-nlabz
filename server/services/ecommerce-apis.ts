@@ -32,19 +32,23 @@ async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductRe
       // Prioriza secure_url, depois url
       const baseUrl = data.pictures[0].secure_url || data.pictures[0].url;
       if (baseUrl) {
-        // Tenta melhorar a qualidade da imagem
-        // Substitui terminações de baixa qualidade por alta qualidade
+        // Melhora significativamente a qualidade da imagem
         imageUrl = baseUrl
-          .replace(/-I\.jpg$/, '-W.webp')  // Muda de baixa para alta resolução
-          .replace(/-I\.webp$/, '-W.webp')
-          .replace(/-S\.jpg$/, '-W.webp')
-          .replace(/-T\.jpg$/, '-W.webp');
+          .replace(/-I\.jpg$/, '-O.jpg')     // Muda de 500px para 1000px
+          .replace(/-I\.webp$/, '-O.jpg')    // Muda webp baixa para jpg alta
+          .replace(/-S\.jpg$/, '-O.jpg')     // Muda de 300px para 1000px
+          .replace(/-T\.jpg$/, '-O.jpg')     // Muda de 180px para 1000px
+          .replace(/-F\.webp$/, '-O.jpg')    // Remove retina e usa alta resolução
+          .replace(/-W\.webp$/, '-O.jpg')    // Garante compatibilidade máxima
+          .replace(/2X/, '');                // Remove indicadores de retina
       }
     } else if (data.thumbnail) {
       // Melhora a thumbnail também
       imageUrl = data.thumbnail
-        .replace(/-I\.jpg$/, '-W.webp')
-        .replace(/-S\.jpg$/, '-W.webp');
+        .replace(/-I\.jpg$/, '-O.jpg')
+        .replace(/-S\.jpg$/, '-O.jpg')
+        .replace(/-T\.jpg$/, '-O.jpg')
+        .replace(/-F\.webp$/, '-O.jpg');
     }
 
     // Normaliza preço
@@ -127,11 +131,12 @@ async function fetchFromMercadoLivre(searchTerm: string): Promise<APIProductResu
       if (item.thumbnail) {
         // Melhora significativamente a qualidade da thumbnail
         imageUrl = item.thumbnail
-          .replace(/-I\.jpg$/, '-W.webp')    // Alta resolução WebP
-          .replace(/-I\.webp$/, '-W.webp')   
-          .replace(/-S\.jpg$/, '-W.webp')    // De pequena para alta
-          .replace(/-T\.jpg$/, '-W.webp')    // De tiny para alta
-          .replace(/\.jpg$/, '.webp');       // Converte para WebP quando possível
+          .replace(/-I\.jpg$/, '-O.jpg')     // Muda de 500px para 1000px
+          .replace(/-I\.webp$/, '-O.jpg')    // Muda webp baixa para jpg alta
+          .replace(/-S\.jpg$/, '-O.jpg')     // De pequena (300px) para alta (1000px)
+          .replace(/-T\.jpg$/, '-O.jpg')     // De tiny (180px) para alta (1000px)
+          .replace(/-F\.webp$/, '-O.jpg')    // Remove retina e usa alta resolução
+          .replace(/2X/, '');                // Remove indicadores de retina que podem quebrar
       }
 
       // Normaliza preço
