@@ -608,4 +608,4 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
   }
 }
 
-export { APIProductResult };
+export { fetchFromGoogleShopping, APIProductResult };

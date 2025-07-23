@@ -65,52 +65,57 @@ ${domain.includes('amazon.com.br') ? `
 ⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL:
 
 PREÇO (OBRIGATÓRIO - VALOR INCORRETO REPORTADO):
-- FOQUE no preço principal do produto, não em ofertas ou descontos
-- Procure primeiro por: span.a-price-whole + span.a-price-fraction dentro de .a-price[data-a-color="price"]
-- Alternativa: .a-price-current .a-offscreen (texto oculto com preço completo)
-- Alternativa: #price_inside_buybox .a-price-current
-- Formato correto: "R$ 3.899,99" → 3899.99 (remova R$ e converta vírgula para ponto)
-- IGNORE: preços com "Prime", "frete", "parcelamento", "economia", "a partir de"
-- IGNORE: valores muito baixos (< R$ 100 para eletrônicos)
-- VALIDAÇÃO: preço deve ser razoável para o produto (iPhones > R$ 2000)
+- PRIORIDADE 1: span[data-a-offscreen] dentro de .a-price.a-text-price.a-size-medium (preço principal)
+- PRIORIDADE 2: .a-price-current .a-offscreen (texto oculto com preço completo)
+- PRIORIDADE 3: span.a-price-whole + span.a-price-fraction dentro de .a-price
+- PRIORIDADE 4: #price_inside_buybox .a-price-current
+- PRIORIDADE 5: meta[property="product:price:amount"]
+- FORMATO: "R$ 4.859,10" → 4859.10 (remova R$ e converta vírgula para ponto)
+- IGNORE COMPLETAMENTE: preços com "Prime", "frete", "parcelamento", "economia", "a partir de", "Pix"
+- IGNORE: valores muito baixos (< R$ 1000 para iPhones)
+- VALIDAÇÃO: preço deve ser razoável (iPhone 15 Plus > R$ 3500)
 
 IMAGEM (OBRIGATÓRIA - SEM IMAGEM REPORTADO):
-- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
+- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e de alta resolução
 - PRIORIDADE 2: #landingImage[src] (imagem principal do produto)
-- PRIORIDADE 3: img[data-a-image-name="landingImage"]
-- PRIORIDADE 4: .a-dynamic-image[src] com boa resolução
-- VALIDAÇÃO: URL deve começar com https:// e conter "media-amazon.com"
-- VALIDAÇÃO: URL deve terminar com .jpg ou .webp
-- VALIDAÇÃO: Prefira URLs com "_AC_" para alta qualidade
-- EXEMPLO: https://m.media-amazon.com/images/I/616p2eYk-iL._AC_UY218_.jpg
+- PRIORIDADE 3: img[data-a-image-name="landingImage"] com src válido
+- PRIORIDADE 4: .a-dynamic-image[src] com maior resolução possível
+- PRIORIDADE 5: JSON-LD com @type="Product" → "image"
+- VALIDAÇÃO CRÍTICA: URL deve começar com https:// e conter "media-amazon.com"
+- VALIDAÇÃO: URL deve ser acessível e terminar com .jpg, .jpeg ou .webp
+- MELHORIA: Prefira URLs com "_AC_UY400_", "_AC_SX425_" para melhor qualidade
+- EXEMPLO VÁLIDO: https://m.media-amazon.com/images/I/616p2eYk-iL._AC_UY400_.jpg
+- REJEITE: URLs placeholder, muito pequenas (< 200px) ou quebradas
 ` : ''}
 
 ${domain.includes('mercadolivre.com') ? `
 ⚠️ INSTRUÇÕES CRÍTICAS PARA MERCADO LIVRE:
 
 PREÇO (ALTÍSSIMA PRIORIDADE):
-- PRIORIDADE 1: .price-tag-fraction (classe principal de preço)
-- PRIORIDADE 2: .andes-money-amount__fraction + .andes-money-amount__cents
-- PRIORIDADE 3: span[data-testid*="price"] ou elementos com "price" no data-testid
+- PRIORIDADE 1: .andes-money-amount__fraction dentro de [data-testid="price-part"]
+- PRIORIDADE 2: .price-tag-fraction (classe principal de preço)
+- PRIORIDADE 3: span[data-testid="price-part-integer"] + span[data-testid="price-part-decimal"]
 - PRIORIDADE 4: .ui-pdp-price__fraction (páginas de produto)
 - PRIORIDADE 5: JSON-LD com @type="Product" → "offers" → "price"
 - PRIORIDADE 6: meta[property="product:price:amount"]
-- COMBINAÇÃO: Se encontrar partes separadas (inteiro + centavos), combine-as
-- FORMATO: "8.320" + "00" = 8320.00
-- IGNORE COMPLETAMENTE: preços com "frete", "entrega", "parcelamento", "a partir de"
-- VALIDAÇÃO: Preço deve ser > R$ 50 para produtos eletrônicos
+- COMBINAÇÃO INTELIGENTE: Se encontrar partes separadas, combine corretamente
+- FORMATO CORRETO: "8.320" + ",00" = 8320.00 (note a vírgula decimal)
+- IGNORE COMPLETAMENTE: preços com "frete", "entrega", "parcelamento", "a partir de", "Pix"
+- VALIDAÇÃO: iPhone 16 Pro Max deve estar entre R$ 7000-10000
 
-IMAGEM (OBRIGATÓRIA):
-- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa
-- PRIORIDADE 2: img[data-zoom-image] (imagem com zoom, alta qualidade)
-- PRIORIDADE 3: img[data-testid="gallery-image"] da galeria principal
-- PRIORIDADE 4: .ui-pdp-gallery__figure img[src] com maior resolução
-- PRIORIDADE 5: JSON-LD com @type="Product" → "image"
+IMAGEM (OBRIGATÓRIA - CRÍTICO):
+- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e acessível
+- PRIORIDADE 2: .ui-pdp-gallery__figure img[src] da primeira imagem da galeria
+- PRIORIDADE 3: img[data-zoom] ou img[data-testid="gallery-image"] 
+- PRIORIDADE 4: JSON-LD com @type="Product" → "image" (primeira imagem do array)
+- PRIORIDADE 5: figure img[src] com maior resolução disponível
 - VALIDAÇÃO CRÍTICA: URL deve conter "mlstatic.com" e começar com https://
 - MELHORIA AUTOMÁTICA: Substitua "-I.jpg" por "-W.webp" para alta resolução
-- MELHORIA AUTOMÁTICA: Substitua "-S.jpg" por "-O.jpg" para melhor qualidade
+- MELHORIA AUTOMÁTICA: Substitua "-S.jpg" por "-O.jpg" para melhor qualidade  
+- MELHORIA AUTOMÁTICA: Substitua "-T.jpg" por "-W.webp" para máxima qualidade
 - EXEMPLO VÁLIDO: https://http2.mlstatic.com/D_NQ_NP_758297-MLB51362436710_072023-W.webp
-- REJEITE URLs com "/photos///" (barras triplas = URL inválida)
+- REJEITE SEMPRE: URLs com "/photos///", placeholder, ou sem mlstatic.com
+- TESTE FINAL: Verifique se a URL é acessível e não retorna 404
 ` : ''}
 
 REGRAS PARA IMAGEM:

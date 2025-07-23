@@ -3,7 +3,7 @@ import { extractProductInfo, type ScrapedProduct } from "./gemini.js";
 import { scrapingCache } from './cache';
 import { priceHistoryService } from './priceHistory';
 import { notificationService } from './notifications';
-import { tryAPIFirst, type APIProductResult } from './ecommerce-apis';
+import { tryAPIFirst, fetchFromGoogleShopping, type APIProductResult } from './ecommerce-apis';
 
 // Importa as funções do scrape-gemini para fallback
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -551,14 +551,14 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
     const googleResults = await fetchFromGoogleShopping(url);
     
     if (googleResults && googleResults.length > 0) {
-      const bestResult = googleResults.find(r => r.price > 0) || googleResults[0];
+      const bestResult = googleResults.find(r => r.price && r.price > 0) || googleResults[0];
       
       if (bestResult && (bestResult.price > 0 || bestResult.name !== 'Produto encontrado')) {
         console.log(`[Scraper] ✅ Google Shopping API bem-sucedida: ${bestResult.name}`);
         
         const productInfo: ScrapedProduct = {
           name: bestResult.name,
-          price: bestResult.price,
+          price: bestResult.price || null,
           originalPrice: bestResult.originalPrice || null,
           imageUrl: bestResult.imageUrl,
           store: bestResult.store,
