@@ -102,7 +102,41 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
     return categoryMap[category] || category;
   }, []);
 
+  // Function to detect product issues
+  const detectProductIssues = useCallback((product: Product) => {
+    const issues: string[] = [];
+
+    if (!product.price || product.price === "0" || product.price === "0.00") {
+      issues.push("Preço não disponível");
+    }
+
+    if (product.brand === "Zara" || product.brand === "Adidas" || product.brand === "Nike") {
+      issues.push("Loja monitorada automaticamente");
+    }
+
+    if (product.imageUrl?.includes("/photos///")) {
+      issues.push("URL da imagem quebrada (Zara)");
+    }
+    // Add more specific validations here
+
+    return issues;
+  }, []);
+
+  // Function to check if any issues are present
+    const hasAnyIssues = useCallback((product: Product) => {
+        const issues = detectProductIssues(product);
+        return issues.length > 0;
+    }, [detectProductIssues]);
+
+    // Function to check if critical issues are present (e.g., no price)
+    const hasCriticalIssues = useCallback((product: Product) => {
+        return !product.price || product.price === "0" || product.price === "0.00";
+    }, []);
+
   const isPurchased = isChecked;
+    const productIssues = detectProductIssues(product);
+    const hasIssues = hasAnyIssues(product);
+    const hasCritical = hasCriticalIssues(product);
 
   const handleReScrape = useCallback(async () => {
     if (!onReScrape || isReScrapingLoading) return;
@@ -124,9 +158,6 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
     },
     enabled: isPurchased, // Busca sempre que o produto estiver comprado
   });
-
-    // Verificação de problemas no produto (exemplo)
-    const hasIssues = product.brand === "Zara" || product.brand === "Adidas" || product.imageUrl === "invalida";
 
     const handleEditModalClose = useCallback(() => {
         setIsEditModalOpen(false);
@@ -154,6 +185,17 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
               ✓ Comprado
             </div>
           )}
+           {/* Alerta visual de problemas */}
+           {hasCritical && (
+                        <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                            🔴
+                        </div>
+                    )}
+                    {hasIssues && !hasCritical && (
+                        <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                            🟡
+                        </div>
+                    )}
         </div>
 
         {/* Content Section */}
@@ -220,8 +262,8 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
                       e.stopPropagation();
                       setIsEditModalOpen(true);
                     }}
-                    className="flex-1 sm:flex-none neomorphic-button"
-                    title={hasIssues ? "Editar produto (problemas detectados - verificar dados)" : "Editar produto"}
+                    className={`flex-1 sm:flex-none neomorphic-button ${hasIssues ? 'border-yellow-300' : ''}`}
+                    title={hasIssues ? `Editar produto (${productIssues.length} problema(s) detectado(s))` : "Editar produto"}
                   >
                     <Edit className="w-4 h-4" style={{ color: 'var(--edit-color)' }} />
                     <span className="sm:hidden">Editar</span>
@@ -232,8 +274,8 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
                         e.stopPropagation();
                         setIsEditModalOpen(true);
                       }}
-                      className="flex-1 sm:flex-none neomorphic-button"
-                      title="Gerenciar pagamento"
+                      className={`flex-1 sm:flex-none neomorphic-button ${hasIssues ? 'border-yellow-300' : ''}`}
+                      title={hasIssues ? `Editar produto (${productIssues.length} problema(s) detectado(s))` : "Gerenciar pagamento"}
                     >
                       <CreditCard className="w-4 h-4" style={{ color: 'var(--primary-action)' }} />
                       <span className="sm:hidden">Pagamento</span>
@@ -270,8 +312,8 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
                       e.stopPropagation();
                       setIsEditModalOpen(true);
                     }}
-                    className="flex-1 sm:flex-none neomorphic-button"
-                    title={hasIssues ? "Editar produto (problemas detectados - verificar dados)" : "Editar produto"}
+                    className={`flex-1 sm:flex-none neomorphic-button ${hasIssues ? 'border-yellow-300' : ''}`}
+                    title={hasIssues ? `Editar produto (${productIssues.length} problema(s) detectado(s))` : "Editar produto"}
                   >
                     <Edit className="w-4 h-4" style={{ color: 'var(--edit-color)' }} />
                     <span className="sm:hidden">Editar</span>
@@ -282,8 +324,8 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
                         e.stopPropagation();
                         setIsEditModalOpen(true);
                       }}
-                      className="flex-1 sm:flex-none neomorphic-button"
-                      title="Gerenciar pagamento"
+                      className={`flex-1 sm:flex-none neomorphic-button ${hasIssues ? 'border-yellow-300' : ''}`}
+                      title={hasIssues ? `Editar produto (${productIssues.length} problema(s) detectado(s))` : "Gerenciar pagamento"}
                     >
                       <CreditCard className="w-4 h-4" style={{ color: 'var(--primary-action)' }} />
                       <span className="sm:hidden">Pagamento</span>
@@ -353,9 +395,9 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
                   </a>
                   <button
                     onClick={() => setIsEditModalOpen(true)}
-                    className="neomorphic-button px-4 py-2 rounded-lg"
+                    className={`neomorphic-button px-4 py-2 rounded-lg ${hasIssues ? 'border-yellow-300' : ''}`}
                     style={{ color: 'var(--edit-color)' }}
-                    title={hasIssues ? "Editar produto (problemas detectados - verificar dados)" : "Editar produto"}
+                    title={hasIssues ? `Editar produto (${productIssues.length} problema(s) detectado(s))` : "Editar produto"}
                   >
                     <Edit className="w-4 h-4 inline mr-2" />
                     Editar

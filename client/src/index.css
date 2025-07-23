@@ -1118,3 +1118,42 @@
     @apply glass-button-primary;
   }
 }
+
+/* Scroll suave */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Alertas de Validação */
+.validation-alert {
+  animation: pulse 2s infinite;
+}
+
+.validation-alert-critical {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-left: 4px solid #dc2626;
+}
+
+.validation-alert-warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-left: 4px solid #d97706;
+}
+
+.problem-icon {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.tooltip-multiline {
+  white-space: pre-line;
+  max-width: 250px;
+}
+
+/* Animação sutil para chamar atenção */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
