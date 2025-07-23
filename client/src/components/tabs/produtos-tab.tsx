@@ -27,8 +27,21 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
   const authToken = localStorage.getItem("authToken");
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
+    queryKey: ["/api/products", refreshKey],
+    queryFn: async () => {
+      const response = await fetch("/api/products", {
+        headers: { 
+          "x-auth-token": authToken || ""
+        }
+      });
+      if (!response.ok) {
+        throw new Error("Erro ao carregar produtos");
+      }
+      return response.json();
+    },
     enabled: !!authToken,
+    staleTime: 30000, // 30 seconds
+    refetchOnWindowFocus: false,
   });
 
   const purchaseProductMutation = useMutation({
@@ -193,6 +206,15 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
       product.tags.split(",").map(tag => tag.trim()).filter(Boolean) : [];
 
     return selectedTags.every(tag => productTags.includes(tag));
+  });
+
+  // Debug: log produtos para identificar problema
+  console.log("ProdutosTab Debug:", {
+    totalProducts: products.length,
+    pendingProducts: products.filter(p => !p.isPurchased).length,
+    purchasedProducts: products.filter(p => p.isPurchased).length,
+    filteredProducts: filteredProducts.length,
+    finalFiltered: finalFilteredProducts.length
   });
 
   if (isLoading) {

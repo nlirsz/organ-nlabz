@@ -108,63 +108,51 @@ export function SmartDashboard() {
         const [productsRes, statsRes, financesRes, installmentsRes] = await Promise.all([
           fetch("/api/products", {
             headers: { 
-              "x-auth-token": authToken,
-              "Cache-Control": "max-age=60" // Cache por 1 minuto
+              "x-auth-token": authToken
             }
           }),
           fetch(`/api/products/stats/${userId}`, {
             headers: { 
-              "x-auth-token": authToken,
-              "Cache-Control": "max-age=60"
+              "x-auth-token": authToken
             }
           }),
           fetch("/api/finances", {
             headers: { 
-              "x-auth-token": authToken,
-              "Cache-Control": "max-age=300" // Cache por 5 minutos
+              "x-auth-token": authToken
             }
           }),
           fetch("/api/installments", {
             headers: { 
-              "x-auth-token": authToken,
-              "Cache-Control": "max-age=60"
+              "x-auth-token": authToken
             }
           })
         ]);
 
         if (!isMounted) return;
 
-        if (productsRes.ok && statsRes.ok) {
-          const productsData = await productsRes.json();
-          const statsData = await statsRes.json();
+        const [productsData, statsData, financesData, installmentsData] = await Promise.all([
+          productsRes.ok ? productsRes.json() : [],
+          statsRes.ok ? statsRes.json() : null,
+          financesRes.ok ? financesRes.json() : [],
+          installmentsRes.ok ? installmentsRes.json() : []
+        ]);
 
-          setProducts(productsData);
-          setStats(statsData);
-        }
+        setProducts(productsData);
+        setStats(statsData);
+        setFinances(financesData);
+        setInstallments(installmentsData);
 
-        if (financesRes.ok) {
-          const financesData = await financesRes.json();
-          setFinances(financesData);
-        }
-
-        if (installmentsRes.ok) {
-          const installmentsData = await installmentsRes.json();
-          setInstallments(installmentsData);
-        }
       } catch (error) {
-        if (isMounted) {
-          console.error("SmartDashboard: Erro ao carregar dados:", error);
-        }
+        console.error("SmartDashboard: Erro ao carregar dados:", error);
       } finally {
         if (isMounted) setLoading(false);
       }
     };
 
-    const timeoutId = setTimeout(fetchData, 100); // Debounce de 100ms
+    fetchData();
 
     return () => {
       isMounted = false;
-      clearTimeout(timeoutId);
     };
   }, [authToken, userId]);
 
@@ -218,34 +206,18 @@ export function SmartDashboard() {
   const currentMonthNum = new Date().getMonth() + 1;
   const currentYearNum = new Date().getFullYear();
 
-  console.log('Current month/year:', { currentMonthNum, currentYearNum });
-  console.log('All installments:', installments);
-
   const currentMonthInstallments = installments.filter(installment => {
     const dueDate = new Date(installment.dueDate);
     const installmentMonth = dueDate.getMonth() + 1;
     const installmentYear = dueDate.getFullYear();
 
-    console.log('Checking installment:', {
-      productName: installment.productName,
-      dueDate: installment.dueDate,
-      installmentMonth,
-      installmentYear,
-      matches: installmentMonth === currentMonthNum && installmentYear === currentYearNum
-    });
-
     return installmentMonth === currentMonthNum && installmentYear === currentYearNum;
   });
 
-  console.log('Current month installments:', currentMonthInstallments);
-
   const currentMonthInstallmentsValue = currentMonthInstallments.reduce((sum, installment) => {
     const amount = parseFloat(installment.amount.toString());
-    console.log('Adding installment amount:', amount);
     return sum + amount;
   }, 0);
-
-  console.log('Current month total value:', currentMonthInstallmentsValue);
 
   // Última compra
   const lastPurchase = purchasedProducts

@@ -104,12 +104,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.user.userId);
       const products = await storage.getProducts(userId);
       
-      // Adiciona headers de cache
-      res.set({
-        'Cache-Control': 'private, max-age=60',
-        'ETag': `"products-${userId}-${Date.now()}"`
-      });
-      
       res.json(products);
     } catch (error) {
       console.error("Error fetching products:", error);
