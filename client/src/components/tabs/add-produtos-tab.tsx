@@ -94,6 +94,41 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
     },
   });
 
+  const scrapeProductMutation = useMutation({
+    mutationFn: async (url: string) => {
+      const response = await fetch("/api/products/scrape", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": authToken || ""
+        },
+        body: JSON.stringify({ url }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Falha ao analisar produto");
+      }
+      return response.json();
+    },
+    onSuccess: (productData) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
+      onProductAdded();
+      toast({
+        title: "Sucesso",
+        description: `Produto "${productData.name}" adicionado à lista!`,
+      });
+      setUrl("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Falha ao analisar produto",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -147,12 +182,7 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
       return;
     }
 
-    // Aqui você pode adicionar a lógica de scraping
-    // Por enquanto, vamos apenas mostrar um feedback
-    toast({
-      title: "Processando",
-      description: "Analisando produto...",
-    });
+    scrapeProductMutation.mutate(url);
   };
 
   if (isManualMode) {
@@ -396,10 +426,20 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
           {/* Add Button */}
           <button
             type="submit"
+            disabled={scrapeProductMutation.isPending}
             className="w-full neomorphic-button-primary flex items-center justify-center gap-2 icon-button py-3"
           >
-            <Plus className="w-5 h-5" />
-            Adicionar Produto
+            {scrapeProductMutation.isPending ? (
+              <>
+                <Sparkles className="w-5 h-5 animate-spin" />
+                Analisando Produto...
+              </>
+            ) : (
+              <>
+                <Plus className="w-5 h-5" />
+                Adicionar Produto
+              </>
+            )}
           </button>
         </form>
 
