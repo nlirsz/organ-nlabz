@@ -3,6 +3,7 @@ import { extractProductInfo, type ScrapedProduct } from "./gemini.js";
 import { scrapingCache } from './cache';
 import { priceHistoryService } from './priceHistory';
 import { notificationService } from './notifications';
+import { tryAPIFirst, type APIProductResult } from './ecommerce-apis';
 
 // Importa as funções do scrape-gemini para fallback
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -53,7 +54,23 @@ function getRandomHeaders(url: string) {
   const userAgent = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
   const domain = new URL(url).hostname;
   
-  return {
+  // Headers específicos por site
+  const siteSpecificHeaders: Record<string, Record<string, string>> = {
+    'mercadolivre.com.br': {
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-ML-Device': 'desktop'
+    },
+    'amazon.com.br': {
+      'X-Requested-With': 'XMLHttpRequest',
+      'Device-Memory': '8',
+      'Downlink': '10'
+    },
+    'americanas.com.br': {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  };
+  
+  const baseHeaders = {
     'User-Agent': userAgent,
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
     'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8,en-US;q=0.7',
@@ -63,16 +80,55 @@ function getRandomHeaders(url: string) {
     'Upgrade-Insecure-Requests': '1',
     'Sec-Fetch-Dest': 'document',
     'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-Site': 'cross-site',
     'Sec-Fetch-User': '?1',
-    'Cache-Control': 'max-age=0',
-    'Referer': `https://${domain}/`,
-    'Origin': `https://${domain}`
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache',
+    'Referer': 'https://www.google.com/',
+    // Simula características de navegador real
+    'Sec-CH-UA': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+    'Sec-CH-UA-Mobile': '?0',
+    'Sec-CH-UA-Platform': '"Windows"',
+    'Viewport-Width': '1920'
   };
+  
+  // Adiciona headers específicos do site
+  const specificHeaders = Object.keys(siteSpecificHeaders).find(key => domain.includes(key));
+  if (specificHeaders) {
+    Object.assign(baseHeaders, siteSpecificHeaders[specificHeaders]);
+  }
+  
+  return baseHeaders;
+}
+
+// Sistema de delays por domínio
+const domainDelays = new Map<string, number>();
+
+function getDelayForDomain(domain: string): number {
+  const baseDelay = 1000; // 1 segundo base
+  const lastRequest = domainDelays.get(domain) || 0;
+  const timeSinceLastRequest = Date.now() - lastRequest;
+  
+  // Se passou menos de 3 segundos, aguarda mais
+  if (timeSinceLastRequest < 3000) {
+    return 3000 - timeSinceLastRequest;
+  }
+  
+  return Math.random() * 1000 + baseDelay; // Entre 1-2 segundos
 }
 
 // Função para tentar múltiplas estratégias de fetch
 async function robustFetch(url: string, maxRetries = 3): Promise<Response> {
+  const domain = new URL(url).hostname;
+  const delay = getDelayForDomain(domain);
+  
+  if (delay > 0) {
+    console.log(`[Fetch] Aguardando ${delay}ms para evitar rate limiting...`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+  
+  domainDelays.set(domain, Date.now());
+  
   let lastError: Error | null = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -487,6 +543,46 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
   if (cached) {
     console.log(`[Scraper] Retornando dados do cache para: ${url}`);
     return cached;
+  }
+  
+  // NOVA ESTRATÉGIA: Tenta API oficial primeiro
+  try {
+    console.log(`[Scraper] Tentando API oficial primeiro...`);
+    const apiResult = await tryAPIFirst(url);
+    
+    if (apiResult && apiResult.price > 0) {
+      console.log(`[Scraper] ✅ API oficial bem-sucedida: ${apiResult.name}`);
+      
+      const productInfo: ScrapedProduct = {
+        name: apiResult.name,
+        price: apiResult.price,
+        originalPrice: apiResult.originalPrice || null,
+        imageUrl: apiResult.imageUrl,
+        store: apiResult.store,
+        description: apiResult.description,
+        category: apiResult.category || 'Outros',
+        brand: apiResult.brand
+      };
+      
+      // Adiciona ao cache
+      scrapingCache.set(cacheKey, productInfo, 60 * 60 * 1000); // 1 hora para dados de API
+      
+      // Adiciona ao histórico de preços
+      if (productId && productInfo.price) {
+        const oldEntries = priceHistoryService.getPriceHistory(productId);
+        const lastPrice = oldEntries.length > 0 ? oldEntries[oldEntries.length - 1].price : null;
+        
+        priceHistoryService.addPriceEntry(productId, productInfo.price, 'api');
+        
+        if (lastPrice && lastPrice !== productInfo.price) {
+          notificationService.checkPriceChange(productId, lastPrice, productInfo.price);
+        }
+      }
+      
+      return productInfo;
+    }
+  } catch (error) {
+    console.log(`[Scraper] API oficial falhou: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
   
   const errors: string[] = [];
