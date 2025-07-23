@@ -30,6 +30,42 @@ import { PriceHistoryChart } from '@/components/price-history-chart';
 import { InstallmentsTimeline } from '@/components/installments-timeline';
 import { ProfileCard } from '@/components/ui/profile-card';
 
+// Componente TiltCard para efeito 3D no desktop
+const TiltCard = ({ children, className = "", ...props }: any) => {
+  const [transform, setTransform] = useState("");
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = (y - centerY) / 20;
+    const rotateY = (centerX - x) / 20;
+
+    setTransform(
+      `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`
+    );
+  };
+
+  const handleMouseLeave = () => {
+    setTransform("");
+  };
+
+  return (
+    <div
+      className={`hidden md:block transition-transform duration-300 ease-out ${className}`}
+      style={{ transform }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
+
 interface Product {
   id: number;
   name: string;
@@ -505,88 +541,179 @@ export function HistoricoTab() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {purchasedProducts.map((product) => (
-                <ProfileCard key={product.id}>
-                  <div className="p-4">
-                    <div className="flex items-start gap-4">
-                      {product.imageUrl && (
-                        <img 
-                          src={product.imageUrl} 
-                          alt={product.name}
-                          className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer"
-                          onClick={() => handleViewProduct(product)}
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-base leading-tight mb-2 line-clamp-2 cursor-pointer hover:text-emerald-400 text-white"
-                                onClick={() => handleViewProduct(product)}>
-                              {product.name}
-                            </h4>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Badge variant="secondary" className="text-xs bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
-                                {product.category || 'Outros'}
-                              </Badge>
-                              <span className="text-sm text-gray-300">{product.store}</span>
-                            </div>
-                          </div>
-                          <div className="flex-shrink-0">
-                            <span className="text-xl font-bold text-emerald-400 whitespace-nowrap">
-                              R$ {parseFloat(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="pt-2 border-t border-white/10 space-y-2">
-                          <div className="flex items-center text-xs text-gray-400">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            Comprado em {new Date(product.createdAt).toLocaleDateString('pt-BR')}
-                          </div>
-                          <div className="flex justify-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
+                <div key={product.id}>
+                  {/* Card com tilt para desktop */}
+                  <TiltCard className="hidden md:block">
+                    <ProfileCard className="bg-gradient-to-br from-green-900/90 to-emerald-900/90 border-green-700/50 hover:border-green-500/60">
+                      <div className="p-4">
+                        <div className="flex items-start gap-4">
+                          {product.imageUrl && (
+                            <img 
+                              src={product.imageUrl} 
+                              alt={product.name}
+                              className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer"
                               onClick={() => handleViewProduct(product)}
-                              title="Ver detalhes"
-                              className="h-8 w-8 p-0 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400"
-                            >
-                              <Info className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditProduct(product)}
-                              title="Editar produto"
-                              className="h-8 w-8 p-0 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleEditProduct(product)}
-                              title="Gerenciar pagamento"
-                              className="h-8 w-8 p-0 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400"
-                            >
-                              <CreditCard className="h-4 w-4" />
-                            </Button>
-                            {product.url && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => window.open(product.url, '_blank')}
-                                title="Ver no site"
-                                className="h-8 w-8 p-0 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
-                            )}
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-base leading-tight mb-2 line-clamp-2 cursor-pointer hover:text-green-300 text-white"
+                                    onClick={() => handleViewProduct(product)}>
+                                  {product.name}
+                                </h4>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge variant="secondary" className="text-xs bg-green-600/30 text-green-200 border-green-500/40">
+                                    {product.category || 'Outros'}
+                                  </Badge>
+                                  <span className="text-sm text-gray-300">{product.store}</span>
+                                </div>
+                              </div>
+                              <div className="flex-shrink-0">
+                                <span className="text-xl font-bold text-green-300 whitespace-nowrap">
+                                  R$ {parseFloat(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="pt-2 border-t border-white/10 space-y-2">
+                              <div className="flex items-center text-xs text-gray-400">
+                                <Calendar className="w-3 h-3 mr-1" />
+                                Comprado em {new Date(product.createdAt).toLocaleDateString('pt-BR')}
+                              </div>
+                              <div className="flex justify-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleViewProduct(product)}
+                                  title="Ver detalhes"
+                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                >
+                                  <Info className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditProduct(product)}
+                                  title="Editar produto"
+                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditProduct(product)}
+                                  title="Gerenciar pagamento"
+                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                >
+                                  <CreditCard className="h-4 w-4" />
+                                </Button>
+                                {product.url && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => window.open(product.url, '_blank')}
+                                    title="Ver no site"
+                                    className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </ProfileCard>
+                  </TiltCard>
+
+                  {/* Card normal para mobile */}
+                  <div className="md:hidden">
+                    <ProfileCard className="bg-gradient-to-br from-green-900/90 to-emerald-900/90 border-green-700/50 hover:border-green-500/60">
+                      <div className="p-4">
+                        <div className="flex items-start gap-4">
+                          {product.imageUrl && (
+                            <img 
+                              src={product.imageUrl} 
+                              alt={product.name}
+                              className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+                              onClick={() => handleViewProduct(product)}
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-base leading-tight mb-2 line-clamp-2 cursor-pointer hover:text-green-300 text-white"
+                                    onClick={() => handleViewProduct(product)}>
+                                  {product.name}
+                                </h4>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge variant="secondary" className="text-xs bg-green-600/30 text-green-200 border-green-500/40">
+                                    {product.category || 'Outros'}
+                                  </Badge>
+                                  <span className="text-sm text-gray-300">{product.store}</span>
+                                </div>
+                              </div>
+                              <div className="flex-shrink-0">
+                                <span className="text-xl font-bold text-green-300 whitespace-nowrap">
+                                  R$ {parseFloat(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="pt-2 border-t border-white/10 space-y-2">
+                              <div className="flex items-center text-xs text-gray-400">
+                                <Calendar className="w-3 h-3 mr-1" />
+                                Comprado em {new Date(product.createdAt).toLocaleDateString('pt-BR')}
+                              </div>
+                              <div className="flex justify-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleViewProduct(product)}
+                                  title="Ver detalhes"
+                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                >
+                                  <Info className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditProduct(product)}
+                                  title="Editar produto"
+                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditProduct(product)}
+                                  title="Gerenciar pagamento"
+                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                >
+                                  <CreditCard className="h-4 w-4" />
+                                </Button>
+                                {product.url && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => window.open(product.url, '_blank')}
+                                    title="Ver no site"
+                                    className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </ProfileCard>
                   </div>
-                </ProfileCard>
+                </div>
               ))}
             </div>
           )}
