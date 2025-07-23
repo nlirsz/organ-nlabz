@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash2, Edit, ExternalLink, Check, RotateCcw, ShoppingCart, Heart, TrendingUp, RefreshCw, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +16,7 @@ interface ProductCardProps {
   onReScrape?: (id: number) => void;
 }
 
-export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCardProps) {
+function ProductCardComponent({ product, onProductUpdated, onReScrape }: ProductCardProps) {
   const [isChecked, setIsChecked] = useState(product.isPurchased);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -67,19 +67,19 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
     },
   });
 
-  const handlePurchaseToggle = () => {
+  const handlePurchaseToggle = useCallback(() => {
     const newStatus = !isChecked;
     setIsChecked(newStatus);
     updateProductMutation.mutate({ isPurchased: newStatus });
-  };
+  }, [isChecked, updateProductMutation]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (window.confirm("Tem certeza que deseja remover este produto?")) {
       deleteProductMutation.mutate();
     }
-  };
+  }, [deleteProductMutation]);
 
-  const formatPrice = (price: string | null) => {
+  const formatPrice = useCallback((price: string | null) => {
     if (!price || price === "0" || price === "0.00") return "Preço não disponível";
     const numPrice = parseFloat(price);
     if (isNaN(numPrice) || numPrice === 0) return "Preço não disponível";
@@ -87,9 +87,9 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
       style: 'currency',
       currency: 'BRL',
     }).format(numPrice);
-  };
+  }, []);
 
-  const getCategoryDisplay = (category: string) => {
+  const getCategoryDisplay = useCallback((category: string) => {
     const categoryMap: Record<string, string> = {
       'Geral': 'Geral',
       'Casa': 'Casa e Decoração',
@@ -100,11 +100,11 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
       'Presentes': 'Presentes'
     };
     return categoryMap[category] || category;
-  };
+  }, []);
 
   const isPurchased = isChecked;
 
-  const handleReScrape = async () => {
+  const handleReScrape = useCallback(async () => {
     if (!onReScrape || isReScrapingLoading) return;
 
     setIsReScrapingLoading(true);
@@ -113,7 +113,7 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
     } finally {
       setIsReScrapingLoading(false);
     }
-  };
+  }, [onReScrape, isReScrapingLoading, product.id]);
 
   // Buscar dados de pagamento quando o produto estiver comprado
   const { data: paymentData } = useQuery({
@@ -127,6 +127,11 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
 
     // Verificação de problemas no produto (exemplo)
     const hasIssues = product.brand === "Zara" || product.brand === "Adidas" || product.imageUrl === "invalida";
+
+    const handleEditModalClose = useCallback(() => {
+        setIsEditModalOpen(false);
+        onProductUpdated();
+    }, [onProductUpdated]);
 
   return (
     <div className="product-card slide-in-up">
@@ -304,7 +309,7 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
           product={product}
           paymentData={paymentData}
           isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
+          onClose={handleEditModalClose}
           onProductUpdated={onProductUpdated}
         />
 
@@ -496,3 +501,5 @@ export function ProductCard({ product, onProductUpdated, onReScrape }: ProductCa
     </div>
   );
 }
+
+export const ProductCard = memo(ProductCardComponent);

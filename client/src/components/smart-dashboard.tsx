@@ -96,27 +96,43 @@ export function SmartDashboard() {
   const userId = localStorage.getItem("userId");
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
       if (!authToken || !userId) {
-        setLoading(false);
+        if (isMounted) setLoading(false);
         return;
       }
 
       try {
         const [productsRes, statsRes, financesRes, installmentsRes] = await Promise.all([
           fetch("/api/products", {
-            headers: { "x-auth-token": authToken }
+            headers: { 
+              "x-auth-token": authToken,
+              "Cache-Control": "max-age=60" // Cache por 1 minuto
+            }
           }),
           fetch(`/api/products/stats/${userId}`, {
-            headers: { "x-auth-token": authToken }
+            headers: { 
+              "x-auth-token": authToken,
+              "Cache-Control": "max-age=60"
+            }
           }),
           fetch("/api/finances", {
-            headers: { "x-auth-token": authToken }
+            headers: { 
+              "x-auth-token": authToken,
+              "Cache-Control": "max-age=300" // Cache por 5 minutos
+            }
           }),
           fetch("/api/installments", {
-            headers: { "x-auth-token": authToken }
+            headers: { 
+              "x-auth-token": authToken,
+              "Cache-Control": "max-age=60"
+            }
           })
         ]);
+
+        if (!isMounted) return;
 
         if (productsRes.ok && statsRes.ok) {
           const productsData = await productsRes.json();
@@ -136,13 +152,20 @@ export function SmartDashboard() {
           setInstallments(installmentsData);
         }
       } catch (error) {
-        console.error("SmartDashboard: Erro ao carregar dados:", error);
+        if (isMounted) {
+          console.error("SmartDashboard: Erro ao carregar dados:", error);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
-    fetchData();
+    const timeoutId = setTimeout(fetchData, 100); // Debounce de 100ms
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [authToken, userId]);
 
   if (loading) {

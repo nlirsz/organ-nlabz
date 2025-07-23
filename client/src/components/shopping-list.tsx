@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Filter, SortAsc, Share, Download, History, ShoppingCart, Search, X, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,41 +35,47 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
     );
   }
 
-  const filteredProducts = Array.isArray(products) ? products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.store?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  ).sort((a, b) => {
-    let result = 0;
-    if (sortBy === "price") {
-      const aPrice = parseFloat(a.price || "0");
-      const bPrice = parseFloat(b.price || "0");
-      result = aPrice - bPrice;
-    } else if (sortBy === "date") {
-      result = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
-    } else {
-      result = a.name.localeCompare(b.name);
-    }
-    return sortOrder === "asc" ? result : -result;
-  }) : [];
+  const filteredProducts = useMemo(() => {
+    if (!Array.isArray(products)) return [];
+    
+    return products.filter(product =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.store?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort((a, b) => {
+      let result = 0;
+      if (sortBy === "price") {
+        const aPrice = parseFloat(a.price || "0");
+        const bPrice = parseFloat(b.price || "0");
+        result = aPrice - bPrice;
+      } else if (sortBy === "date") {
+        result = new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      } else {
+        result = a.name.localeCompare(b.name);
+      }
+      return sortOrder === "asc" ? result : -result;
+    });
+  }, [products, searchTerm, sortBy, sortOrder]);
 
-  const totalValue = filteredProducts.reduce((sum, product) => {
-    return sum + (product.price ? parseFloat(product.price) : 0);
-  }, 0);
+  const totalValue = useMemo(() => {
+    return filteredProducts.reduce((sum, product) => {
+      return sum + (product.price ? parseFloat(product.price) : 0);
+    }, 0);
+  }, [filteredProducts]);
 
-  const handleSort = (newSortBy: "name" | "price" | "date") => {
+  const handleSort = useCallback((newSortBy: "name" | "price" | "date") => {
     if (sortBy === newSortBy) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortBy(newSortBy);
       setSortOrder("asc");
     }
-  };
+  }, [sortBy, sortOrder]);
 
-  const getSortIcon = (field: "name" | "price" | "date") => {
+  const getSortIcon = useCallback((field: "name" | "price" | "date") => {
     if (sortBy !== field) return <ArrowUpDown className="w-4 h-4" />;
     return sortOrder === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />;
-  };
+  }, [sortBy, sortOrder]);
 
   return (
     <div className="space-y-6">

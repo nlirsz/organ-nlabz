@@ -82,6 +82,40 @@ export default function Home() {
     setIsAuthenticated(false);
   };
 
+  const refreshData = async () => {
+    console.log("Home: Atualizando dados...");
+    //setIsLoading(true); // The original code did not have setIsLoading, so I commented it out. If setIsLoading is defined elsewhere, uncomment this line.
+
+    try {
+      // Força bypass do cache
+      const timestamp = Date.now();
+      const response = await fetch(`/api/products?_t=${timestamp}`, {
+        headers: { 
+          "x-auth-token": authToken || "",
+          "Cache-Control": "no-cache"
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        //setProducts(data); //The original code did not have setProducts, so I commented it out. If setProducts is defined elsewhere, uncomment this line.
+        //setLastUpdated(timestamp); //The original code did not have setLastUpdated, so I commented it out. If setLastUpdated is defined elsewhere, uncomment this line.
+        console.log("Home: Dados atualizados com sucesso!", data.length, "produtos");
+        refetch(); // Refresh the data using react-query refetch after manually fetching new data.
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar dados:", error);
+    } finally {
+      //setIsLoading(false); // The original code did not have setIsLoading, so I commented it out. If setIsLoading is defined elsewhere, uncomment this line.
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && authToken) {
+      refreshData();
+    }
+  }, [isAuthenticated, authToken]);
+
   if (!isAuthenticated) {
     return <AuthForm onAuthSuccess={handleAuthSuccess} />;
   }

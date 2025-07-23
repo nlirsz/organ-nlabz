@@ -103,6 +103,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.user.userId);
       const products = await storage.getProducts(userId);
+      
+      // Adiciona headers de cache
+      res.set({
+        'Cache-Control': 'private, max-age=60',
+        'ETag': `"products-${userId}-${Date.now()}"`
+      });
+      
       res.json(products);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -127,6 +134,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.user.userId);
       const stats = await storage.getProductStats(userId);
+      
+      // Cache stats por 1 minuto
+      res.set({
+        'Cache-Control': 'private, max-age=60',
+        'ETag': `"stats-${userId}-${Date.now()}"`
+      });
+      
       res.json(stats);
     } catch (error) {
       console.error("Error fetching stats:", error);
