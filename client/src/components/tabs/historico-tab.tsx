@@ -543,8 +543,8 @@ export function HistoricoTab() {
                 <div key={product.id}>
                   {/* Card com tilt para desktop */}
                   <TiltCard className="hidden md:block">
-                    <ProfileCard className="bg-gradient-to-br from-green-900/90 to-emerald-900/90 border-green-700/50 hover:border-green-500/60">
-                      <div className="p-4">
+                    <ProfileCard className="bg-gradient-to-br from-green-900/90 to-emerald-900/90 border-green-700/50 hover:border-green-500/60 h-full">
+                      <div className="p-4 h-full flex flex-col">
                         <div className="flex items-start gap-4">
                           {product.imageUrl && (
                             <img 
@@ -629,8 +629,8 @@ export function HistoricoTab() {
 
                   {/* Card normal para mobile */}
                   <div className="md:hidden">
-                    <ProfileCard className="bg-gradient-to-br from-green-900/90 to-emerald-900/90 border-green-700/50 hover:border-green-500/60">
-                      <div className="p-4">
+                    <ProfileCard className="bg-gradient-to-br from-green-900/90 to-emerald-900/90 border-green-700/50 hover:border-green-500/60 h-full">
+                      <div className="p-4 h-full flex flex-col">
                         <div className="flex items-start gap-4">
                           {product.imageUrl && (
                             <img 

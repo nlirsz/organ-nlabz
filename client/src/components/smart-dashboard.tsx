@@ -415,7 +415,10 @@ export function SmartDashboard() {
           enableTilt={true}
           enableMagnetism={true}
           clickEffect={true}
-          particleCount={10}
+          enableBorderGlow={true}
+          enableSpotlight={true}
+          spotlightRadius={250}
+          particleCount={15}
           glowColor="34, 197, 94"
           className="md:col-span-4"
         >
@@ -448,7 +451,10 @@ export function SmartDashboard() {
           enableTilt={true}
           enableMagnetism={true}
           clickEffect={true}
-          particleCount={6}
+          enableBorderGlow={true}
+          enableSpotlight={true}
+          spotlightRadius={200}
+          particleCount={10}
           glowColor="59, 130, 246"
           className="md:col-span-3"
         >
@@ -473,7 +479,10 @@ export function SmartDashboard() {
           enableTilt={true}
           enableMagnetism={true}
           clickEffect={true}
-          particleCount={8}
+          enableBorderGlow={true}
+          enableSpotlight={true}
+          spotlightRadius={200}
+          particleCount={12}
           glowColor="34, 197, 94"
           className="md:col-span-3"
         >
@@ -504,7 +513,10 @@ export function SmartDashboard() {
           enableTilt={true}
           enableMagnetism={true}
           clickEffect={true}
-          particleCount={5}
+          enableBorderGlow={true}
+          enableSpotlight={true}
+          spotlightRadius={150}
+          particleCount={8}
           glowColor="245, 158, 11"
           className="md:col-span-2"
         >
@@ -532,7 +544,10 @@ export function SmartDashboard() {
           enableTilt={true}
           enableMagnetism={true}
           clickEffect={true}
-          particleCount={4}
+          enableBorderGlow={true}
+          enableSpotlight={true}
+          spotlightRadius={180}
+          particleCount={8}
           glowColor="234, 179, 8"
           className="md:col-span-3"
         >
@@ -556,7 +571,10 @@ export function SmartDashboard() {
           enableTilt={true}
           enableMagnetism={true}
           clickEffect={true}
-          particleCount={5}
+          enableBorderGlow={true}
+          enableSpotlight={true}
+          spotlightRadius={180}
+          particleCount={10}
           glowColor="147, 51, 234"
           className="md:col-span-3"
         >
@@ -581,7 +599,10 @@ export function SmartDashboard() {
           enableTilt={true}
           enableMagnetism={true}
           clickEffect={true}
-          particleCount={6}
+          enableBorderGlow={true}
+          enableSpotlight={true}
+          spotlightRadius={180}
+          particleCount={10}
           glowColor="99, 102, 241"
           className="md:col-span-3"
         >
@@ -606,7 +627,10 @@ export function SmartDashboard() {
           enableTilt={true}
           enableMagnetism={true}
           clickEffect={true}
-          particleCount={4}
+          enableBorderGlow={true}
+          enableSpotlight={true}
+          spotlightRadius={180}
+          particleCount={8}
           glowColor="244, 63, 94"
           className="md:col-span-3"
         >
