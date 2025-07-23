@@ -69,6 +69,8 @@ export default function Home() {
     setAuthToken(token);
     setCurrentUser({ id: userId, username });
     setIsAuthenticated(true);
+    // Redirect to /app after successful authentication
+    window.location.href = '/app';
   };
 
   const handleLogout = () => {
