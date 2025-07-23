@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { GooeyNav } from './gooey-nav';
 import { 
   BarChart3, 
   Package, 
@@ -103,28 +104,30 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
             </div>
           </div>
 
-          {/* Navigation Icons */}
+          {/* Navigation Icons with Gooey Effect */}
           <nav className="flex-1 flex flex-col items-center space-y-4">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
+            <GooeyNav className="flex flex-col items-center space-y-4">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
 
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleTabChange(item.id)}
-                  className={cn(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200",
-                    "hover:scale-105",
-                    isActive 
-                      ? "bg-[#119423] text-white shadow-lg shadow-[#119423]/25" 
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-                  )}
-                >
-                  <Icon className="w-5 h-5" />
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTabChange(item.id)}
+                    className={cn(
+                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300",
+                      "hover:scale-110 transform",
+                      isActive 
+                        ? "bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30" 
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/20 dark:hover:to-green-900/20"
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </button>
+                );
+              })}
+            </GooeyNav>
           </nav>
 
           {/* Bottom actions */}
@@ -186,28 +189,30 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
             </div>
           </div>
 
-          {/* Navigation Icons */}
+          {/* Navigation Icons with Gooey Effect */}
           <div className="flex flex-col items-center space-y-6">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
+            <GooeyNav className="flex flex-col items-center space-y-6">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
 
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleTabChange(item.id)}
-                  className={cn(
-                    "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200",
-                    "hover:scale-110",
-                    isActive 
-                      ? "bg-[#119423] text-white shadow-lg shadow-[#119423]/30" 
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 shadow-md"
-                  )}
-                >
-                  <Icon className="w-6 h-6" />
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTabChange(item.id)}
+                    className={cn(
+                      "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300",
+                      "hover:scale-110 transform",
+                      isActive 
+                        ? "bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30" 
+                        : "bg-gray-100 text-gray-700 hover:bg-gradient-to-br hover:from-emerald-100 hover:to-green-100 shadow-md"
+                    )}
+                  >
+                    <Icon className="w-6 h-6" />
+                  </button>
+                );
+              })}
+            </GooeyNav>
           </div>
 
           {/* Bottom actions */}

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ShoppingCart, Sparkles, BarChart3, Zap, Users, Shield, Star, ArrowRight, Check, TrendingUp, Package, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Button as MovingBorderButton } from "@/components/ui/moving-border";
+import { RippleGrid } from "@/components/ui/ripple-grid";
 
 // Tilted Card Component from ReactBits - Reduzida intensidade
 const TiltedCard = ({ children, className = "", ...props }: any) => {
@@ -151,7 +152,8 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative z-10 py-20 px-4">
-        <div className="max-w-7xl mx-auto text-center">
+        <RippleGrid className="z-0" />
+        <div className="max-w-7xl mx-auto text-center relative z-20">
           <div className="flex flex-col items-center justify-center mb-12">
             <div className="mb-8 relative">
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-green-400/20 blur-2xl rounded-full"></div>

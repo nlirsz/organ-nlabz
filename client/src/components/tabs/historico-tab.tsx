@@ -28,6 +28,7 @@ import { StoreProductsModal } from '@/components/store-products-modal';
 import { EditProductWithPaymentModal } from '@/components/edit-product-with-payment-modal';
 import { PriceHistoryChart } from '@/components/price-history-chart';
 import { InstallmentsTimeline } from '@/components/installments-timeline';
+import { ProfileCard } from '@/components/ui/profile-card';
 
 interface Product {
   id: number;
@@ -504,8 +505,8 @@ export function HistoricoTab() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {purchasedProducts.map((product) => (
-                <Card key={product.id} className="group hover:shadow-md transition-shadow bg-card border-border">
-                  <CardContent className="p-4">
+                <ProfileCard key={product.id}>
+                  <div className="p-4">
                     <div className="flex items-start gap-4">
                       {product.imageUrl && (
                         <img 
@@ -518,26 +519,26 @@ export function HistoricoTab() {
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-base leading-tight mb-2 line-clamp-2 cursor-pointer hover:text-primary text-foreground"
+                            <h4 className="font-semibold text-base leading-tight mb-2 line-clamp-2 cursor-pointer hover:text-emerald-400 text-white"
                                 onClick={() => handleViewProduct(product)}>
                               {product.name}
                             </h4>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <Badge variant="secondary" className="text-xs bg-secondary text-secondary-foreground">
+                              <Badge variant="secondary" className="text-xs bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
                                 {product.category || 'Outros'}
                               </Badge>
-                              <span className="text-sm text-muted-foreground">{product.store}</span>
+                              <span className="text-sm text-gray-300">{product.store}</span>
                             </div>
                           </div>
                           <div className="flex-shrink-0">
-                            <span className="text-xl font-bold text-green-600 dark:text-green-400 whitespace-nowrap">
+                            <span className="text-xl font-bold text-emerald-400 whitespace-nowrap">
                               R$ {parseFloat(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
                         </div>
                         
-                        <div className="pt-2 border-t border-border space-y-2">
-                          <div className="flex items-center text-xs text-muted-foreground">
+                        <div className="pt-2 border-t border-white/10 space-y-2">
+                          <div className="flex items-center text-xs text-gray-400">
                             <Calendar className="w-3 h-3 mr-1" />
                             Comprado em {new Date(product.createdAt).toLocaleDateString('pt-BR')}
                           </div>
@@ -547,7 +548,7 @@ export function HistoricoTab() {
                               variant="ghost"
                               onClick={() => handleViewProduct(product)}
                               title="Ver detalhes"
-                              className="h-8 w-8 p-0"
+                              className="h-8 w-8 p-0 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400"
                             >
                               <Info className="h-4 w-4" />
                             </Button>
@@ -556,7 +557,7 @@ export function HistoricoTab() {
                               variant="ghost"
                               onClick={() => handleEditProduct(product)}
                               title="Editar produto"
-                              className="h-8 w-8 p-0"
+                              className="h-8 w-8 p-0 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -565,7 +566,7 @@ export function HistoricoTab() {
                               variant="ghost"
                               onClick={() => handleEditProduct(product)}
                               title="Gerenciar pagamento"
-                              className="h-8 w-8 p-0"
+                              className="h-8 w-8 p-0 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400"
                             >
                               <CreditCard className="h-4 w-4" />
                             </Button>
@@ -575,7 +576,7 @@ export function HistoricoTab() {
                                 variant="ghost"
                                 onClick={() => window.open(product.url, '_blank')}
                                 title="Ver no site"
-                                className="h-8 w-8 p-0"
+                                className="h-8 w-8 p-0 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400"
                               >
                                 <ExternalLink className="h-4 w-4" />
                               </Button>
@@ -584,8 +585,8 @@ export function HistoricoTab() {
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </ProfileCard>
               ))}
             </div>
           )}
