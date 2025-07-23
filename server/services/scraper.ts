@@ -307,6 +307,16 @@ function getSpecificImageInstructions(domain: string): string {
   if (domain.includes('nike.com')) {
     return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: img[data-qa="product-image"]';
   }
+  if (domain.includes('amazon.com')) {
+    return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
+- PRIORIDADE 2: img[data-a-dynamic-image] com maior resolução
+- PRIORIDADE 3: img[src*="images-amazon.com"] ou img[src*="m.media-amazon.com"]
+- PRIORIDADE 4: JSON-LD procure por "image" dentro de @type="Product"
+- IMPORTANTE: Prefira URLs que contenham "._AC_SX679_" ou "._AC_SL1500_" (alta resolução)
+- IMPORTANTE: Evite URLs muito pequenas (menores que 300px)
+- IMPORTANTE: URL deve começar com https:// e ser acessível
+- VALIDAÇÃO: Teste se a URL da imagem é válida e carrega corretamente`;
+  }
   if (domain.includes('zara.com')) {
     return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
 - PRIORIDADE 2: meta[name="twitter:image"]
@@ -318,6 +328,16 @@ function getSpecificImageInstructions(domain: string): string {
 - IMPORTANTE: Evite URLs que contenham "/photos///" ou barras duplas/triplas
 - IMPORTANTE: Prefira URLs que contenham "/assets/public/" e parâmetros como "&w=1500"
 - TESTE: Valide se a URL não contém "/photos///" que indica URL quebrada`;
+  }
+  if (domain.includes('mercadolivre.com')) {
+    return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
+- PRIORIDADE 2: meta[name="twitter:image"] 
+- PRIORIDADE 3: img[src*="mlstatic.com"] com maior resolução
+- IMPORTANTE: Prefira URLs que contenham "-O.jpg" (alta resolução)
+- IMPORTANTE: Evite URLs com "_2X" ou "2X" (podem não carregar)
+- IMPORTANTE: Substitua ".webp" por ".jpg" para melhor compatibilidade
+- CONVERSÃO: Se encontrar .webp, converta para .jpg
+- CONVERSÃO: Se encontrar -I.jpg, converta para -O.jpg (maior resolução)`;
   }
   if (domain.includes('dafiti.com') || domain.includes('netshoes.com')) {
     return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: .product-image img';

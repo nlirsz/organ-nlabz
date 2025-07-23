@@ -382,10 +382,14 @@ export async function extractProductInfo(url: string, htmlContent?: string): Pro
         console.log(`[Gemini] Trying HTML method...`);
         const htmlResult = await scrapeByAnalyzingHtml(url, htmlContent);
 
-        if (htmlResult.price && htmlResult.price > 0) {
-          console.log(`[Gemini] ✓ Success with HTML method - Price: R$ ${htmlResult.price}`);
-          return htmlResult;
-        }
+        console.log(`[Gemini] ✓ Success with HTML method - Price: R$ ${htmlResult.price}`);
+
+    // Pós-processamento de imagens para melhor compatibilidade
+    if (htmlResult.imageUrl) {
+      htmlResult.imageUrl = optimizeImageUrl(htmlResult.imageUrl, url);
+    }
+
+    return htmlResult;
 
         if (htmlResult.name && htmlResult.name !== "Produto Desconhecido") {
           console.log(`[Gemini] HTML method found product without price: ${htmlResult.name}`);

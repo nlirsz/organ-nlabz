@@ -34,26 +34,30 @@ async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductRe
       if (baseUrl) {
         // CRÍTICO: Otimização para máxima compatibilidade
         imageUrl = baseUrl
-          .replace(/\.webp$/i, '.jpg')       // SEMPRE remove .webp por .jpg
-          .replace(/-I\.jpg$/i, '-O.jpg')    // 500px → 1000px
-          .replace(/-I\.webp$/i, '-O.jpg')   // webp baixa → jpg alta
-          .replace(/-S\.jpg$/i, '-O.jpg')    // 300px → 1000px
-          .replace(/-T\.jpg$/i, '-O.jpg')    // 180px → 1000px
+          .replace(/_2X/gi, '')              // Remove indicadores de retina PRIMEIRO
+          .replace(/2X/g, '')                // Remove outros indicadores de retina
           .replace(/-F\.webp$/i, '-O.jpg')   // Remove webp retina
           .replace(/-W\.webp$/i, '-O.jpg')   // Remove webp alta para jpg
+          .replace(/-I\.webp$/i, '-O.jpg')   // webp baixa → jpg alta
+          .replace(/-I\.jpg$/i, '-O.jpg')    // 500px → 1000px
+          .replace(/-S\.jpg$/i, '-O.jpg')    // 300px → 1000px
+          .replace(/-T\.jpg$/i, '-O.jpg')    // 180px → 1000px
           .replace(/-F\.jpg$/i, '-O.jpg')    // Melhora resolução
-          .replace(/2X/g, '')                // Remove indicadores de retina
+          .replace(/\.webp$/i, '.jpg')       // SEMPRE remove .webp por .jpg
           .replace(/\.webp/gi, '.jpg');      // Extra: garante que não sobrou webp
       }
     } else if (data.thumbnail) {
       // Melhora a thumbnail também
       imageUrl = data.thumbnail
-        .replace(/\.webp$/i, '.jpg')
-        .replace(/-I\.jpg$/i, '-O.jpg')
-        .replace(/-S\.jpg$/i, '-O.jpg')
-        .replace(/-T\.jpg$/i, '-O.jpg')
-        .replace(/-F\.webp$/i, '-O.jpg')
-        .replace(/\.webp/gi, '.jpg');
+        .replace(/_2X/gi, '')              // Remove indicadores de retina PRIMEIRO
+        .replace(/2X/g, '')                // Remove outros indicadores de retina
+        .replace(/-F\.webp$/i, '-O.jpg')   // Remove webp retina
+        .replace(/-I\.webp$/i, '-O.jpg')   // webp baixa → jpg alta
+        .replace(/-I\.jpg$/i, '-O.jpg')    // 500px → 1000px
+        .replace(/-S\.jpg$/i, '-O.jpg')    // 300px → 1000px
+        .replace(/-T\.jpg$/i, '-O.jpg')    // 180px → 1000px
+        .replace(/\.webp$/i, '.jpg')       // SEMPRE substitui .webp por .jpg
+        .replace(/\.webp/gi, '.jpg');      // Extra: garante que não sobrou webp
     }
 
     // Normaliza preço
@@ -136,14 +140,15 @@ async function fetchFromMercadoLivre(searchTerm: string): Promise<APIProductResu
       if (item.thumbnail) {
         // CRÍTICO: Otimização máxima para compatibilidade
         imageUrl = item.thumbnail
-          .replace(/\.webp$/i, '.jpg')       // SEMPRE substitui .webp por .jpg
-          .replace(/-I\.jpg$/i, '-O.jpg')    // 500px → 1000px
-          .replace(/-I\.webp$/i, '-O.jpg')   // webp baixa → jpg alta
-          .replace(/-S\.jpg$/i, '-O.jpg')    // 300px → 1000px
-          .replace(/-T\.jpg$/i, '-O.jpg')    // 180px → 1000px
+          .replace(/_2X/gi, '')              // Remove indicadores de retina PRIMEIRO
+          .replace(/2X/g, '')                // Remove outros indicadores de retina
           .replace(/-F\.webp$/i, '-O.jpg')   // Remove webp retina
           .replace(/-W\.webp$/i, '-O.jpg')   // Remove webp alta
-          .replace(/2X/g, '')                // Remove indicadores de retina
+          .replace(/-I\.webp$/i, '-O.jpg')   // webp baixa → jpg alta
+          .replace(/-I\.jpg$/i, '-O.jpg')    // 500px → 1000px
+          .replace(/-S\.jpg$/i, '-O.jpg')    // 300px → 1000px
+          .replace(/-T\.jpg$/i, '-O.jpg')    // 180px → 1000px
+          .replace(/\.webp$/i, '.jpg')       // SEMPRE substitui .webp por .jpg
           .replace(/\.webp/gi, '.jpg');      // Extra: garante que não sobrou webp
       }
 
@@ -486,10 +491,10 @@ function extractSearchTermFromUrl(url: string): string {
 function extractProductId(url: string): { platform: string; id: string } | null {
   const patterns = [
     // Mercado Livre - CORRIGIDO para capturar IDs corretamente
-    { platform: 'mercadolivre', regex: /\/p\/([A-Z0-9-]+)/i }, // Para URLs /p/MLB47769283
-    { platform: 'mercadolivre', regex: /mercadolivre\.com\.br\/.*?-(MLB[A-Z0-9-]+)(?:\?|$|#)/i },
-    { platform: 'mercadolivre', regex: /produto\.mercadolivre\.com\.br\/([A-Z0-9-]+)/i },
-    { platform: 'mercadolivre', regex: /articulo\.mercadolibre\.com\.[a-z]+\/.*?-(ML[A-Z0-9-]+)(?:\?|$)/i },
+    { platform: 'mercadolivre', regex: /\/p\/([A-Z0-9]+)/i }, // Para URLs /p/MLB47769283
+    { platform: 'mercadolivre', regex: /mercadolivre\.com\.br\/.*?-(MLB[A-Z0-9]+)(?:[_\-]|(?:\?|$|#))/i },
+    { platform: 'mercadolivre', regex: /produto\.mercadolivre\.com\.br\/(MLB[A-Z0-9]+)/i },
+    { platform: 'mercadolivre', regex: /articulo\.mercadolibre\.com\.[a-z]+\/.*?-(ML[A-Z0-9]+)(?:[_\-]|(?:\?|$))/i },
 
     // Amazon - múltiplos formatos
     { platform: 'amazon', regex: /amazon\.com\.br\/.*\/dp\/([A-Z0-9]{10})/i },
