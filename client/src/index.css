@@ -1149,11 +1149,22 @@ html {
 }
 
 /* Animação sutil para chamar atenção */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
   }
-  50% {
-    opacity: 0.8;
+
+  /* Estilo para imagens com erro */
+  .image-error + .absolute {
+    display: flex !important;
   }
-}
+
+  /* Alerta de imagem com animação */
+  .image-alert {
+    animation: pulse 2s infinite;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }

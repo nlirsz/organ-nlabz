@@ -110,6 +110,13 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
       issues.push("Preço não disponível");
     }
 
+    if (!product.imageUrl || 
+        product.imageUrl.includes('placeholder') || 
+        product.imageUrl.includes('via.placeholder') ||
+        product.imageUrl.includes('/photos///')) {
+      issues.push("Imagem não disponível ou com problema");
+    }
+
     if (product.brand === "Zara" || product.brand === "Adidas" || product.brand === "Nike") {
       issues.push("Loja monitorada automaticamente");
     }
@@ -178,8 +185,19 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
               const target = e.target as HTMLImageElement;
               target.src = 'https://via.placeholder.com/400x300/ffffff/6c757d?text=Sem+Imagem';
               target.style.backgroundColor = 'white';
+              // Adicionar classe para mostrar alerta de imagem
+              target.classList.add('image-error');
             }}
           />
+          {/* Alerta para problemas de imagem */}
+          {(!product.imageUrl || 
+            product.imageUrl.includes('placeholder') || 
+            product.imageUrl.includes('via.placeholder') ||
+            product.imageUrl.includes('/photos///')) && (
+            <div className="absolute top-2 left-2 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
+              !
+            </div>
+          )}
           {product.isPurchased && (
             <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
               ✓ Comprado
