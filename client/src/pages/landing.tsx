@@ -170,7 +170,11 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
             <TiltedCard>
-              <Button size="lg" className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-10 py-4 text-lg rounded-2xl shadow-2xl border border-emerald-400/30">
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-10 py-4 text-lg rounded-2xl shadow-2xl border border-emerald-400/30"
+                onClick={() => window.location.href = '/auth'}
+              >
                 Começar Gratuitamente
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
@@ -256,16 +260,16 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
             {/* Plano Gratuito - Principal com borda em movimento */}
-            <TiltedCard className="h-full group transform lg:scale-105">
+            <TiltedCard className="group transform lg:scale-105">
               <AnimatedBorder className="relative">
-                <div className="bg-gradient-to-br from-slate-800/95 to-gray-900/95 backdrop-blur-sm p-8 h-full rounded-3xl border border-emerald-400/50 shadow-2xl">
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <div className="bg-gradient-to-br from-slate-800/95 to-gray-900/95 backdrop-blur-sm p-8 min-h-[600px] flex flex-col rounded-3xl border border-emerald-400/50 shadow-2xl">
+                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-20">
                     <span className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-8 py-3 rounded-full text-sm font-bold shadow-2xl border border-emerald-400/30">
                       🔥 Recomendado
                     </span>
                   </div>
 
-                  <div className="text-center mb-8 mt-6">
+                  <div className="text-center mb-8 mt-8">
                     <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mb-6 shadow-xl">
                       <Package className="w-10 h-10 text-white" />
                     </div>
@@ -281,7 +285,7 @@ export default function LandingPage() {
                     </p>
                   </div>
 
-                  <ul className="space-y-4 mb-10">
+                  <ul className="space-y-4 mb-10 flex-grow">
                     {[
                       "Até 100 produtos",
                       "IA Gemini para extração",
@@ -297,7 +301,10 @@ export default function LandingPage() {
                     ))}
                   </ul>
 
-                  <Button className="w-full rounded-2xl py-4 bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-600 hover:from-emerald-700 hover:via-green-700 hover:to-emerald-700 text-white text-lg shadow-2xl transition-all duration-300 font-bold border border-emerald-400/30">
+                  <Button 
+                    className="w-full rounded-2xl py-4 bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-600 hover:from-emerald-700 hover:via-green-700 hover:to-emerald-700 text-white text-lg shadow-2xl transition-all duration-300 font-bold border border-emerald-400/30 mt-auto"
+                    onClick={() => window.location.href = '/auth'}
+                  >
                     Começar Gratuitamente
                   </Button>
                 </div>
@@ -305,26 +312,23 @@ export default function LandingPage() {
             </TiltedCard>
 
             {/* Plano MAX (antigo Pro) - Com cadeado e blur */}
-            <TiltedCard className="h-full group relative">
-              <div className="relative bg-gradient-to-br from-slate-800/60 to-gray-900/60 backdrop-blur-xl p-8 h-full rounded-3xl border border-gray-600/30 shadow-2xl overflow-hidden">
+            <TiltedCard className="group relative">
+              <div className="relative bg-gradient-to-br from-slate-800/60 to-gray-900/60 backdrop-blur-xl p-8 min-h-[600px] flex flex-col rounded-3xl border border-gray-600/30 shadow-2xl overflow-hidden">
                 {/* Overlay de blur e cadeado */}
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-gray-900/80 backdrop-blur-sm rounded-3xl z-10 flex flex-col items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 to-gray-900/95 backdrop-blur-lg rounded-3xl z-10 flex flex-col items-center justify-center">
                   <div className="text-center">
                     <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-6 shadow-2xl">
                       <Shield className="w-12 h-12 text-white" />
                     </div>
                     <h3 className="text-3xl font-bold text-white mb-4">Em Breve</h3>
                     <p className="text-gray-300 text-lg max-w-xs mx-auto leading-relaxed">
-                      Funcionalidades avançadas chegando em breve. Cadastre-se para ser notificado!
+                      Funcionalidades avançadas chegando em breve. Cadastre-se gratuitamente para não perder!
                     </p>
-                    <Button className="mt-6 rounded-2xl py-3 px-8 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold shadow-xl transition-all duration-300">
-                      Ser Notificado
-                    </Button>
                   </div>
                 </div>
 
                 {/* Conteúdo original (blur de fundo) */}
-                <div className="text-center mb-8 blur-sm">
+                <div className="text-center mb-8 blur-lg opacity-40">
                   <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-6">
                     <TrendingUp className="w-10 h-10 text-white" />
                   </div>
@@ -340,7 +344,7 @@ export default function LandingPage() {
                   </p>
                 </div>
 
-                <ul className="space-y-4 mb-10 blur-sm">
+                <ul className="space-y-4 mb-10 flex-grow blur-lg opacity-40">
                   {[
                     "Produtos ilimitados",
                     "IA Gemini avançada",
@@ -360,7 +364,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
 
-                <div className="blur-sm">
+                <div className="blur-lg opacity-40 mt-auto">
                   <Button className="w-full rounded-2xl py-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-lg shadow-2xl transition-all duration-300 font-bold">
                     Começar Teste Grátis
                   </Button>
@@ -406,7 +410,11 @@ export default function LandingPage() {
               Junte-se a milhares de usuários que já transformaram sua experiência de compras
             </p>
             <PulseElement>
-              <Button size="lg" className="bg-white text-gray-900 hover:bg-gray-100 px-10 py-4 text-lg font-bold rounded-2xl shadow-lg">
+              <Button 
+                size="lg" 
+                className="bg-white text-gray-900 hover:bg-gray-100 px-10 py-4 text-lg font-bold rounded-2xl shadow-lg"
+                onClick={() => window.location.href = '/auth'}
+              >
                 Começar Gratuitamente Agora
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
