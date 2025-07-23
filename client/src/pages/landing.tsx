@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { ShoppingCart, Sparkles, BarChart3, Zap, Users, Shield, Star, ArrowRight, Check, TrendingUp, Package, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -157,23 +156,23 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <FloatingElement delay={0} className="absolute top-20 left-10 opacity-30">
-          <div className="w-64 h-64 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-full blur-3xl"></div>
+          <div className="w-64 h-64 bg-gradient-to-r from-emerald-500/30 to-green-500/30 rounded-full blur-3xl"></div>
         </FloatingElement>
         <FloatingElement delay={1} className="absolute top-40 right-20 opacity-25">
-          <div className="w-48 h-48 bg-gradient-to-r from-blue-500/25 to-cyan-500/25 rounded-full blur-3xl"></div>
+          <div className="w-48 h-48 bg-gradient-to-r from-green-500/25 to-teal-500/25 rounded-full blur-3xl"></div>
         </FloatingElement>
         <FloatingElement delay={2} className="absolute bottom-40 left-1/4 opacity-35">
-          <div className="w-80 h-80 bg-gradient-to-r from-emerald-500/35 to-teal-500/35 rounded-full blur-3xl"></div>
+          <div className="w-80 h-80 bg-gradient-to-r from-emerald-500/35 to-green-600/35 rounded-full blur-3xl"></div>
         </FloatingElement>
         <PulseElement delay={0.5} className="absolute top-1/2 right-10 opacity-20">
-          <div className="w-40 h-40 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-full blur-2xl"></div>
+          <div className="w-40 h-40 bg-gradient-to-r from-gray-500/20 to-slate-500/20 rounded-full blur-2xl"></div>
         </PulseElement>
         <FloatingElement delay={3} className="absolute bottom-20 right-1/3 opacity-25">
-          <div className="w-56 h-56 bg-gradient-to-r from-violet-500/25 to-indigo-500/25 rounded-full blur-3xl"></div>
+          <div className="w-56 h-56 bg-gradient-to-r from-green-500/25 to-emerald-500/25 rounded-full blur-3xl"></div>
         </FloatingElement>
       </div>
 
@@ -194,7 +193,7 @@ export default function LandingPage() {
             </h1>
             <div className="w-32 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mt-4 opacity-60"></div>
           </div>
-          
+
           <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
             A lista de compras mais inteligente e organizada do Brasil. Use IA para adicionar produtos automaticamente e controle seus gastos como nunca antes.
           </p>
@@ -302,7 +301,7 @@ export default function LandingPage() {
                       </div>
                     </PulseElement>
                   )}
-                  
+
                   <div className="text-center mb-8">
                     <h3 className="text-2xl font-bold text-white mb-2">
                       {plan.name}
