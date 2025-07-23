@@ -3,7 +3,7 @@ import { useState } from "react";
 import { ShoppingCart, Sparkles, BarChart3, Zap, Users, Shield, Star, ArrowRight, Check, TrendingUp, Package, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Tilted Card Component from ReactBits
+// Tilted Card Component from ReactBits - Reduzida intensidade
 const TiltedCard = ({ children, className = "", ...props }: any) => {
   const [transform, setTransform] = useState("");
 
@@ -14,11 +14,11 @@ const TiltedCard = ({ children, className = "", ...props }: any) => {
     const y = e.clientY - rect.top;
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    const rotateX = (y - centerY) / 10;
-    const rotateY = (centerX - x) / 10;
+    const rotateX = (y - centerY) / 25; // Reduzido de 10 para 25
+    const rotateY = (centerX - x) / 25; // Reduzido de 10 para 25
 
     setTransform(
-      `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`
+      `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)` // Reduzido scale de 1.02 para 1.01
     );
   };
 
@@ -28,7 +28,7 @@ const TiltedCard = ({ children, className = "", ...props }: any) => {
 
   return (
     <div
-      className={`transition-transform duration-300 ease-out ${className}`}
+      className={`transition-transform duration-500 ease-out ${className}`} // Aumentado duration para transição mais suave
       style={{ transform }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
@@ -160,34 +160,39 @@ export default function LandingPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <FloatingElement delay={0} className="absolute top-20 left-10 opacity-20">
-          <div className="w-32 h-32 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-xl"></div>
+        <FloatingElement delay={0} className="absolute top-20 left-10 opacity-30">
+          <div className="w-64 h-64 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-full blur-3xl"></div>
         </FloatingElement>
-        <FloatingElement delay={1} className="absolute top-40 right-20 opacity-20">
-          <div className="w-24 h-24 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full blur-xl"></div>
+        <FloatingElement delay={1} className="absolute top-40 right-20 opacity-25">
+          <div className="w-48 h-48 bg-gradient-to-r from-blue-500/25 to-cyan-500/25 rounded-full blur-3xl"></div>
         </FloatingElement>
-        <FloatingElement delay={2} className="absolute bottom-40 left-1/4 opacity-20">
-          <div className="w-40 h-40 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full blur-xl"></div>
+        <FloatingElement delay={2} className="absolute bottom-40 left-1/4 opacity-35">
+          <div className="w-80 h-80 bg-gradient-to-r from-emerald-500/35 to-teal-500/35 rounded-full blur-3xl"></div>
         </FloatingElement>
-        <PulseElement delay={0.5} className="absolute top-1/2 right-10 opacity-10">
-          <div className="w-20 h-20 bg-gradient-to-r from-orange-400 to-red-400 rounded-full blur-lg"></div>
+        <PulseElement delay={0.5} className="absolute top-1/2 right-10 opacity-20">
+          <div className="w-40 h-40 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-full blur-2xl"></div>
         </PulseElement>
+        <FloatingElement delay={3} className="absolute bottom-20 right-1/3 opacity-25">
+          <div className="w-56 h-56 bg-gradient-to-r from-violet-500/25 to-indigo-500/25 rounded-full blur-3xl"></div>
+        </FloatingElement>
       </div>
 
       {/* Hero Section */}
       <section className="relative z-10 py-20 px-4">
         <div className="max-w-7xl mx-auto text-center">
-          <div className="flex items-center justify-center mb-8">
-            <div className="w-20 h-20 bg-[#121212] rounded-full flex items-center justify-center mr-6 shadow-2xl border-4 border-purple-400/30">
+          <div className="flex flex-col items-center justify-center mb-12">
+            <div className="w-28 h-28 bg-gradient-to-br from-[#121212] via-[#1a1a1a] to-[#121212] rounded-full flex items-center justify-center mb-6 shadow-2xl border-4 border-gradient-to-r from-purple-400/40 to-pink-400/40 backdrop-blur-sm relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400/20 to-pink-400/20 blur-lg"></div>
               <img 
                 src="/assets/logo.png" 
                 alt="orgaN Logo" 
-                className="w-12 h-12 object-contain"
+                className="w-16 h-16 object-contain relative z-10"
               />
             </div>
-            <h1 className="text-6xl md:text-8xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent animate-pulse">
+            <h1 className="text-7xl md:text-9xl font-black tracking-tight bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent" style={{ fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 900 }}>
               orgaN
             </h1>
+            <div className="w-32 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mt-4 opacity-60"></div>
           </div>
           
           <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
@@ -208,32 +213,28 @@ export default function LandingPage() {
             </TiltedCard>
           </div>
 
-          {/* Animated Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <TiltedCard className="group">
-              <div className="text-center p-6 bg-gradient-to-br from-purple-900/50 to-pink-900/50 rounded-2xl backdrop-blur-sm border border-purple-400/20 group-hover:border-purple-400/40 transition-all duration-300">
-                <PulseElement>
-                  <div className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">10k+</div>
-                </PulseElement>
-                <div className="text-gray-300">Usuários Ativos</div>
-              </div>
-            </TiltedCard>
-            <TiltedCard className="group">
-              <div className="text-center p-6 bg-gradient-to-br from-blue-900/50 to-cyan-900/50 rounded-2xl backdrop-blur-sm border border-blue-400/20 group-hover:border-blue-400/40 transition-all duration-300">
-                <PulseElement delay={0.5}>
-                  <div className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">1M+</div>
-                </PulseElement>
-                <div className="text-gray-300">Produtos Adicionados</div>
-              </div>
-            </TiltedCard>
-            <TiltedCard className="group">
-              <div className="text-center p-6 bg-gradient-to-br from-emerald-900/50 to-teal-900/50 rounded-2xl backdrop-blur-sm border border-emerald-400/20 group-hover:border-emerald-400/40 transition-all duration-300">
-                <PulseElement delay={1}>
-                  <div className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent mb-2">99%</div>
-                </PulseElement>
-                <div className="text-gray-300">Precisão da IA</div>
-              </div>
-            </TiltedCard>
+          {/* Feature Highlights */}
+          <div className="max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <TiltedCard className="group">
+                <div className="text-center p-8 bg-gradient-to-br from-purple-900/30 to-pink-900/30 rounded-2xl backdrop-blur-lg border border-purple-400/20 group-hover:border-purple-400/40 transition-all duration-300">
+                  <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Sparkles className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">IA Inteligente</h3>
+                  <p className="text-gray-300 text-sm">Cole uma URL e nossa IA extrai automaticamente todas as informações do produto</p>
+                </div>
+              </TiltedCard>
+              <TiltedCard className="group">
+                <div className="text-center p-8 bg-gradient-to-br from-blue-900/30 to-cyan-900/30 rounded-2xl backdrop-blur-lg border border-blue-400/20 group-hover:border-blue-400/40 transition-all duration-300">
+                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <BarChart3 className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Controle Financeiro</h3>
+                  <p className="text-gray-300 text-sm">Dashboard completo para acompanhar seus gastos e parcelamentos</p>
+                </div>
+              </TiltedCard>
+            </div>
           </div>
         </div>
       </section>
@@ -370,10 +371,11 @@ export default function LandingPage() {
       <footer className="relative z-10 py-12 px-4 bg-slate-900/50 backdrop-blur-sm border-t border-gray-700/50">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center mb-6">
-            <div className="w-12 h-12 bg-[#121212] rounded-full flex items-center justify-center mr-3 border-2 border-purple-400/30">
-              <img src="/assets/logo.png" alt="orgaN Logo" className="w-8 h-8 object-contain" />
+            <div className="w-12 h-12 bg-gradient-to-br from-[#121212] to-[#1a1a1a] rounded-full flex items-center justify-center mr-3 border-2 border-purple-400/30 relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400/10 to-pink-400/10 blur-sm"></div>
+              <img src="/assets/logo.png" alt="orgaN Logo" className="w-8 h-8 object-contain relative z-10" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">orgaN</span>
+            <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent" style={{ fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 800 }}>orgaN</span>
           </div>
           <p className="text-gray-400 mb-4">
             A lista de compras mais inteligente e organizada do Brasil
