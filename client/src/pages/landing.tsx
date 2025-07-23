@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { ShoppingCart, Sparkles, BarChart3, Zap, Users, Shield, Star, ArrowRight, Check, TrendingUp, Package, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as MovingBorderButton } from "@/components/ui/moving-border";
 
 // Tilted Card Component from ReactBits - Reduzida intensidade
 const TiltedCard = ({ children, className = "", ...props }: any) => {
@@ -71,16 +72,19 @@ const PulseElement = ({ children, delay = 0, className = "" }: any) => {
   );
 };
 
-// Animated Border Component
+// Animated Border Component usando Moving Border
 const AnimatedBorder = ({ children, className = "" }: any) => {
   return (
-    <div className={`relative ${className}`}>
-      <div className="absolute -inset-1 bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-400 rounded-2xl blur-sm opacity-75 animate-pulse"></div>
-      <div className="absolute -inset-1 bg-gradient-to-r from-green-400 via-emerald-500 to-green-400 rounded-2xl animate-spin" style={{ animationDuration: '3s' }}></div>
-      <div className="relative">
-        {children}
-      </div>
-    </div>
+    <MovingBorderButton
+      borderRadius="1.5rem"
+      containerClassName={`w-full h-auto ${className}`}
+      borderClassName="h-20 w-20 bg-[radial-gradient(#10b981_40%,transparent_60%)] opacity-[0.8]"
+      duration={4000}
+      className="border-emerald-400/30 bg-slate-900/90 backdrop-blur-sm text-white"
+      as="div"
+    >
+      {children}
+    </MovingBorderButton>
   );
 };
 
@@ -149,21 +153,15 @@ export default function LandingPage() {
       <section className="relative z-10 py-20 px-4">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex flex-col items-center justify-center mb-12">
-            <div className="w-28 h-28 bg-[#121212] rounded-full flex items-center justify-center mb-6 shadow-2xl relative">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-emerald-400/20 to-green-400/20 blur-lg"></div>
+            <div className="mb-8 relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-green-400/20 blur-2xl rounded-full"></div>
               <img 
-                src="/assets/logo.png" 
+                src="/assets/organ-logo-text.png" 
                 alt="orgaN Logo" 
-                className="w-16 h-16 object-contain relative z-10"
+                className="w-96 h-auto object-contain relative z-10 drop-shadow-2xl"
               />
             </div>
-            <h1 
-              className="text-7xl md:text-9xl font-black tracking-tight bg-gradient-to-r from-white via-gray-200 to-emerald-300 bg-clip-text text-transparent"
-              style={{ fontFamily: 'Nico Moji, system-ui, sans-serif' }}
-            >
-              orgaN
-            </h1>
-            <div className="w-32 h-1 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full mt-4 opacity-60"></div>
+            <div className="w-32 h-1 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full opacity-60"></div>
           </div>
 
           <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
@@ -392,16 +390,11 @@ export default function LandingPage() {
       <footer className="relative z-10 py-12 px-4 bg-slate-900/50 backdrop-blur-sm border-t border-gray-700/50">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center mb-6">
-            <div className="w-12 h-12 bg-[#121212] rounded-full flex items-center justify-center mr-3 relative">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-emerald-400/10 to-green-400/10 blur-sm"></div>
-              <img src="/assets/logo.png" alt="orgaN Logo" className="w-8 h-8 object-contain relative z-10" />
-            </div>
-            <span 
-              className="text-2xl font-bold bg-gradient-to-r from-white to-emerald-300 bg-clip-text text-transparent"
-              style={{ fontFamily: 'Nico Moji, system-ui, sans-serif' }}
-            >
-              orgaN
-            </span>
+            <img 
+              src="/assets/organ-logo-text.png" 
+              alt="orgaN Logo" 
+              className="w-32 h-auto object-contain opacity-80"
+            />
           </div>
           <p className="text-gray-400 mb-4">
             A lista de compras mais inteligente e organizada do Brasil
