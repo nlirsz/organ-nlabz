@@ -114,6 +114,30 @@
   --accent-foreground: var(--text-primary);
 }
 
+:root {
+  --sidebar-width: 256px;
+  --sidebar-background: var(--c-secondary);
+  --sidebar-text: var(--text-primary);
+  --sidebar-border: var(--c-border);
+  --sidebar-shadow: var(--shadow-glass);
+  --sidebar-active-background: var(--primary-action);
+  --sidebar-active-text: var(--highlight-action-text);
+  --sidebar-ring: 222.2 84% 4.9%;
+
+  --chart-1: 12 76% 61%;
+  --chart-2: 173 58% 39%;
+  --chart-3: 197 37% 24%;
+  --chart-4: 43 74% 66%;
+  --chart-5: 27 87% 67%;
+
+  /* Magic Bento variables */
+  --magic-glow-color: 34, 197, 94;
+  --magic-glow-x: 50%;
+  --magic-glow-y: 50%;
+  --magic-glow-intensity: 0;
+  --magic-glow-radius: 200px;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -147,6 +171,40 @@
     pointer-events: none;
     z-index: -1;
   }
+}
+
+/* Magic Bento Styles */
+.magic-bento-card {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.magic-particle {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(180deg); }
+}
+
+.magic-bento-card:hover {
+  box-shadow: 0 10px 30px rgba(34, 197, 94, 0.15);
+}
+
+/* Enhanced glow effects */
+.magic-bento-card::before {
+  background: radial-gradient(
+    var(--magic-glow-radius) circle at var(--magic-glow-x) var(--magic-glow-y),
+    rgba(var(--magic-glow-color), calc(var(--magic-glow-intensity) * 0.1)) 0%,
+    rgba(var(--magic-glow-color), calc(var(--magic-glow-intensity) * 0.05)) 30%,
+    transparent 60%
+  );
+}
+
+/* Smooth animations */
+.magic-bento-card * {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* === Glassmorphism Cards === */

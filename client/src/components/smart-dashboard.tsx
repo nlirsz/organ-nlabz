@@ -410,140 +410,220 @@ export function SmartDashboard() {
       {/* Cards Principais Organizados por Importância */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Card Principal - Valor Comprado (mais importante) */}
-        <Card className="md:col-span-4 relative overflow-hidden group hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-green-500"></div>
-          <CardContent className="p-6 relative">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-emerald-50 rounded-xl">
-                <DollarSign className="h-8 w-8 text-emerald-600" />
+        <MagicBento
+          enableStars={true}
+          enableTilt={true}
+          enableMagnetism={true}
+          clickEffect={true}
+          particleCount={10}
+          glowColor="34, 197, 94"
+          className="md:col-span-4"
+        >
+          <Card className="relative overflow-hidden group border border-gray-200 bg-white h-full">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-green-500"></div>
+            <CardContent className="p-6 relative h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-emerald-50 rounded-xl">
+                  <DollarSign className="h-8 w-8 text-emerald-600" />
+                </div>
+                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                  Principal
+                </Badge>
               </div>
-              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">
-                Principal
-              </Badge>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-600">Valor Comprado</p>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(purchasedValue)}</p>
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
-                <p className="text-xs text-gray-500 font-medium">Total investido</p>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-600">Valor Comprado</p>
+                <p className="text-3xl font-bold text-gray-900">{formatCurrency(purchasedValue)}</p>
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="w-4 h-4 text-emerald-500" />
+                  <p className="text-xs text-gray-500 font-medium">Total investido</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </MagicBento>
 
         {/* Cards Médios */}
-        <Card className="md:col-span-3 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-cyan-500"></div>
-          <CardContent className="p-5 relative">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Package className="h-6 w-6 text-blue-600" />
+        <MagicBento
+          enableStars={true}
+          enableTilt={true}
+          enableMagnetism={true}
+          clickEffect={true}
+          particleCount={6}
+          glowColor="59, 130, 246"
+          className="md:col-span-3"
+        >
+          <Card className="relative overflow-hidden border border-gray-200 bg-white h-full">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-cyan-500"></div>
+            <CardContent className="p-5 relative h-full">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Package className="h-6 w-6 text-blue-600" />
+                </div>
               </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600">Total de Produtos</p>
-              <p className="text-2xl font-bold text-gray-900">{products.length}</p>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-600">Total de Produtos</p>
+                <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </MagicBento>
 
-        <Card className="md:col-span-3 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-emerald-500"></div>
-          <CardContent className="p-5 relative">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-green-50 rounded-lg">
-                <ShoppingCart className="h-6 w-6 text-green-600" />
+        <MagicBento
+          enableStars={true}
+          enableTilt={true}
+          enableMagnetism={true}
+          clickEffect={true}
+          particleCount={8}
+          glowColor="34, 197, 94"
+          className="md:col-span-3"
+        >
+          <Card className="relative overflow-hidden border border-gray-200 bg-white h-full">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-emerald-500"></div>
+            <CardContent className="p-5 relative h-full">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 bg-green-50 rounded-lg">
+                  <ShoppingCart className="h-6 w-6 text-green-600" />
+                </div>
               </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600">Produtos Comprados</p>
-              <p className="text-2xl font-bold text-gray-900">{purchasedProducts.length}</p>
-              <div className="w-full bg-gray-200 rounded-full h-1.5">
-                <div 
-                  className="bg-gradient-to-r from-green-400 to-emerald-500 h-1.5 rounded-full transition-all duration-1000" 
-                  style={{width: `${(purchasedProducts.length / products.length) * 100}%`}}
-                ></div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-600">Produtos Comprados</p>
+                <p className="text-2xl font-bold text-gray-900">{purchasedProducts.length}</p>
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div 
+                    className="bg-gradient-to-r from-green-400 to-emerald-500 h-1.5 rounded-full transition-all duration-1000" 
+                    style={{width: `${(purchasedProducts.length / products.length) * 100}%`}}
+                  ></div>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </MagicBento>
 
-        <Card className="md:col-span-2 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-amber-500"></div>
-          <CardContent className="p-5 relative">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-orange-50 rounded-lg">
-                <Clock className="h-6 w-6 text-orange-600" />
+        <MagicBento
+          enableStars={true}
+          enableTilt={true}
+          enableMagnetism={true}
+          clickEffect={true}
+          particleCount={5}
+          glowColor="245, 158, 11"
+          className="md:col-span-2"
+        >
+          <Card className="relative overflow-hidden border border-gray-200 bg-white h-full">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-amber-500"></div>
+            <CardContent className="p-5 relative h-full">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 bg-orange-50 rounded-lg">
+                  <Clock className="h-6 w-6 text-orange-600" />
+                </div>
               </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600">Pendentes</p>
-              <p className="text-2xl font-bold text-gray-900">{pendingProducts.length}</p>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-600">Pendentes</p>
+                <p className="text-2xl font-bold text-gray-900">{pendingProducts.length}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </MagicBento>
       </div>
 
       {/* Segunda Linha de Cards */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        <Card className="md:col-span-3 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
-          <CardContent className="p-5 relative">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-yellow-50 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-yellow-600" />
+        <MagicBento
+          enableStars={true}
+          enableTilt={true}
+          enableMagnetism={true}
+          clickEffect={true}
+          particleCount={4}
+          glowColor="234, 179, 8"
+          className="md:col-span-3"
+        >
+          <Card className="relative overflow-hidden border border-gray-200 bg-white h-full">
+            <CardContent className="p-5 relative h-full">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 bg-yellow-50 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-yellow-600" />
+                </div>
               </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600">Valor Pendente</p>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(pendingValue)}</p>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-600">Valor Pendente</p>
+                <p className="text-xl font-bold text-gray-900">{formatCurrency(pendingValue)}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </MagicBento>
 
-        <Card className="md:col-span-3 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
-          <CardContent className="p-5 relative">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-purple-50 rounded-lg">
-                <Calendar className="h-6 w-6 text-purple-600" />
+        <MagicBento
+          enableStars={true}
+          enableTilt={true}
+          enableMagnetism={true}
+          clickEffect={true}
+          particleCount={5}
+          glowColor="147, 51, 234"
+          className="md:col-span-3"
+        >
+          <Card className="relative overflow-hidden border border-gray-200 bg-white h-full">
+            <CardContent className="p-5 relative h-full">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 bg-purple-50 rounded-lg">
+                  <Calendar className="h-6 w-6 text-purple-600" />
+                </div>
               </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600">Produtos do Mês</p>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(currentMonthValue)}</p>
-              <p className="text-xs text-gray-500">{currentMonthProducts.length} itens</p>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-600">Produtos do Mês</p>
+                <p className="text-xl font-bold text-gray-900">{formatCurrency(currentMonthValue)}</p>
+                <p className="text-xs text-gray-500">{currentMonthProducts.length} itens</p>
+              </div>
+            </CardContent>
+          </Card>
+        </MagicBento>
 
-        <Card className="md:col-span-3 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
-          <CardContent className="p-5 relative">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-indigo-50 rounded-lg">
-                <CreditCard className="h-6 w-6 text-indigo-600" />
+        <MagicBento
+          enableStars={true}
+          enableTilt={true}
+          enableMagnetism={true}
+          clickEffect={true}
+          particleCount={6}
+          glowColor="99, 102, 241"
+          className="md:col-span-3"
+        >
+          <Card className="relative overflow-hidden border border-gray-200 bg-white h-full">
+            <CardContent className="p-5 relative h-full">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 bg-indigo-50 rounded-lg">
+                  <CreditCard className="h-6 w-6 text-indigo-600" />
+                </div>
               </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600">Parcelas do Mês</p>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(currentMonthInstallmentsValue)}</p>
-              <p className="text-xs text-gray-500">{currentMonthInstallments.length} parcelas</p>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-600">Parcelas do Mês</p>
+                <p className="text-xl font-bold text-gray-900">{formatCurrency(currentMonthInstallmentsValue)}</p>
+                <p className="text-xs text-gray-500">{currentMonthInstallments.length} parcelas</p>
+              </div>
+            </CardContent>
+          </Card>
+        </MagicBento>
 
-        <Card className="md:col-span-3 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
-          <CardContent className="p-5 relative">
-            <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-rose-50 rounded-lg">
-                <Percent className="h-6 w-6 text-rose-600" />
+        <MagicBento
+          enableStars={true}
+          enableTilt={true}
+          enableMagnetism={true}
+          clickEffect={true}
+          particleCount={4}
+          glowColor="244, 63, 94"
+          className="md:col-span-3"
+        >
+          <Card className="relative overflow-hidden border border-gray-200 bg-white h-full">
+            <CardContent className="p-5 relative h-full">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 bg-rose-50 rounded-lg">
+                  <Percent className="h-6 w-6 text-rose-600" />
+                </div>
               </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600">Total de Descontos</p>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(totalDiscount)}</p>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-600">Total de Descontos</p>
+                <p className="text-xl font-bold text-gray-900">{formatCurrency(totalDiscount)}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </MagicBento>
       </div>
 
       {/* Cards de Informações Específicas */}
