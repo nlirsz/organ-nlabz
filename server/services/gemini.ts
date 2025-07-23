@@ -103,10 +103,27 @@ Retorne JSON válido:
 - Ignore preços de parcelamento ou frete`;
     }
     
+    if (domain.includes('mercadolivre.com')) {
+      return `- PRIORIDADE 1: Procure por classe .price-tag-fraction (parte inteira) e .price-tag-cents (centavos)
+- PRIORIDADE 2: meta[property="product:price:amount"]
+- PRIORIDADE 3: JSON-LD com @type="Product" e "offers"
+- Combine fração + centavos para preço total
+- Formato brasileiro: R$ 1.299,99 → 1299.99`;
+    }
+    
+    if (domain.includes('amazon.com')) {
+      return `- PRIORIDADE 1: .a-price-whole e .a-price-fraction
+- PRIORIDADE 2: #price_inside_buybox
+- PRIORIDADE 3: meta[property="product:price:amount"]
+- Ignore preços Prime, frete ou parcelamento`;
+    }
+    
     return `- Procure pelo preço PRINCIPAL do produto individual
 - Ignore preços de combo, frete ou parcelamento
 - Priorize: preços em destaque, classes "price", "valor", "preco-principal"
-- Formato: números com ponto decimal (ex: 1299.99)`;
+- Para sites brasileiros: formato R$ 1.299,99 → 1299.99
+- Para sites internacionais: converta para BRL se necessário
+- Formato final: números com ponto decimal (ex: 1299.99)`;
   }
 
   function getSpecificImageRules(domain: string): string {
