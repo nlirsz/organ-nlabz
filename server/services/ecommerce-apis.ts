@@ -158,7 +158,7 @@ async function fetchFromMercadoLivre(searchTerm: string): Promise<APIProductResu
   }
 }
 
-// Google Shopping API (com chave gratuita) - CORRIGIDA
+// Google Shopping API - CORRIGIDA com busca web normal
 async function fetchFromGoogleShopping(urlOrQuery: string): Promise<APIProductResult[]> {
   const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
   const GOOGLE_CX = process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID;
@@ -174,80 +174,119 @@ async function fetchFromGoogleShopping(urlOrQuery: string): Promise<APIProductRe
     if (urlOrQuery.startsWith('http')) {
       const urlObj = new URL(urlOrQuery);
       const domain = urlObj.hostname.replace('www.', '');
-      const pathSegments = urlObj.pathname.split('/').filter(s => s.length > 2);
-
-      // Cria query baseada na URL
-      searchQuery = `${pathSegments.join(' ').replace(/[-_]/g, ' ')} site:${domain}`;
+      
+      // Para Mercado Livre, extrai nome do produto da URL
+      if (domain.includes('mercadolivre.com')) {
+        const pathSegments = urlObj.pathname.split('/').filter(s => s.length > 2);
+        // Remove /p/ e códigos do produto
+        const productName = pathSegments
+          .filter(s => !s.match(/^(p|MLB\d+)$/))
+          .join(' ')
+          .replace(/[-_]/g, ' ')
+          .replace(/\d+gb/gi, '$& ')
+          .trim();
+        
+        searchQuery = `"${productName}" site:${domain}`;
+      } else {
+        const pathSegments = urlObj.pathname.split('/').filter(s => s.length > 2);
+        searchQuery = `${pathSegments.join(' ').replace(/[-_]/g, ' ')} site:${domain}`;
+      }
     }
 
     console.log(`[Google API] Buscando: ${searchQuery}`);
 
+    // Remove searchType=image para busca web normal
     const response = await fetch(
-      `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(searchQuery)}&num=5&searchType=image`
+      `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(searchQuery)}&num=5`
     );
 
     if (!response.ok) {
-      console.log(`[Google API] Erro HTTP: ${response.status}`);
+      console.log(`[Google API] Erro HTTP: ${response.status} - ${response.statusText}`);
+      
+      // Se der erro 400, tenta busca simplificada
+      if (response.status === 400) {
+        console.log(`[Google API] Tentando busca simplificada...`);
+        const simpleQuery = urlOrQuery.startsWith('http') ? 
+          extractSearchTermFromUrl(urlOrQuery) : 
+          urlOrQuery.substring(0, 50); // Limita tamanho da query
+        
+        if (simpleQuery && simpleQuery.length > 3) {
+          const simpleResponse = await fetch(
+            `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(simpleQuery)}&num=3`
+          );
+          
+          if (simpleResponse.ok) {
+            const simpleData = await simpleResponse.json();
+            return parseGoogleResults(simpleData);
+          }
+        }
+      }
+      
       return [];
     }
 
     const data = await response.json();
-
-    if (!data.items || data.items.length === 0) {
-      console.log(`[Google API] Nenhum resultado encontrado`);
-      return [];
-    }
-
-    const results: APIProductResult[] = [];
-
-    for (const item of data.items.slice(0, 3)) {
-      const itemUrl = item.link || item.formattedUrl;
-      
-      // Busca melhor imagem
-      let imageUrl = 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
-      
-      // Prioridades para imagem
-      if (item.pagemap?.cse_image?.[0]?.src) {
-        imageUrl = item.pagemap.cse_image[0].src;
-      } else if (item.pagemap?.metatags?.[0]?.['og:image']) {
-        imageUrl = item.pagemap.metatags[0]['og:image'];
-      } else if (item.pagemap?.metatags?.[0]?.['twitter:image']) {
-        imageUrl = item.pagemap.metatags[0]['twitter:image'];
-      } else if (item.image?.contextLink) {
-        imageUrl = item.image.contextLink;
-      }
-
-      // Extrai preço mais inteligentemente
-      const price = extractPriceFromSnippet(item.snippet) || 
-                   extractPriceFromMetatags(item.pagemap?.metatags?.[0]) || 
-                   0;
-
-      // Extrai marca
-      const brand = extractBrandFromSnippet(item.snippet) || 
-                   extractBrandFromMetatags(item.pagemap?.metatags?.[0]);
-
-      const storeName = getStoreFromUrl(itemUrl);
-
-      if (price > 0 || item.title) {
-        results.push({
-          name: item.title?.replace(/[|\-].*$/, '').trim() || 'Produto encontrado',
-          price: price,
-          imageUrl: imageUrl,
-          store: storeName,
-          description: item.snippet || '',
-          category: guessCategory(item.title + ' ' + item.snippet),
-          url: itemUrl,
-          brand: brand
-        });
-      }
-    }
-
-    console.log(`[Google API] ${results.length} produtos válidos encontrados`);
-    return results;
+    return parseGoogleResults(data);
+    
   } catch (error) {
     console.error('[Google API] Erro ao buscar:', error);
     return [];
   }
+}
+
+// Função auxiliar para processar resultados do Google
+function parseGoogleResults(data: any): APIProductResult[] {
+  if (!data.items || data.items.length === 0) {
+    console.log(`[Google API] Nenhum resultado encontrado`);
+    return [];
+  }
+
+  const results: APIProductResult[] = [];
+
+  for (const item of data.items.slice(0, 3)) {
+    const itemUrl = item.link || item.formattedUrl;
+    
+    // Busca melhor imagem
+    let imageUrl = 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
+    
+    // Prioridades para imagem
+    if (item.pagemap?.cse_image?.[0]?.src) {
+      imageUrl = item.pagemap.cse_image[0].src;
+    } else if (item.pagemap?.metatags?.[0]?.['og:image']) {
+      imageUrl = item.pagemap.metatags[0]['og:image'];
+    } else if (item.pagemap?.metatags?.[0]?.['twitter:image']) {
+      imageUrl = item.pagemap.metatags[0]['twitter:image'];
+    } else if (item.image?.contextLink) {
+      imageUrl = item.image.contextLink;
+    }
+
+    // Extrai preço mais inteligentemente
+    const price = extractPriceFromSnippet(item.snippet) || 
+                 extractPriceFromMetatags(item.pagemap?.metatags?.[0]) || 
+                 0;
+
+    // Extrai marca
+    const brand = extractBrandFromSnippet(item.snippet) || 
+                 extractBrandFromMetatags(item.pagemap?.metatags?.[0]);
+
+    const storeName = getStoreFromUrl(itemUrl);
+
+    if (price > 0 || item.title) {
+      results.push({
+        name: item.title?.replace(/[|\-].*$/, '').trim() || 'Produto encontrado',
+        price: price,
+        imageUrl: imageUrl,
+        store: storeName,
+        description: item.snippet || '',
+        category: guessCategory(item.title + ' ' + item.snippet),
+        url: itemUrl,
+        brand: brand
+      });
+    }
+  }
+
+  console.log(`[Google API] ${results.length} produtos válidos encontrados`);
+  return results;
 }
 
 // Helper melhorado para extrair preço do snippet
@@ -430,33 +469,33 @@ function extractSearchTermFromUrl(url: string): string {
   }
 }
 
-// Extrai ID do produto de URLs conhecidas - MELHORADO
+// Extrai ID do produto de URLs conhecidas - CORRIGIDO
 function extractProductId(url: string): { platform: string; id: string } | null {
   const patterns = [
-    // Mercado Livre - múltiplos formatos
-    { platform: 'mercadolivre', regex: /mercadolivre\.com\.br\/.*?-([A-Z0-9-]{10,})(?:\?|$|#)/ },
-    { platform: 'mercadolivre', regex: /produto\.mercadolivre\.com\.br\/([A-Z0-9-]+)/ },
-    { platform: 'mercadolivre', regex: /articulo\.mercadolibre\.com\.[a-z]+\/.*?-([A-Z0-9-]{10,})(?:\?|$)/ },
-    { platform: 'mercadolivre', regex: /\/p\/[^\/]*\/([A-Z0-9-]{10,})/ },
+    // Mercado Livre - CORRIGIDO para capturar IDs corretamente
+    { platform: 'mercadolivre', regex: /\/p\/([A-Z0-9-]+)/i }, // Para URLs /p/MLB47769283
+    { platform: 'mercadolivre', regex: /mercadolivre\.com\.br\/.*?-(MLB[A-Z0-9-]+)(?:\?|$|#)/i },
+    { platform: 'mercadolivre', regex: /produto\.mercadolivre\.com\.br\/([A-Z0-9-]+)/i },
+    { platform: 'mercadolivre', regex: /articulo\.mercadolibre\.com\.[a-z]+\/.*?-(ML[A-Z0-9-]+)(?:\?|$)/i },
 
     // Amazon - múltiplos formatos
-    { platform: 'amazon', regex: /amazon\.com\.br\/.*\/dp\/([A-Z0-9]{10})/ },
-    { platform: 'amazon', regex: /amazon\.com\.br\/.*\/product\/([A-Z0-9]{10})/ },
-    { platform: 'amazon', regex: /amazon\.com\.br\/dp\/([A-Z0-9]{10})/ },
-    { platform: 'amazon', regex: /amazon\.com\.br\/gp\/product\/([A-Z0-9]{10})/ },
+    { platform: 'amazon', regex: /amazon\.com\.br\/.*\/dp\/([A-Z0-9]{10})/i },
+    { platform: 'amazon', regex: /amazon\.com\.br\/.*\/product\/([A-Z0-9]{10})/i },
+    { platform: 'amazon', regex: /amazon\.com\.br\/dp\/([A-Z0-9]{10})/i },
+    { platform: 'amazon', regex: /amazon\.com\.br\/gp\/product\/([A-Z0-9]{10})/i },
 
     // Shopee
-    { platform: 'shopee', regex: /shopee\.com\.br\/.*?-i\.(\d+)\.(\d+)/ },
+    { platform: 'shopee', regex: /shopee\.com\.br\/.*?-i\.(\d+)\.(\d+)/i },
 
     // Magazine Luiza
-    { platform: 'magazineluiza', regex: /magazineluiza\.com\.br\/.*\/([0-9]+)\/p/ }
+    { platform: 'magazineluiza', regex: /magazineluiza\.com\.br\/.*\/([0-9]+)\/p/i }
   ];
 
   for (const pattern of patterns) {
     const match = url.match(pattern.regex);
     if (match) {
       const id = match[1] || match[2];
-      if (id && id.length >= 8) { // IDs devem ter pelo menos 8 caracteres
+      if (id && id.length >= 3) { // Reduzido para capturar IDs menores válidos do ML
         console.log(`[Product ID] Extraído ${pattern.platform}: ${id}`);
         return { platform: pattern.platform, id };
       }
@@ -521,41 +560,43 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
   const results: APIProductResult[] = [];
 
   try {
-    // Extrair termo de busca da URL
-    const searchTerm = extractSearchTermFromUrl(url);
-    console.log(`[API First] Termo de busca extraído: ${searchTerm}`);
-
-    if (!searchTerm || searchTerm.length < 3) {
-      console.log('[API First] Termo de busca muito curto, tentando APIs diretas');
-      
-      // Tenta APIs diretas mesmo sem termo
-      const directResult = await tryAPIFirst(url);
-      if (directResult) {
-        return [directResult];
-      }
-      return null;
+    // PRIORIDADE 1: Tenta API direta primeiro se possível
+    const directResult = await tryAPIFirst(url);
+    if (directResult && directResult.price > 0) {
+      console.log(`[API First] ✅ API direta bem-sucedida`);
+      return [directResult];
     }
 
-    // Tentar Mercado Livre primeiro
+    // PRIORIDADE 2: Google Shopping como principal (mais confiável)
     try {
-      const mlResults = await fetchFromMercadoLivre(searchTerm);
-      if (mlResults && mlResults.length > 0) {
-        console.log(`[API First] Mercado Livre encontrou ${mlResults.length} produtos`);
-        results.push(...mlResults.slice(0, 3));
-      }
-    } catch (error) {
-      console.error('[API First] Erro no Mercado Livre:', error);
-    }
-
-    // Tentar Google Shopping
-    try {
-      const googleResults = await fetchFromGoogleShopping(searchTerm);
+      console.log(`[API First] Tentando Google Shopping como prioridade...`);
+      const googleResults = await fetchFromGoogleShopping(url);
       if (googleResults && googleResults.length > 0) {
-        console.log(`[API First] Google Shopping encontrou ${googleResults.length} produtos`);
-        results.push(...googleResults.slice(0, 2));
+        const validResults = googleResults.filter(r => r.price > 0 || r.name !== 'Produto encontrado');
+        if (validResults.length > 0) {
+          console.log(`[API First] ✅ Google Shopping encontrou ${validResults.length} produtos válidos`);
+          results.push(...validResults.slice(0, 3));
+        }
       }
     } catch (error) {
       console.error('[API First] Erro no Google Shopping:', error);
+    }
+
+    // PRIORIDADE 3: Mercado Livre como complemento
+    const searchTerm = extractSearchTermFromUrl(url);
+    if (searchTerm && searchTerm.length >= 3 && url.includes('mercadolivre.com')) {
+      try {
+        const mlResults = await fetchFromMercadoLivre(searchTerm);
+        if (mlResults && mlResults.length > 0) {
+          console.log(`[API First] Mercado Livre encontrou ${mlResults.length} produtos`);
+          // Adiciona apenas se não temos resultados suficientes do Google
+          if (results.length < 2) {
+            results.push(...mlResults.slice(0, 2));
+          }
+        }
+      } catch (error) {
+        console.error('[API First] Erro no Mercado Livre:', error);
+      }
     }
 
     console.log(`[API First] Total de produtos encontrados: ${results.length}`);

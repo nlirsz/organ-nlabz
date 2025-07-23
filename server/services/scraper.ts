@@ -545,13 +545,57 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
     return cached;
   }
   
-  // NOVA ESTRATÉGIA: Tenta API oficial primeiro
+  // ESTRATÉGIA 1: Tenta Google Shopping API primeiro (mais confiável)
   try {
-    console.log(`[Scraper] Tentando API oficial primeiro...`);
+    console.log(`[Scraper] Tentando Google Shopping API primeiro...`);
+    const googleResults = await fetchFromGoogleShopping(url);
+    
+    if (googleResults && googleResults.length > 0) {
+      const bestResult = googleResults.find(r => r.price > 0) || googleResults[0];
+      
+      if (bestResult && (bestResult.price > 0 || bestResult.name !== 'Produto encontrado')) {
+        console.log(`[Scraper] ✅ Google Shopping API bem-sucedida: ${bestResult.name}`);
+        
+        const productInfo: ScrapedProduct = {
+          name: bestResult.name,
+          price: bestResult.price,
+          originalPrice: bestResult.originalPrice || null,
+          imageUrl: bestResult.imageUrl,
+          store: bestResult.store,
+          description: bestResult.description,
+          category: bestResult.category || 'Outros',
+          brand: bestResult.brand
+        };
+        
+        // Adiciona ao cache
+        scrapingCache.set(cacheKey, productInfo, 60 * 60 * 1000); // 1 hora para dados de API
+        
+        // Adiciona ao histórico de preços
+        if (productId && productInfo.price) {
+          const oldEntries = priceHistoryService.getPriceHistory(productId);
+          const lastPrice = oldEntries.length > 0 ? oldEntries[oldEntries.length - 1].price : null;
+          
+          priceHistoryService.addPriceEntry(productId, productInfo.price, 'google-api');
+          
+          if (lastPrice && lastPrice !== productInfo.price) {
+            notificationService.checkPriceChange(productId, lastPrice, productInfo.price);
+          }
+        }
+        
+        return productInfo;
+      }
+    }
+  } catch (error) {
+    console.log(`[Scraper] Google Shopping API falhou: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+  }
+
+  // ESTRATÉGIA 2: Tenta API específica da plataforma
+  try {
+    console.log(`[Scraper] Tentando API específica da plataforma...`);
     const apiResult = await tryAPIFirst(url);
     
     if (apiResult && apiResult.price > 0) {
-      console.log(`[Scraper] ✅ API oficial bem-sucedida: ${apiResult.name}`);
+      console.log(`[Scraper] ✅ API específica bem-sucedida: ${apiResult.name}`);
       
       const productInfo: ScrapedProduct = {
         name: apiResult.name,
@@ -572,7 +616,7 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
         const oldEntries = priceHistoryService.getPriceHistory(productId);
         const lastPrice = oldEntries.length > 0 ? oldEntries[oldEntries.length - 1].price : null;
         
-        priceHistoryService.addPriceEntry(productId, productInfo.price, 'api');
+        priceHistoryService.addPriceEntry(productId, productInfo.price, 'platform-api');
         
         if (lastPrice && lastPrice !== productInfo.price) {
           notificationService.checkPriceChange(productId, lastPrice, productInfo.price);
@@ -582,7 +626,7 @@ export async function scrapeProductFromUrl(url: string, productId?: number): Pro
       return productInfo;
     }
   } catch (error) {
-    console.log(`[Scraper] API oficial falhou: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    console.log(`[Scraper] API específica falhou: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
   }
   
   const errors: string[] = [];

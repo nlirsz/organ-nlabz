@@ -88,22 +88,29 @@ IMAGEM (OBRIGATÓRIA - SEM IMAGEM REPORTADO):
 ${domain.includes('mercadolivre.com') ? `
 ⚠️ INSTRUÇÕES CRÍTICAS PARA MERCADO LIVRE:
 
-PREÇO (DEVE SER PRECISO):
-- Procure por: .andes-money-amount__fraction ou .price-tag-fraction
-- Alternativa: span[data-testid*="price"] ou elementos com "price" no testid
-- JSON-LD: @type="Product" → "offers" → "price"
-- Formato: "R$ 8.320,00" → 8320.00
-- IGNORE: preços de frete, parcelamento, "a partir de"
+PREÇO (ALTÍSSIMA PRIORIDADE):
+- PRIORIDADE 1: .price-tag-fraction (classe principal de preço)
+- PRIORIDADE 2: .andes-money-amount__fraction + .andes-money-amount__cents
+- PRIORIDADE 3: span[data-testid*="price"] ou elementos com "price" no data-testid
+- PRIORIDADE 4: .ui-pdp-price__fraction (páginas de produto)
+- PRIORIDADE 5: JSON-LD com @type="Product" → "offers" → "price"
+- PRIORIDADE 6: meta[property="product:price:amount"]
+- COMBINAÇÃO: Se encontrar partes separadas (inteiro + centavos), combine-as
+- FORMATO: "8.320" + "00" = 8320.00
+- IGNORE COMPLETAMENTE: preços com "frete", "entrega", "parcelamento", "a partir de"
+- VALIDAÇÃO: Preço deve ser > R$ 50 para produtos eletrônicos
 
-IMAGEM (OBRIGATÓRIA - IMAGEM INVÁLIDA REPORTADA):
-- PRIORIDADE 1: meta[property="og:image"] - validar se URL funciona
-- PRIORIDADE 2: img[data-testid="gallery-image"] ou similar
-- PRIORIDADE 3: JSON-LD com @type="Product" → "image"
-- VALIDAÇÃO CRÍTICA: URL deve começar com https:// e conter "mlstatic.com"
-- VALIDAÇÃO CRÍTICA: Prefira URLs terminando em "-W.webp" ou "-O.jpg" (alta resolução)
-- VALIDAÇÃO CRÍTICA: Evite URLs terminando em "-I.jpg" (baixa resolução/inválidas)
-- SUBSTITUA automaticamente: "-I.jpg" por "-W.webp" para melhor qualidade
+IMAGEM (OBRIGATÓRIA):
+- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa
+- PRIORIDADE 2: img[data-zoom-image] (imagem com zoom, alta qualidade)
+- PRIORIDADE 3: img[data-testid="gallery-image"] da galeria principal
+- PRIORIDADE 4: .ui-pdp-gallery__figure img[src] com maior resolução
+- PRIORIDADE 5: JSON-LD com @type="Product" → "image"
+- VALIDAÇÃO CRÍTICA: URL deve conter "mlstatic.com" e começar com https://
+- MELHORIA AUTOMÁTICA: Substitua "-I.jpg" por "-W.webp" para alta resolução
+- MELHORIA AUTOMÁTICA: Substitua "-S.jpg" por "-O.jpg" para melhor qualidade
 - EXEMPLO VÁLIDO: https://http2.mlstatic.com/D_NQ_NP_758297-MLB51362436710_072023-W.webp
+- REJEITE URLs com "/photos///" (barras triplas = URL inválida)
 ` : ''}
 
 REGRAS PARA IMAGEM:
