@@ -1,78 +1,76 @@
 
-import { tryAPIFirst } from './services/ecommerce-apis';
-import { scrapeProductFromUrl } from './services/scraper';
-
-// URLs de teste
-const testUrls = [
-  // Mercado Livre - deve usar API
-  'https://www.mercadolivre.com.br/smartphone-samsung-galaxy-a54-5g-128gb-violeta-8gb-ram-67-cam-tripla-50mp-selfie-32mp/p/MLB28338727',
-  
-  // Nike - deve usar scraping
-  'https://www.nike.com.br/tenis-nike-air-force-1-07-masculino-315122-111',
-  
-  // Zara - deve usar scraping
-  'https://www.zara.com/br/pt/sunrise-on-the-red-sand-dunes-intense-edp-100-ml--3-38-fl--oz--p20220319.html',
-  
-  // Amazon - deve tentar Google API
-  'https://www.amazon.com.br/dp/B08N5WRWNW'
-];
+import { scrapeProductData } from './services/scraper';
+import { fetchProductFromAPIs } from './services/ecommerce-apis';
+import { analyzeProductWithGemini } from './services/gemini';
 
 async function testScraping() {
-  console.log('🧪 INICIANDO TESTES DE SCRAPING...\n');
-  
-  for (let i = 0; i < testUrls.length; i++) {
-    const url = testUrls[i];
-    console.log(`\n📍 TESTE ${i + 1}: ${url}`);
-    console.log('='.repeat(80));
+  console.log('🧪 === INICIANDO TESTES DE SCRAPING E APIS ===\n');
+
+  // URLs de teste
+  const testUrls = [
+    'https://www.mercadolivre.com.br/smartphone-samsung-galaxy-a54-5g-128gb-8gb-ram-tela-67-camera-50mp-violeta/p/MLB21580703',
+    'https://www.amazon.com.br/smartphone-samsung-galaxy-s24-ultra/dp/B0CQ8YZQHX',
+    'https://www.netshoes.com.br/tenis-nike-air-max-270-masculino-preto+branco-D12-0492-006',
+    'https://www.adidas.com.br/tenis-ultraboost-22-masculino/GZ0127.html'
+  ];
+
+  for (const url of testUrls) {
+    console.log(`\n🔍 === TESTANDO: ${url} ===`);
     
     try {
-      // Teste 1: API First
-      console.log('\n🔍 Testando APIs primeiro...');
-      const apiResult = await tryAPIFirst(url);
-      
-      if (apiResult) {
-        console.log('✅ API bem-sucedida!');
-        console.log(`   Nome: ${apiResult.name}`);
-        console.log(`   Preço: R$ ${apiResult.price}`);
-        console.log(`   Loja: ${apiResult.store}`);
-        continue; // Se API funcionou, não precisa testar scraping
+      // Teste 1: APIs Externas
+      console.log('\n📡 Testando APIs externas...');
+      const apiResult = await fetchProductFromAPIs(url);
+      if (apiResult && apiResult.length > 0) {
+        console.log('✅ APIs encontraram produtos:');
+        apiResult.forEach((product, index) => {
+          console.log(`   ${index + 1}. ${product.name} - ${product.price} (${product.source})`);
+        });
       } else {
-        console.log('❌ API falhou, testando scraping...');
+        console.log('❌ Nenhum produto encontrado via APIs');
       }
-      
-      // Teste 2: Scraping completo
-      console.log('\n🕷️ Testando scraping completo...');
-      const scrapingResult = await scrapeProductFromUrl(url);
-      
-      if (scrapingResult) {
-        console.log('✅ Scraping realizado!');
-        console.log(`   Nome: ${scrapingResult.name}`);
-        console.log(`   Preço: ${scrapingResult.price ? `R$ ${scrapingResult.price}` : 'Não encontrado'}`);
-        console.log(`   Loja: ${scrapingResult.store}`);
-        console.log(`   Categoria: ${scrapingResult.category}`);
-        
-        if (scrapingResult.imageUrl) {
-          console.log(`   Imagem: ${scrapingResult.imageUrl.substring(0, 50)}...`);
+
+      // Teste 2: Scraping Direto
+      console.log('\n🕷️ Testando scraping direto...');
+      const scrapedResult = await scrapeProductData(url);
+      if (scrapedResult && scrapedResult.name && scrapedResult.name !== `Produto de ${scrapedResult.store}`) {
+        console.log('✅ Scraping direto bem-sucedido:');
+        console.log(`   Nome: ${scrapedResult.name}`);
+        console.log(`   Preço: ${scrapedResult.price || 'N/A'}`);
+        console.log(`   Loja: ${scrapedResult.store}`);
+        console.log(`   Imagem: ${scrapedResult.imageUrl ? 'Sim' : 'Não'}`);
+      } else {
+        console.log('❌ Scraping direto falhou');
+      }
+
+      // Teste 3: Análise com Gemini
+      console.log('\n🤖 Testando análise com Gemini...');
+      try {
+        const geminiResult = await analyzeProductWithGemini(url);
+        if (geminiResult && geminiResult.name) {
+          console.log('✅ Gemini analisou com sucesso:');
+          console.log(`   Nome: ${geminiResult.name}`);
+          console.log(`   Preço: ${geminiResult.price || 'N/A'}`);
+          console.log(`   Categoria: ${geminiResult.category || 'N/A'}`);
+          console.log(`   Marca: ${geminiResult.brand || 'N/A'}`);
+        } else {
+          console.log('❌ Gemini não conseguiu analisar');
         }
-      } else {
-        console.log('❌ Scraping falhou completamente');
+      } catch (geminiError) {
+        console.log('❌ Erro no Gemini:', geminiError.message);
       }
-      
+
     } catch (error) {
-      console.log(`❌ Erro no teste: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      console.error(`❌ Erro geral ao testar ${url}:`, error.message);
     }
     
-    // Aguarda entre testes para não sobrecarregar
-    if (i < testUrls.length - 1) {
-      console.log('\n⏳ Aguardando 3 segundos...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
-    }
+    console.log('\n' + '='.repeat(80));
   }
-  
-  console.log('\n🏁 TESTES CONCLUÍDOS!');
+
+  console.log('\n🏁 === TESTES CONCLUÍDOS ===');
 }
 
-// Executa os testes se arquivo for executado diretamente
+// Executar apenas se chamado diretamente
 if (require.main === module) {
   testScraping().catch(console.error);
 }
