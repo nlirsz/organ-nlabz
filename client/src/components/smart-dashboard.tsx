@@ -264,15 +264,21 @@ export function SmartDashboard() {
     return sum + (original - current);
   }, 0);
 
-  // Criar gradientes para os gráficos
-  const createGradient = (ctx: CanvasRenderingContext2D, color1: string, color2: string) => {
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, color1);
-    gradient.addColorStop(1, color2);
-    return gradient;
-  };
+  // Cores mais sutis para os gráficos
+  const chartColors = [
+    'rgba(99, 102, 241, 0.8)',   // Indigo
+    'rgba(139, 92, 246, 0.8)',   // Violet  
+    'rgba(59, 130, 246, 0.8)',   // Blue
+    'rgba(16, 185, 129, 0.8)',   // Emerald
+    'rgba(245, 158, 11, 0.8)',   // Amber
+    'rgba(239, 68, 68, 0.8)',    // Red
+    'rgba(236, 72, 153, 0.8)',   // Pink
+    'rgba(6, 182, 212, 0.8)',    // Cyan
+    'rgba(132, 204, 22, 0.8)',   // Lime
+    'rgba(251, 146, 60, 0.8)',   // Orange
+  ];
 
-  // Dados para gráfico financeiro
+  // Dados para gráfico financeiro com gradientes suaves
   const financeChartData = {
     labels: finances.map(f => {
       const date = new Date(f.mes_ano + '-01');
@@ -282,97 +288,81 @@ export function SmartDashboard() {
       {
         label: 'Receita',
         data: finances.map(f => f.receita),
-        borderColor: 'rgb(34, 197, 94)',
+        borderColor: 'rgba(34, 197, 94, 1)',
         backgroundColor: (context: any) => {
           const chart = context.chart;
           const {ctx, chartArea} = chart;
           if (!chartArea) return null;
           const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           gradient.addColorStop(0, 'rgba(34, 197, 94, 0.05)');
-          gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.15)');
-          gradient.addColorStop(1, 'rgba(34, 197, 94, 0.3)');
+          gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.1)');
+          gradient.addColorStop(1, 'rgba(34, 197, 94, 0.2)');
           return gradient;
         },
-        borderWidth: 3,
+        borderWidth: 2,
         tension: 0.4,
-        pointBackgroundColor: 'rgb(34, 197, 94)',
+        pointBackgroundColor: 'rgba(34, 197, 94, 1)',
         pointBorderColor: '#ffffff',
         pointBorderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 8,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        fill: true,
       },
       {
         label: 'Gastos',
         data: finances.map(f => f.gastos),
-        borderColor: 'rgb(239, 68, 68)',
+        borderColor: 'rgba(239, 68, 68, 1)',
         backgroundColor: (context: any) => {
           const chart = context.chart;
           const {ctx, chartArea} = chart;
           if (!chartArea) return null;
           const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           gradient.addColorStop(0, 'rgba(239, 68, 68, 0.05)');
-          gradient.addColorStop(0.5, 'rgba(239, 68, 68, 0.15)');
-          gradient.addColorStop(1, 'rgba(239, 68, 68, 0.3)');
+          gradient.addColorStop(0.5, 'rgba(239, 68, 68, 0.1)');
+          gradient.addColorStop(1, 'rgba(239, 68, 68, 0.2)');
           return gradient;
         },
-        borderWidth: 3,
+        borderWidth: 2,
         tension: 0.4,
-        pointBackgroundColor: 'rgb(239, 68, 68)',
+        pointBackgroundColor: 'rgba(239, 68, 68, 1)',
         pointBorderColor: '#ffffff',
         pointBorderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 8,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        fill: true,
       },
       {
         label: 'Saldo',
         data: finances.map(f => f.receita - f.gastos),
-        borderColor: 'rgb(59, 130, 246)',
+        borderColor: 'rgba(59, 130, 246, 1)',
         backgroundColor: (context: any) => {
           const chart = context.chart;
           const {ctx, chartArea} = chart;
           if (!chartArea) return null;
           const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           gradient.addColorStop(0, 'rgba(59, 130, 246, 0.05)');
-          gradient.addColorStop(0.5, 'rgba(59, 130, 246, 0.15)');
-          gradient.addColorStop(1, 'rgba(59, 130, 246, 0.3)');
+          gradient.addColorStop(0.5, 'rgba(59, 130, 246, 0.1)');
+          gradient.addColorStop(1, 'rgba(59, 130, 246, 0.2)');
           return gradient;
         },
-        borderWidth: 3,
+        borderWidth: 2,
         tension: 0.4,
-        pointBackgroundColor: 'rgb(59, 130, 246)',
+        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
         pointBorderColor: '#ffffff',
         pointBorderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 8,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        fill: true,
       }
     ]
   };
 
-  // Dados para gráfico de categorias com gradientes
+  // Dados para gráfico de categorias com cores corretas na legenda
   const categoryChartData = {
     labels: Object.keys(categoryStats),
     datasets: [{
       data: Object.values(categoryStats).map(cat => cat.purchasedValue),
-      backgroundColor: (context: any) => {
-        const chart = context.chart;
-        const {ctx} = chart;
-        if (!ctx) return null;
-        
-        const gradients = [
-          (() => { const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 200); g.addColorStop(0, '#60A5FA'); g.addColorStop(1, '#3B82F6'); return g; })(),
-          (() => { const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 200); g.addColorStop(0, '#F87171'); g.addColorStop(1, '#EF4444'); return g; })(),
-          (() => { const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 200); g.addColorStop(0, '#34D399'); g.addColorStop(1, '#10B981'); return g; })(),
-          (() => { const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 200); g.addColorStop(0, '#FBBF24'); g.addColorStop(1, '#F59E0B'); return g; })(),
-          (() => { const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 200); g.addColorStop(0, '#A78BFA'); g.addColorStop(1, '#8B5CF6'); return g; })(),
-          (() => { const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 200); g.addColorStop(0, '#F472B6'); g.addColorStop(1, '#EC4899'); return g; })(),
-          (() => { const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 200); g.addColorStop(0, '#22D3EE'); g.addColorStop(1, '#06B6D4'); return g; })(),
-          (() => { const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 200); g.addColorStop(0, '#A3E635'); g.addColorStop(1, '#84CC16'); return g; })(),
-          (() => { const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 200); g.addColorStop(0, '#FB923C'); g.addColorStop(1, '#F97316'); return g; })(),
-          (() => { const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 200); g.addColorStop(0, '#818CF8'); g.addColorStop(1, '#6366F1'); return g; })(),
-        ];
-        
-        return gradients[context.dataIndex % gradients.length];
-      },
+      backgroundColor: chartColors.slice(0, Object.keys(categoryStats).length),
       borderWidth: 0,
       hoverBorderWidth: 3,
       hoverBorderColor: '#ffffff',
@@ -388,100 +378,23 @@ export function SmartDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Cards Principais de Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total de Produtos */}
-        <Card className="relative overflow-hidden group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 border-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-cyan-500/5 to-indigo-500/10 opacity-60"></div>
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-indigo-500"></div>
+      {/* Cards Principais Organizados por Importância */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        {/* Card Principal - Valor Comprado (mais importante) */}
+        <Card className="md:col-span-4 relative overflow-hidden group hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-green-500"></div>
           <CardContent className="p-6 relative">
-            <div className="flex items-center justify-between mb-6">
-              <div className="p-4 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg group-hover:shadow-blue-500/25 transition-all duration-300">
-                <Package className="h-8 w-8 text-white" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 bg-emerald-50 rounded-xl">
+                <DollarSign className="h-8 w-8 text-emerald-600" />
               </div>
-              <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0 px-3 py-1 text-xs font-semibold">
-                Total
+              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                Principal
               </Badge>
             </div>
-            <div className="space-y-3">
-              <p className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Total de Produtos</p>
-              <p className="text-5xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{products.length}</p>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-1000" style={{width: '100%'}}></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Produtos Comprados */}
-        <Card className="relative overflow-hidden group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 border-0 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-100 dark:from-green-900 dark:via-emerald-900 dark:to-teal-900">
-          <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-teal-500/10 opacity-60"></div>
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500"></div>
-          <CardContent className="p-6 relative">
-            <div className="flex items-center justify-between mb-6">
-              <div className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg group-hover:shadow-green-500/25 transition-all duration-300">
-                <ShoppingCart className="h-8 w-8 text-white" />
-              </div>
-              <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 px-3 py-1 text-xs font-semibold">
-                Comprados
-              </Badge>
-            </div>
-            <div className="space-y-3">
-              <p className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Produtos Comprados</p>
-              <p className="text-5xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{purchasedProducts.length}</p>
-              <div className="space-y-2">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-1000" 
-                    style={{width: `${(purchasedProducts.length / products.length) * 100}%`}}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 font-medium">{Math.round((purchasedProducts.length / products.length) * 100)}% concluído</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Produtos Pendentes */}
-        <Card className="relative overflow-hidden group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 border-0 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-100 dark:from-orange-900 dark:via-amber-900 dark:to-yellow-900">
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-yellow-500/10 opacity-60"></div>
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500"></div>
-          <CardContent className="p-6 relative">
-            <div className="flex items-center justify-between mb-6">
-              <div className="p-4 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl shadow-lg group-hover:shadow-orange-500/25 transition-all duration-300">
-                <Clock className="h-8 w-8 text-white" />
-              </div>
-              <Badge className="bg-gradient-to-r from-orange-500 to-amber-500 text-white border-0 px-3 py-1 text-xs font-semibold">
-                Pendentes
-              </Badge>
-            </div>
-            <div className="space-y-3">
-              <p className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Produtos Pendentes</p>
-              <p className="text-5xl font-black bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">{pendingProducts.length}</p>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full animate-pulse"></div>
-                <p className="text-xs text-gray-500 font-medium">Aguardando compra</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Valor Comprado */}
-        <Card className="relative overflow-hidden group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 border-0 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-100 dark:from-emerald-900 dark:via-green-900 dark:to-teal-900">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-green-500/5 to-teal-500/10 opacity-60"></div>
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500"></div>
-          <CardContent className="p-6 relative">
-            <div className="flex items-center justify-between mb-6">
-              <div className="p-4 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl shadow-lg group-hover:shadow-emerald-500/25 transition-all duration-300">
-                <DollarSign className="h-8 w-8 text-white" />
-              </div>
-              <Badge className="bg-gradient-to-r from-emerald-500 to-green-500 text-white border-0 px-3 py-1 text-xs font-semibold">
-                Gasto
-              </Badge>
-            </div>
-            <div className="space-y-3">
-              <p className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Valor Comprado</p>
-              <p className="text-3xl font-black bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">{formatCurrency(purchasedValue)}</p>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-600">Valor Comprado</p>
+              <p className="text-3xl font-bold text-gray-900">{formatCurrency(purchasedValue)}</p>
               <div className="flex items-center space-x-2">
                 <TrendingUp className="w-4 h-4 text-emerald-500" />
                 <p className="text-xs text-gray-500 font-medium">Total investido</p>
@@ -490,99 +403,134 @@ export function SmartDashboard() {
           </CardContent>
         </Card>
 
-        {/* Valor Pendente */}
-        <Card className="relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-          <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-orange-500/5"></div>
-          <CardContent className="p-6 relative">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-yellow-500/10 rounded-xl">
-                <TrendingUp className="h-8 w-8 text-yellow-600" />
+        {/* Cards Médios */}
+        <Card className="md:col-span-3 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-cyan-500"></div>
+          <CardContent className="p-5 relative">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Package className="h-6 w-6 text-blue-600" />
               </div>
-              <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                Aguardando
-              </Badge>
             </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-600">Valor Pendente</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(pendingValue)}</p>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-600">Total de Produtos</p>
+              <p className="text-2xl font-bold text-gray-900">{products.length}</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Produtos Adicionados no Mês */}
-        <Card className="relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5"></div>
-          <CardContent className="p-6 relative">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-purple-500/10 rounded-xl">
-                <Calendar className="h-8 w-8 text-purple-600" />
+        <Card className="md:col-span-3 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-emerald-500"></div>
+          <CardContent className="p-5 relative">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2 bg-green-50 rounded-lg">
+                <ShoppingCart className="h-6 w-6 text-green-600" />
               </div>
-              <Badge variant="secondary" className="bg-purple-50 text-purple-700 border-purple-200">
-                Este Mês
-              </Badge>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-600">Produtos Comprados</p>
+              <p className="text-2xl font-bold text-gray-900">{purchasedProducts.length}</p>
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                <div 
+                  className="bg-gradient-to-r from-green-400 to-emerald-500 h-1.5 rounded-full transition-all duration-1000" 
+                  style={{width: `${(purchasedProducts.length / products.length) * 100}%`}}
+                ></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-amber-500"></div>
+          <CardContent className="p-5 relative">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2 bg-orange-50 rounded-lg">
+                <Clock className="h-6 w-6 text-orange-600" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-600">Pendentes</p>
+              <p className="text-2xl font-bold text-gray-900">{pendingProducts.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Segunda Linha de Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <Card className="md:col-span-3 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
+          <CardContent className="p-5 relative">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2 bg-yellow-50 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-yellow-600" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-600">Valor Pendente</p>
+              <p className="text-xl font-bold text-gray-900">{formatCurrency(pendingValue)}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-3 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
+          <CardContent className="p-5 relative">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <Calendar className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+            <div className="space-y-1">
               <p className="text-sm font-medium text-gray-600">Produtos do Mês</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(currentMonthValue)}</p>
+              <p className="text-xl font-bold text-gray-900">{formatCurrency(currentMonthValue)}</p>
               <p className="text-xs text-gray-500">{currentMonthProducts.length} itens</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Parcelas do Mês */}
-        <Card className="relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-blue-500/5"></div>
-          <CardContent className="p-6 relative">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-indigo-500/10 rounded-xl">
-                <CreditCard className="h-8 w-8 text-indigo-600" />
+        <Card className="md:col-span-3 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
+          <CardContent className="p-5 relative">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2 bg-indigo-50 rounded-lg">
+                <CreditCard className="h-6 w-6 text-indigo-600" />
               </div>
-              <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-indigo-200">
-                Parcelas
-              </Badge>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <p className="text-sm font-medium text-gray-600">Parcelas do Mês</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(currentMonthInstallmentsValue)}</p>
+              <p className="text-xl font-bold text-gray-900">{formatCurrency(currentMonthInstallmentsValue)}</p>
               <p className="text-xs text-gray-500">{currentMonthInstallments.length} parcelas</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Total de Descontos */}
-        <Card className="relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-pink-500/5"></div>
-          <CardContent className="p-6 relative">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-rose-500/10 rounded-xl">
-                <Percent className="h-8 w-8 text-rose-600" />
+        <Card className="md:col-span-3 relative overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white">
+          <CardContent className="p-5 relative">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2 bg-rose-50 rounded-lg">
+                <Percent className="h-6 w-6 text-rose-600" />
               </div>
-              <Badge variant="secondary" className="bg-rose-50 text-rose-700 border-rose-200">
-                Economia
-              </Badge>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               <p className="text-sm font-medium text-gray-600">Total de Descontos</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalDiscount)}</p>
+              <p className="text-xl font-bold text-gray-900">{formatCurrency(totalDiscount)}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Cards de Informações Específicas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Última Compra */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
+        <Card className="border border-gray-200 bg-white">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Activity className="h-5 w-5 text-gray-600" />
               Última Compra
             </CardTitle>
           </CardHeader>
           <CardContent>
             {lastPurchase ? (
               <div className="space-y-2">
-                <p className="font-semibold">{lastPurchase.name}</p>
+                <p className="font-semibold text-gray-900">{lastPurchase.name}</p>
                 <p className="text-sm text-gray-600">{formatCurrency(parseFloat(lastPurchase.price))}</p>
                 <p className="text-xs text-gray-500">
                   {new Date(lastPurchase.purchaseDate!).toLocaleDateString('pt-BR')}
@@ -595,17 +543,17 @@ export function SmartDashboard() {
         </Card>
 
         {/* Categoria com Mais Itens */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Tag className="h-5 w-5" />
+        <Card className="border border-gray-200 bg-white">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Tag className="h-5 w-5 text-gray-600" />
               Top Categoria (Itens)
             </CardTitle>
           </CardHeader>
           <CardContent>
             {topCategoryByItems ? (
               <div className="space-y-2">
-                <p className="font-semibold">{topCategoryByItems[0]}</p>
+                <p className="font-semibold text-gray-900">{topCategoryByItems[0]}</p>
                 <p className="text-sm text-gray-600">{topCategoryByItems[1].total} produtos</p>
                 <p className="text-xs text-gray-500">
                   {formatCurrency(topCategoryByItems[1].totalValue)} total
@@ -618,17 +566,17 @@ export function SmartDashboard() {
         </Card>
 
         {/* Categoria com Mais Comprados */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
+        <Card className="border border-gray-200 bg-white">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Target className="h-5 w-5 text-gray-600" />
               Top Categoria (Comprados)
             </CardTitle>
           </CardHeader>
           <CardContent>
             {topCategoryByPurchased ? (
               <div className="space-y-2">
-                <p className="font-semibold">{topCategoryByPurchased[0]}</p>
+                <p className="font-semibold text-gray-900">{topCategoryByPurchased[0]}</p>
                 <p className="text-sm text-gray-600">{topCategoryByPurchased[1].purchased} comprados</p>
                 <p className="text-xs text-gray-500">
                   {formatCurrency(topCategoryByPurchased[1].purchasedValue)} gasto
@@ -644,10 +592,10 @@ export function SmartDashboard() {
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gráfico Financeiro Mensal */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
+        <Card className="border border-gray-200 bg-white">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <BarChart3 className="h-5 w-5 text-gray-600" />
               Evolução Financeira Mensal
             </CardTitle>
           </CardHeader>
@@ -736,10 +684,10 @@ export function SmartDashboard() {
         </Card>
 
         {/* Gráfico de Gastos por Categoria */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5" />
+        <Card className="border border-gray-200 bg-white">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <PieChart className="h-5 w-5 text-gray-600" />
               Gastos por Categoria
             </CardTitle>
           </CardHeader>
@@ -750,17 +698,17 @@ export function SmartDashboard() {
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
-                  cutout: '70%',
+                  cutout: '60%',
                   plugins: {
                     legend: {
                       position: 'right' as const,
                       labels: {
                         usePointStyle: true,
                         pointStyle: 'circle',
-                        padding: 20,
+                        padding: 15,
                         font: {
                           size: 13,
-                          weight: '600',
+                          weight: '500',
                         },
                         color: '#374151',
                         generateLabels: function(chart) {
@@ -768,7 +716,7 @@ export function SmartDashboard() {
                           if (data.labels?.length && data.datasets.length) {
                             return data.labels.map((label, i) => ({
                               text: label as string,
-                              fillStyle: data.datasets[0].backgroundColor?.[i] || '#000',
+                              fillStyle: chartColors[i] || '#000',
                               strokeStyle: '#fff',
                               lineWidth: 2,
                               pointStyle: 'circle',
@@ -801,7 +749,7 @@ export function SmartDashboard() {
                   },
                   elements: {
                     arc: {
-                      borderWidth: 3,
+                      borderWidth: 2,
                       borderColor: '#ffffff',
                     },
                   },
@@ -815,10 +763,10 @@ export function SmartDashboard() {
       {/* Tabelas Detalhadas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gastos por Categoria */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Tag className="h-5 w-5" />
+        <Card className="border border-gray-200 bg-white">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Tag className="h-5 w-5 text-gray-600" />
               Detalhes por Categoria
             </CardTitle>
           </CardHeader>
@@ -827,10 +775,10 @@ export function SmartDashboard() {
               {Object.entries(categoryStats)
                 .sort(([,a], [,b]) => b.purchasedValue - a.purchasedValue)
                 .map(([category, data]) => (
-                  <div key={category} className="p-4 bg-gray-50 rounded-lg">
+                  <div key={category} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-semibold">{category}</h4>
-                      <Badge variant="outline">{data.total} itens</Badge>
+                      <h4 className="font-semibold text-gray-900">{category}</h4>
+                      <Badge variant="outline" className="text-gray-600 border-gray-300">{data.total} itens</Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
@@ -856,10 +804,10 @@ export function SmartDashboard() {
         </Card>
 
         {/* Gastos por Loja */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
+        <Card className="border border-gray-200 bg-white">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <MapPin className="h-5 w-5 text-gray-600" />
               Detalhes por Loja
             </CardTitle>
           </CardHeader>
@@ -868,10 +816,10 @@ export function SmartDashboard() {
               {Object.entries(storeStats)
                 .sort(([,a], [,b]) => b.purchasedValue - a.purchasedValue)
                 .map(([store, data]) => (
-                  <div key={store} className="p-4 bg-gray-50 rounded-lg">
+                  <div key={store} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-semibold">{store}</h4>
-                      <Badge variant="outline">{data.total} itens</Badge>
+                      <h4 className="font-semibold text-gray-900">{store}</h4>
+                      <Badge variant="outline" className="text-gray-600 border-gray-300">{data.total} itens</Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
