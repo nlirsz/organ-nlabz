@@ -305,44 +305,49 @@ function getSpecificPriceInstructions(domain: string): string {
 
 function getSpecificImageInstructions(domain: string): string {
   if (domain.includes('nike.com')) {
-    return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: img[data-qa="product-image"]';
+    return '- PRIORIDADE 1: meta[property="og:image"] - URL exata como "copiar link da imagem"\n- PRIORIDADE 2: img[data-qa="product-image"] - URL direta sem modificações';
   }
   if (domain.includes('amazon.com')) {
-    return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
-- PRIORIDADE 2: img[data-a-dynamic-image] com maior resolução
-- PRIORIDADE 3: img[src*="images-amazon.com"] ou img[src*="m.media-amazon.com"]
-- PRIORIDADE 4: JSON-LD procure por "image" dentro de @type="Product"
-- IMPORTANTE: Prefira URLs que contenham "._AC_SX679_" ou "._AC_SL1500_" (alta resolução)
-- IMPORTANTE: Evite URLs muito pequenas (menores que 300px)
-- IMPORTANTE: URL deve começar com https:// e ser acessível
-- VALIDAÇÃO: Teste se a URL da imagem é válida e carrega corretamente`;
+    return `- PRIORIDADE 1: meta[property="og:image"] - URL EXATA (simula copiar link da imagem)
+- PRIORIDADE 2: img[data-a-dynamic-image] - primeira URL da lista sem modificações
+- PRIORIDADE 3: img[src*="images-amazon.com"] ou img[src*="m.media-amazon.com"] - URL direta
+- PRIORIDADE 4: JSON-LD "image" - URL original sem alterações
+
+FILOSOFIA: Copiar link da imagem do navegador
+- MANTENHA URL original: não altere _AC_SX679_, _AC_SL1500_, etc.
+- PREFIRA URLs com resolução boa mas MANTENHA como está
+- NÃO adicione ou remova parâmetros
+- URL deve funcionar diretamente no navegador`;
   }
   if (domain.includes('zara.com')) {
-    return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
-- PRIORIDADE 2: meta[name="twitter:image"]
-- PRIORIDADE 3: JSON-LD procure por "image" dentro de @type="Product"
-- PRIORIDADE 4: picture source com maior resolução (procure por width=2048 ou similar)
-- PRIORIDADE 5: img[src*="static.zara.net/assets/public"] (prefira URLs com /assets/public/)
-- PRIORIDADE 6: img[src*="static.zara.net"] que NÃO contenha "/photos///" (evite URLs com barras triplas)
-- IMPORTANTE: URL deve começar com https:// e ser acessível
-- IMPORTANTE: Evite URLs que contenham "/photos///" ou barras duplas/triplas
-- IMPORTANTE: Prefira URLs que contenham "/assets/public/" e parâmetros como "&w=1500"
-- TESTE: Valide se a URL não contém "/photos///" que indica URL quebrada`;
+    return `- PRIORIDADE 1: meta[property="og:image"] - URL EXATA como copiar link
+- PRIORIDADE 2: meta[name="twitter:image"] - URL original
+- PRIORIDADE 3: JSON-LD "image" - URL sem modificações
+- PRIORIDADE 4: picture source - URL de maior resolução original
+- PRIORIDADE 5: img[src*="static.zara.net"] - URL direta como encontrada
+
+FILOSOFIA: Simula botão direito > copiar link da imagem
+- MANTENHA URL exatamente como encontrada
+- NÃO remova parâmetros como "&w=1500" se presentes
+- EVITE URLs com "/photos///" mas MANTENHA estrutura original`;
   }
   if (domain.includes('mercadolivre.com')) {
-    return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
-- PRIORIDADE 2: meta[name="twitter:image"] 
-- PRIORIDADE 3: img[src*="mlstatic.com"] com maior resolução
-- IMPORTANTE: Prefira URLs que contenham "-O.jpg" (alta resolução)
-- IMPORTANTE: Evite URLs com "_2X" ou "2X" (podem não carregar)
-- IMPORTANTE: Substitua ".webp" por ".jpg" para melhor compatibilidade
-- CONVERSÃO: Se encontrar .webp, converta para .jpg
-- CONVERSÃO: Se encontrar -I.jpg, converta para -O.jpg (maior resolução)`;
+    return `- PRIORIDADE 1: meta[property="og:image"] - URL EXATA como copiar link da imagem
+- PRIORIDADE 2: meta[name="twitter:image"] - URL original sem alterações
+- PRIORIDADE 3: img[src*="mlstatic.com"] - URL direta da galeria principal
+- PRIORIDADE 4: picture source - URL de maior resolução original
+
+FILOSOFIA: Simula exatamente "copiar link da imagem" do navegador
+- MANTENHA URL original: -O.jpg, -W.jpg, _2X permanecem como estão
+- NÃO converta .webp aqui (será feito depois se necessário)
+- NÃO modifique -I para -O aqui (preserva original)
+- IGNORE URLs com parâmetros temporários (?timestamp, &cache)
+- URL deve carregar diretamente como link da imagem`;
   }
   if (domain.includes('dafiti.com') || domain.includes('netshoes.com')) {
-    return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: .product-image img';
+    return '- PRIORIDADE 1: meta[property="og:image"] - URL exata como copiar link\n- PRIORIDADE 2: .product-image img - URL original sem modificações';
   }
-  return '- PRIORIDADE 1: meta[property="og:image"]\n- PRIORIDADE 2: img dentro de divs de produto com maior resolução';
+  return '- PRIORIDADE 1: meta[property="og:image"] - URL exata como botão direito > copiar link\n- PRIORIDADE 2: img de produto - URL direta sem alterações';
 }
   
   if (!model) {

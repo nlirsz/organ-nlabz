@@ -58,7 +58,7 @@ function optimizeImageUrl(imageUrl: string, domain: string): string {
     // ESTRATÉGIA: Simula o "copiar link da imagem" do navegador
     // Remove parâmetros desnecessários que podem quebrar a imagem
     const cleanUrl = new URL(imageUrl);
-    
+
     // Remove parâmetros de tracking e cache que podem causar problemas
     const paramsToRemove = ['cache', 'v', 'timestamp', 't', '_', 'cb', 'nocache'];
     paramsToRemove.forEach(param => cleanUrl.searchParams.delete(param));
@@ -86,7 +86,7 @@ function optimizeImageUrl(imageUrl: string, domain: string): string {
       if (pathname.includes('.webp')) {
         pathname = pathname.replace(/\.webp$/i, '.jpg');
       }
-      
+
       // Melhora resolução apenas se for muito baixa
       if (pathname.includes('-I.')) {
         pathname = pathname.replace(/-I\.(jpg|webp)$/i, '-O.jpg');
@@ -255,28 +255,48 @@ Retorne JSON válido:
 
   function getSpecificImageRules(domain: string): string {
   if (domain.includes('amazon.com')) {
-    return `- PRIORIDADE 1: meta[property="og:image"] (melhor compatibilidade e sempre funciona)
-- PRIORIDADE 2: #landingImage[src] (imagem principal interativa do produto)
-- PRIORIDADE 3: img[data-a-image-name="landingImage"][src] (imagem principal)
-- PRIORIDADE 4: .a-dynamic-image[src] da primeira imagem da galeria
-- VALIDAÇÃO CRÍTICA: URL deve começar com https:// e conter media-amazon.com
-- OTIMIZAÇÃO INTELIGENTE: Para URLs com "_AC_", use "_AC_SX679_" (melhor compatibilidade que SL1500)
-- OTIMIZAÇÃO INTELIGENTE: Para URLs com "_UY", use "_AC_UY400_" (resolução boa e compatível)
-- REJEITAR: URLs com "_SL1500_" podem ser muito pesadas
-- EXEMPLO ÓTIMO: https://m.media-amazon.com/images/I/51nHt+jXdjL._AC_SX679_.jpg
-- TESTE FINAL: Certifique-se que a URL não retorna 403 ou 404`;
+    return `- PRIORIDADE 1: meta[property="og:image"] - URL EXATA como botão direito > copiar link
+- PRIORIDADE 2: img[data-a-dynamic-image] - primeira URL da lista (maior resolução)
+- PRIORIDADE 3: img[src*="images-amazon.com"] ou img[src*="m.media-amazon.com"] - URL direta
+- PRIORIDADE 4: JSON-LD "image" dentro de @type="Product" - URL sem modificações
+
+REGRAS CRÍTICAS (simula copiar link da imagem):
+- MANTENHA a URL exatamente como encontrada no HTML
+- NÃO modifique códigos como "_AC_SX679_", "_AC_SL1500_" 
+- PREFIRA URLs com "_AC_SX679_" ou maiores (boa resolução)
+- EVITE URLs com "_AC_SX200_" ou menores (muito pequenas)
+- MANTENHA parâmetros originais se presentes
+- URL deve carregar diretamente no navegador
+
+EXEMPLOS IDEAIS:
+- https://m.media-amazon.com/images/I/71k-y-f-XEL._AC_SX679_.jpg
+- https://images-amazon.com/images/I/81abc123def._AC_SL1500_.jpg
+
+VALIDAÇÃO: URL deve funcionar como link direto da imagem`;
   }
   if (domain.includes('mercadolivre.com')) {
-    return `- PRIORIDADE 1: meta[property="og:image"] - SEMPRE funciona e é a mais confiável
-- PRIORIDADE 2: .ui-pdp-gallery__figure img[src] (primeira imagem da galeria)
-- PRIORIDADE 3: img[data-zoom][src] ou img[data-testid="gallery-image"][src]
-- PRIORIDADE 4: JSON-LD com @type="Product" → "image" (primeira imagem)
-- VALIDAÇÃO CRÍTICA: URL deve começar com https:// e conter "mlstatic.com"
-- IMPORTANTE: Mantenha URL original sempre que possível
-- CONVERSÃO APENAS SE NECESSÁRIO: .webp → .jpg (para compatibilidade)
-- MELHORIA APENAS SE BAIXA RESOLUÇÃO: -I → -O, -S → -O, -T → -O
-- EVITE mudanças desnecessárias na URL original
-- TESTE: Certifique-se que a URL final carrega a imagem corretamente`;
+    return `- PRIORIDADE 1: meta[property="og:image"] - URL EXATA como aparece (simula 'copiar link da imagem')
+- PRIORIDADE 2: meta[name="twitter:image"] - URL DIRETA sem modificações
+- PRIORIDADE 3: img[src*="mlstatic.com"] da galeria principal - primeira imagem grande
+- PRIORIDADE 4: picture source com srcset - escolha URL de maior resolução SEM parâmetros extras
+- PRIORIDADE 5: .gallery img[src] - URL direta da primeira imagem
+- PRIORIDADE 6: figure img[src] - imagem do produto principal
+
+REGRAS CRÍTICAS (simula botão direito > copiar link da imagem):
+- NUNCA adicione parâmetros extras à URL da imagem
+- MANTENHA a URL exatamente como está no HTML
+- PREFIRA URLs que terminam com -O.jpg, -W.jpg ou _2X (alta resolução)
+- SE a URL termina com .webp, mantenha assim (será convertida depois se necessário)
+- IGNORE URLs com parâmetros ?timestamp, &cache, &token (são temporárias)
+- URL deve ser DIRETAMENTE acessível como se copiasse o link da imagem
+
+EXEMPLOS DE URLs IDEAIS (como copiar link funciona):
+- https://http2.mlstatic.com/D_NQ_NP_652166-MLA83590374671_042025-O.jpg
+- https://http2.mlstatic.com/D_NQ_NP_2X_731724-MLB5242628388_112023-O.jpg
+- https://http2.mlstatic.com/D_NQ_NP_731724-MLB5242628388_112023-W.webp
+
+VALIDAÇÃO: A URL deve funcionar se colada diretamente no navegador
+`;
   }
   if (domain.includes('nike.com')) {
     return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: img[data-qa="product-image"]';
