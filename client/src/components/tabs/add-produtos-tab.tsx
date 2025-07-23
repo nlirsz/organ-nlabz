@@ -502,8 +502,3 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
     </div>
   );
 }
-```
-
-```
-The code is the same as the original code, except the `UrlInput` component is used in the returned JSX.
-```
