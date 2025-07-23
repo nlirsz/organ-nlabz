@@ -73,9 +73,16 @@ interface FinanceData {
 }
 
 interface InstallmentData {
-  value: number;
-  due_date: string;
+  id: number;
+  productId: number;
   productName: string;
+  installmentNumber: number;
+  totalInstallments: number;
+  amount: number;
+  dueDate: string;
+  month: number;
+  year: number;
+  isPaid: boolean;
 }
 
 export function SmartDashboard() {
@@ -192,13 +199,13 @@ export function SmartDashboard() {
   console.log('All installments:', installments);
 
   const currentMonthInstallments = installments.filter(installment => {
-    const dueDate = new Date(installment.due_date);
+    const dueDate = new Date(installment.dueDate);
     const installmentMonth = dueDate.getMonth() + 1;
     const installmentYear = dueDate.getFullYear();
 
     console.log('Checking installment:', {
       productName: installment.productName,
-      dueDate: installment.due_date,
+      dueDate: installment.dueDate,
       installmentMonth,
       installmentYear,
       matches: installmentMonth === currentMonthNum && installmentYear === currentYearNum
@@ -210,7 +217,7 @@ export function SmartDashboard() {
   console.log('Current month installments:', currentMonthInstallments);
 
   const currentMonthInstallmentsValue = currentMonthInstallments.reduce((sum, installment) => {
-    const amount = parseFloat(installment.value);
+    const amount = parseFloat(installment.amount.toString());
     console.log('Adding installment amount:', amount);
     return sum + amount;
   }, 0);
