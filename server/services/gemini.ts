@@ -306,7 +306,10 @@ EXEMPLO ESPERADO:
 Se encontrar "R$ 4.859,10", retorne: 4859.10`;
   }
 
-  function getSpecificImageRules(domain: string): string {
+  return '- PRIORIDADE 1: meta[property="og:image"]\n- PRIORIDADE 2: img dentro de divs de produto com maior resolução';
+}
+
+function getSpecificImageRules(domain: string): string {
   if (domain.includes('amazon.com')) {
     return `⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL - IMAGEM:
 
@@ -555,6 +558,7 @@ export async function extractProductInfo(url: string, htmlContent?: string): Pro
     return {
       name: "Produto extraído da URL: " + url.substring(0, 50) + "...",
       price: null,
+      originalPrice: null,
       imageUrl: "https://via.placeholder.com/300x300/CCCCCC/666666?text=Produto",
       store: "Loja Online",
       description: "Produto extraído da URL: " + url,
