@@ -61,6 +61,51 @@ Domínio: ${domain}
 REGRAS CRÍTICAS PARA PREÇO:
 ${getSpecificPriceRules(domain)}
 
+${domain.includes('amazon.com.br') ? `
+⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL:
+
+PREÇO (OBRIGATÓRIO - VALOR INCORRETO REPORTADO):
+- FOQUE no preço principal do produto, não em ofertas ou descontos
+- Procure primeiro por: span.a-price-whole + span.a-price-fraction dentro de .a-price[data-a-color="price"]
+- Alternativa: .a-price-current .a-offscreen (texto oculto com preço completo)
+- Alternativa: #price_inside_buybox .a-price-current
+- Formato correto: "R$ 3.899,99" → 3899.99 (remova R$ e converta vírgula para ponto)
+- IGNORE: preços com "Prime", "frete", "parcelamento", "economia", "a partir de"
+- IGNORE: valores muito baixos (< R$ 100 para eletrônicos)
+- VALIDAÇÃO: preço deve ser razoável para o produto (iPhones > R$ 2000)
+
+IMAGEM (OBRIGATÓRIA - SEM IMAGEM REPORTADO):
+- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
+- PRIORIDADE 2: #landingImage[src] (imagem principal do produto)
+- PRIORIDADE 3: img[data-a-image-name="landingImage"]
+- PRIORIDADE 4: .a-dynamic-image[src] com boa resolução
+- VALIDAÇÃO: URL deve começar com https:// e conter "media-amazon.com"
+- VALIDAÇÃO: URL deve terminar com .jpg ou .webp
+- VALIDAÇÃO: Prefira URLs com "_AC_" para alta qualidade
+- EXEMPLO: https://m.media-amazon.com/images/I/616p2eYk-iL._AC_UY218_.jpg
+` : ''}
+
+${domain.includes('mercadolivre.com') ? `
+⚠️ INSTRUÇÕES CRÍTICAS PARA MERCADO LIVRE:
+
+PREÇO (DEVE SER PRECISO):
+- Procure por: .andes-money-amount__fraction ou .price-tag-fraction
+- Alternativa: span[data-testid*="price"] ou elementos com "price" no testid
+- JSON-LD: @type="Product" → "offers" → "price"
+- Formato: "R$ 8.320,00" → 8320.00
+- IGNORE: preços de frete, parcelamento, "a partir de"
+
+IMAGEM (OBRIGATÓRIA - IMAGEM INVÁLIDA REPORTADA):
+- PRIORIDADE 1: meta[property="og:image"] - validar se URL funciona
+- PRIORIDADE 2: img[data-testid="gallery-image"] ou similar
+- PRIORIDADE 3: JSON-LD com @type="Product" → "image"
+- VALIDAÇÃO CRÍTICA: URL deve começar com https:// e conter "mlstatic.com"
+- VALIDAÇÃO CRÍTICA: Prefira URLs terminando em "-W.webp" ou "-O.jpg" (alta resolução)
+- VALIDAÇÃO CRÍTICA: Evite URLs terminando em "-I.jpg" (baixa resolução/inválidas)
+- SUBSTITUA automaticamente: "-I.jpg" por "-W.webp" para melhor qualidade
+- EXEMPLO VÁLIDO: https://http2.mlstatic.com/D_NQ_NP_758297-MLB51362436710_072023-W.webp
+` : ''}
+
 REGRAS PARA IMAGEM:
 ${getSpecificImageRules(domain)}
 
@@ -104,18 +149,28 @@ Retorne JSON válido:
     }
     
     if (domain.includes('mercadolivre.com')) {
-      return `- PRIORIDADE 1: Procure por classe .price-tag-fraction (parte inteira) e .price-tag-cents (centavos)
-- PRIORIDADE 2: meta[property="product:price:amount"]
-- PRIORIDADE 3: JSON-LD com @type="Product" e "offers"
-- Combine fração + centavos para preço total
-- Formato brasileiro: R$ 1.299,99 → 1299.99`;
+      return `- PRIORIDADE 1: Procure por classes .price-tag-fraction, .price-tag-cents, .andes-money-amount__fraction
+- PRIORIDADE 2: span[data-testid="price-part"] ou elementos com "price" no data-testid
+- PRIORIDADE 3: JSON-LD com @type="Product" → "offers" → "price"
+- PRIORIDADE 4: meta[property="product:price:amount"]
+- PRIORIDADE 5: Elementos com classes contendo "price", "valor", "preco"
+- Combine parte inteira + centavos se separados
+- Formato: R$ 8.320,00 → 8320.00
+- IGNORE: preços de frete, parcelamento, ou valores muito baixos (< R$ 10)
+- IGNORE: preços com texto "a partir de", "até", "frete"`;
     }
     
     if (domain.includes('amazon.com')) {
-      return `- PRIORIDADE 1: .a-price-whole e .a-price-fraction
-- PRIORIDADE 2: #price_inside_buybox
-- PRIORIDADE 3: meta[property="product:price:amount"]
-- Ignore preços Prime, frete ou parcelamento`;
+      return `- PRIORIDADE 1: span.a-price-whole + span.a-price-fraction dentro de .a-price[data-a-color="price"]
+- PRIORIDADE 2: .a-price-current .a-offscreen (preço em texto oculto)
+- PRIORIDADE 3: #price_inside_buybox, #corePrice_feature_div .a-price
+- PRIORIDADE 4: JSON-LD com @type="Product" → "offers" → "price"
+- PRIORIDADE 5: meta[property="product:price:amount"]
+- PRIORIDADE 6: span contendo "R$" seguido de números
+- Formato: R$ 3.899,99 → 3899.99
+- IGNORE: preços Prime, frete, parcelamento, cashback
+- IGNORE: preços com "a partir de", "até", "economia"
+- PROCURE: preço principal do produto, não promoções`;
     }
     
     return `- Procure pelo preço PRINCIPAL do produto individual
@@ -133,6 +188,31 @@ Retorne JSON válido:
 - PRIORIDADE 3: .media__wrapper img ou .product-detail-images img
 - PRIORIDADE 4: img[src*="zara.com/assets"] com width=2048 ou similar
 - URL deve ser completa (https://) e acessível`;
+    }
+    
+    if (domain.includes('mercadolivre.com')) {
+      return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
+- PRIORIDADE 2: .gallery img[src] com maior resolução (prefira URLs com "-W.jpg" ou "-O.jpg")
+- PRIORIDADE 3: img[data-zoom] ou img[data-testid="gallery-image"]
+- PRIORIDADE 4: JSON-LD com @type="Product" → "image"
+- PRIORIDADE 5: img[src*="mlstatic.com"] com dimensões maiores
+- VALIDAÇÃO: URL deve começar com https:// e conter mlstatic.com
+- VALIDAÇÃO: Prefira URLs que terminem com "-W.webp", "-O.jpg", ou similares (alta resolução)
+- VALIDAÇÃO: Evite URLs com "-I.jpg" (baixa resolução)
+- EXEMPLO VÁLIDO: https://http2.mlstatic.com/D_NQ_NP_758297-MLB51362436710_072023-W.webp`;
+    }
+    
+    if (domain.includes('amazon.com')) {
+      return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e de alta resolução
+- PRIORIDADE 2: #landingImage[src] (imagem principal do produto)
+- PRIORIDADE 3: img[data-a-image-name="landingImage"] ou similar
+- PRIORIDADE 4: .a-dynamic-image[src] com maior resolução
+- PRIORIDADE 5: JSON-LD com @type="Product" → "image"
+- PRIORIDADE 6: img[src*="media-amazon.com/images/I"] com "_AC_" (alta qualidade)
+- VALIDAÇÃO: URL deve começar com https:// e conter media-amazon.com
+- VALIDAÇÃO: Prefira URLs com "_AC_UY218_", "_AC_SX425_", ou dimensões maiores
+- VALIDAÇÃO: Evite URLs muito pequenas (< 200px)
+- EXEMPLO VÁLIDO: https://m.media-amazon.com/images/I/616p2eYk-iL._AC_UY218_.jpg`;
     }
     
     return `- PRIORIDADE 1: meta[property="og:image"] com URL completa

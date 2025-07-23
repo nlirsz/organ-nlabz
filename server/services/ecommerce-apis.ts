@@ -25,14 +25,26 @@ async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductRe
     const data = await response.json();
     console.log(`[Mercado Livre API] Produto encontrado: ${data.title}`);
 
-    // Busca a melhor imagem disponível
+    // Busca a melhor imagem disponível com alta resolução
     let imageUrl = 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
     
     if (data.pictures && data.pictures.length > 0) {
       // Prioriza secure_url, depois url
-      imageUrl = data.pictures[0].secure_url || data.pictures[0].url || imageUrl;
+      const baseUrl = data.pictures[0].secure_url || data.pictures[0].url;
+      if (baseUrl) {
+        // Tenta melhorar a qualidade da imagem
+        // Substitui terminações de baixa qualidade por alta qualidade
+        imageUrl = baseUrl
+          .replace(/-I\.jpg$/, '-W.webp')  // Muda de baixa para alta resolução
+          .replace(/-I\.webp$/, '-W.webp')
+          .replace(/-S\.jpg$/, '-W.webp')
+          .replace(/-T\.jpg$/, '-W.webp');
+      }
     } else if (data.thumbnail) {
-      imageUrl = data.thumbnail;
+      // Melhora a thumbnail também
+      imageUrl = data.thumbnail
+        .replace(/-I\.jpg$/, '-W.webp')
+        .replace(/-S\.jpg$/, '-W.webp');
     }
 
     // Normaliza preço
@@ -113,8 +125,13 @@ async function fetchFromMercadoLivre(searchTerm: string): Promise<APIProductResu
       let imageUrl = 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
       
       if (item.thumbnail) {
-        // Tenta melhorar a qualidade da thumbnail
-        imageUrl = item.thumbnail.replace(/\bI\.jpg$/, 'W.jpg').replace(/\b[A-Z]\.jpg$/, 'W.jpg');
+        // Melhora significativamente a qualidade da thumbnail
+        imageUrl = item.thumbnail
+          .replace(/-I\.jpg$/, '-W.webp')    // Alta resolução WebP
+          .replace(/-I\.webp$/, '-W.webp')   
+          .replace(/-S\.jpg$/, '-W.webp')    // De pequena para alta
+          .replace(/-T\.jpg$/, '-W.webp')    // De tiny para alta
+          .replace(/\.jpg$/, '.webp');       // Converte para WebP quando possível
       }
 
       // Normaliza preço
