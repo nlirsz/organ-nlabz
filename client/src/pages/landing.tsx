@@ -92,38 +92,38 @@ export default function LandingPage() {
   const features = [
     {
       icon: <Sparkles className="w-8 h-8 text-emerald-400" />,
-      title: "IA Inteligente",
-      description: "Adicione produtos apenas colando URLs. Nossa IA extrai automaticamente nome, preço, imagens e categoria usando Gemini AI.",
+      title: "Adicione produtos com 1 clique",
+      description: "Apenas cole a URL e nossa IA extrai automaticamente nome, preço, imagens e categoria usando Gemini AI.",
       gradient: "from-emerald-500 to-green-600"
     },
     {
       icon: <BarChart3 className="w-8 h-8 text-green-400" />,
-      title: "Dashboard Financeiro",
+      title: "Controle total dos seus gastos",
       description: "Acompanhe seus gastos com análises detalhadas por categoria, loja e período. Visualize seu histórico de compras.",
       gradient: "from-green-500 to-emerald-600"
     },
     {
       icon: <ShoppingCart className="w-8 h-8 text-emerald-400" />,
-      title: "Lista Inteligente",
-      description: "Organize produtos por categoria, marque como comprados, e tenha controle total da sua lista de compras.",
+      title: "Listas que se organizam sozinhas",
+      description: "Organize produtos por categoria automaticamente, marque como comprados, e tenha controle total da sua lista.",
       gradient: "from-emerald-500 to-green-600"
     },
     {
       icon: <CreditCard className="w-8 h-8 text-green-400" />,
-      title: "Parcelamento",
-      description: "Configure pagamentos parcelados e acompanhe suas prestações com notificações de vencimento.",
+      title: "Nunca perca um pagamento",
+      description: "Configure pagamentos parcelados e acompanhe suas prestações com notificações inteligentes de vencimento.",
       gradient: "from-green-500 to-emerald-600"
     },
     {
       icon: <Users className="w-8 h-8 text-emerald-400" />,
-      title: "Multi-usuário",
-      description: "Cada usuário tem sua lista pessoal e dados privados com sistema de autenticação seguro.",
+      title: "Listas compartilhadas com a família",
+      description: "Cada usuário tem sua lista pessoal e pode compartilhar com familiares de forma segura e organizada.",
       gradient: "from-emerald-500 to-green-600"
     },
     {
       icon: <Shield className="w-8 h-8 text-green-400" />,
-      title: "Design Moderno",
-      description: "Interface elegante com design neumórfico, tema escuro/claro e experiência visual única.",
+      title: "Interface pensada para você",
+      description: "Design moderno e intuitivo com tema escuro/claro, criado para tornar suas compras mais simples e agradáveis.",
       gradient: "from-green-500 to-emerald-600"
     }
   ];
@@ -164,24 +164,24 @@ export default function LandingPage() {
             <div className="w-32 h-1 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full opacity-60"></div>
           </div>
 
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-tight">
+            Sua lista de compras criada por <span className="bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">IA</span>.
+            <br />
+            Apenas cole o link.
+          </h1>
           <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
-            A lista de compras mais inteligente e organizada do Brasil. Use IA para adicionar produtos automaticamente e controle seus gastos como nunca antes.
+            Controle seus gastos e organize tudo em um só lugar. Comece a usar de graça.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+          <div className="flex justify-center mb-16">
             <TiltedCard>
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-10 py-4 text-lg rounded-2xl shadow-2xl border border-emerald-400/30"
+                className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-12 py-5 text-xl rounded-2xl shadow-2xl border border-emerald-400/30 font-bold"
                 onClick={() => window.location.href = '/auth'}
               >
-                Começar Gratuitamente
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </TiltedCard>
-            <TiltedCard>
-              <Button variant="outline" size="lg" className="px-10 py-4 text-lg rounded-2xl bg-transparent border-2 border-emerald-400/50 text-emerald-300 hover:bg-emerald-400/10">
-                Ver Demonstração
+                Começar Gratuitamente Agora
+                <ArrowRight className="ml-3 w-6 h-6" />
               </Button>
             </TiltedCard>
           </div>
@@ -194,7 +194,7 @@ export default function LandingPage() {
                   <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">IA Inteligente</h3>
+                  <h3 className="text-xl font-bold text-white mb-2">Adicione produtos com 1 clique</h3>
                   <p className="text-gray-300 text-sm">Cole uma URL e nossa IA extrai automaticamente todas as informações do produto</p>
                 </div>
               </TiltedCard>
@@ -203,7 +203,7 @@ export default function LandingPage() {
                   <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <BarChart3 className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Controle Financeiro</h3>
+                  <h3 className="text-xl font-bold text-white mb-2">Controle total dos seus gastos</h3>
                   <p className="text-gray-300 text-sm">Dashboard completo para acompanhar seus gastos e parcelamentos</p>
                 </div>
               </TiltedCard>
@@ -217,10 +217,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">
-              Funcionalidades <span className="bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">Revolucionárias</span>
+              Tudo que você precisa para <span className="bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">simplificar suas compras</span>
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Descubra como nossa tecnologia pode transformar sua experiência de compras online
+              Recursos pensados para sua organização e economia pessoal
             </p>
           </div>
 
@@ -287,7 +287,7 @@ export default function LandingPage() {
 
                   <ul className="space-y-4 mb-10 flex-grow">
                     {[
-                      "Até 100 produtos",
+                      "Até 100 produtos ativos*",
                       "IA Gemini para extração",
                       "Dashboard financeiro básico",
                       "Controle de parcelamentos",
@@ -307,6 +307,9 @@ export default function LandingPage() {
                   >
                     Começar Gratuitamente
                   </Button>
+                  <p className="text-xs text-gray-400 text-center mt-3">
+                    *Produtos não comprados em suas listas
+                  </p>
                 </div>
               </AnimatedBorder>
             </TiltedCard>
@@ -316,14 +319,29 @@ export default function LandingPage() {
               <div className="relative bg-gradient-to-br from-slate-800/60 to-gray-900/60 backdrop-blur-xl p-8 min-h-[600px] flex flex-col rounded-3xl border border-gray-600/30 shadow-2xl overflow-hidden">
                 {/* Overlay de blur e cadeado */}
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 to-gray-900/95 backdrop-blur-lg rounded-3xl z-10 flex flex-col items-center justify-center">
-                  <div className="text-center">
+                  <div className="text-center px-8">
                     <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-6 shadow-2xl">
                       <Shield className="w-12 h-12 text-white" />
                     </div>
-                    <h3 className="text-3xl font-bold text-white mb-4">Em Breve</h3>
-                    <p className="text-gray-300 text-lg max-w-xs mx-auto leading-relaxed">
-                      Funcionalidades avançadas chegando em breve. Cadastre-se gratuitamente para não perder!
+                    <h3 className="text-3xl font-bold text-white mb-4">Organ PRO</h3>
+                    <p className="text-gray-300 text-base mb-6 leading-relaxed">
+                      Em desenvolvimento: Relatórios avançados de gastos e integração com assistentes de voz.
                     </p>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                      <p className="text-white text-sm mb-4 font-medium">
+                        Quer ser o primeiro a saber do Plano PRO?
+                      </p>
+                      <div className="flex flex-col gap-3">
+                        <input 
+                          type="email" 
+                          placeholder="Seu melhor e-mail"
+                          className="w-full px-4 py-3 rounded-xl bg-white/20 border border-white/30 text-white placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        />
+                        <Button className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold py-3 rounded-xl">
+                          Avise-me!
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
