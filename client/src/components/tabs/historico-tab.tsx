@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -244,14 +243,14 @@ export function HistoricoTab() {
 
   const handleEditProduct = async (product: Product) => {
     setSelectedProduct(product);
-    
+
     // Buscar dados de pagamento se o produto estiver comprado
     if (product.isPurchased) {
       try {
         const response = await fetch(`/api/payments/product/${product.id}`, {
           headers: { "x-auth-token": authToken || "" }
         });
-        
+
         if (response.ok) {
           const paymentData = await response.json();
           setSelectedPaymentData(paymentData);
@@ -265,7 +264,7 @@ export function HistoricoTab() {
     } else {
       setSelectedPaymentData(null);
     }
-    
+
     setEditModalOpen(true);
   };
 
@@ -278,12 +277,12 @@ export function HistoricoTab() {
     // Recarregar dados após atualização
     const fetchData = async () => {
       if (!authToken || !userId) return;
-      
+
       try {
         const productsRes = await fetch("/api/products", {
           headers: { "x-auth-token": authToken }
         });
-        
+
         if (productsRes.ok) {
           const productsData = await productsRes.json();
           setProducts(productsData);
@@ -575,19 +574,19 @@ export function HistoricoTab() {
                                 </span>
                               </div>
                             </div>
-                            
-                            <div className="pt-2 border-t border-white/10 space-y-2">
-                              <div className="flex items-center text-xs text-gray-400">
+
+                            <div className="pt-3 border-t border-white/10 space-y-3">
+                              <div className="flex items-center justify-center text-xs text-gray-400">
                                 <Calendar className="w-3 h-3 mr-1" />
                                 Comprado em {new Date(product.createdAt).toLocaleDateString('pt-BR')}
                               </div>
-                              <div className="flex justify-center gap-1">
+                              <div className="flex items-center justify-center gap-3 px-2">
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleViewProduct(product)}
                                   title="Ver detalhes"
-                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                  className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                 >
                                   <Info className="h-4 w-4" />
                                 </Button>
@@ -596,7 +595,7 @@ export function HistoricoTab() {
                                   variant="ghost"
                                   onClick={() => handleEditProduct(product)}
                                   title="Editar produto"
-                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                  className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -605,7 +604,7 @@ export function HistoricoTab() {
                                   variant="ghost"
                                   onClick={() => handleEditProduct(product)}
                                   title="Gerenciar pagamento"
-                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                  className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                 >
                                   <CreditCard className="h-4 w-4" />
                                 </Button>
@@ -615,7 +614,7 @@ export function HistoricoTab() {
                                     variant="ghost"
                                     onClick={() => window.open(product.url, '_blank')}
                                     title="Ver no site"
-                                    className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                    className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                   >
                                     <ExternalLink className="h-4 w-4" />
                                   </Button>
@@ -661,19 +660,19 @@ export function HistoricoTab() {
                                 </span>
                               </div>
                             </div>
-                            
-                            <div className="pt-2 border-t border-white/10 space-y-2">
-                              <div className="flex items-center text-xs text-gray-400">
+
+                            <div className="pt-3 border-t border-white/10 space-y-3">
+                              <div className="flex items-center justify-center text-xs text-gray-400">
                                 <Calendar className="w-3 h-3 mr-1" />
                                 Comprado em {new Date(product.createdAt).toLocaleDateString('pt-BR')}
                               </div>
-                              <div className="flex justify-center gap-1">
+                              <div className="flex items-center justify-center gap-3 px-2">
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleViewProduct(product)}
                                   title="Ver detalhes"
-                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                  className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                 >
                                   <Info className="h-4 w-4" />
                                 </Button>
@@ -682,7 +681,7 @@ export function HistoricoTab() {
                                   variant="ghost"
                                   onClick={() => handleEditProduct(product)}
                                   title="Editar produto"
-                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                  className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -691,7 +690,7 @@ export function HistoricoTab() {
                                   variant="ghost"
                                   onClick={() => handleEditProduct(product)}
                                   title="Gerenciar pagamento"
-                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                  className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                 >
                                   <CreditCard className="h-4 w-4" />
                                 </Button>
@@ -701,7 +700,7 @@ export function HistoricoTab() {
                                     variant="ghost"
                                     onClick={() => window.open(product.url, '_blank')}
                                     title="Ver no site"
-                                    className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300"
+                                    className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                   >
                                     <ExternalLink className="h-4 w-4" />
                                   </Button>
@@ -763,7 +762,7 @@ export function HistoricoTab() {
             <DialogHeader>
               <DialogTitle>{selectedProduct.name}</DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-6">
               {/* Imagem do produto */}
               {selectedProduct.imageUrl && (
