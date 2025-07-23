@@ -20,10 +20,21 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
 
   const addProductMutation = useMutation({
     mutationFn: async (url: string) => {
+      console.log("Iniciando scraping para URL:", url);
       const response = await apiRequest("POST", "/api/products/scrape", { url });
-      return response.json();
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Dados recebidos do scraping:", data);
+      return data;
     },
     onSuccess: (data) => {
+      console.log("Scraping bem-sucedido:", data);
+      
       // Invalidate queries to refresh the products tab
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
@@ -36,6 +47,7 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
           duration: 5000,
         });
         setFailedScrapingData({
+          url: url,
           name: data.name,
           price: data.price,
           store: data.store,
@@ -49,7 +61,7 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
         // Scraping bem-sucedido
         toast({
           title: "Sucesso",
-          description: `${data.name} foi adicionado à sua lista de compras!`,
+          description: `${data.name || 'Produto'} foi adicionado à sua lista de compras!`,
         });
       }
       setUrl("");
@@ -58,23 +70,16 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
     onError: (error: any) => {
       console.error("Erro ao adicionar produto:", error);
 
-      // Se o erro permite retry manual, oferece a opção
-      if (error.canRetryWithManual) {
-        toast({
-          title: "Falha no scraping",
-          description: "Não foi possível extrair informações automaticamente. Tente adicionar manualmente.",
-          variant: "destructive",
-          duration: 5000,
-        });
-        setFailedScrapingData({ url });
-        setShowManualModal(true);
-      } else {
-        toast({
-          title: "Erro",
-          description: error.message || "Falha ao adicionar produto. Verifique a URL e tente novamente.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Falha no scraping",
+        description: "Não foi possível extrair informações automaticamente. Tente adicionar manualmente.",
+        variant: "destructive",
+        duration: 5000,
+      });
+      
+      // Sempre oferece opção manual em caso de erro
+      setFailedScrapingData({ url });
+      setShowManualModal(true);
     },
   });
 
@@ -183,6 +188,7 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
             <button
               type="button"
               onClick={() => setShowManualModal(true)}
+              disabled={addProductMutation.isPending}
               className="neomorphic-button flex items-center justify-center icon-button"
               title="Adicionar produto manualmente"
             >
@@ -191,9 +197,15 @@ export function UrlInput({ onProductAdded }: UrlInputProps) {
           </div>
 
           {addProductMutation.isPending && (
-            <div className="text-center">
-              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                Extraindo informações do produto...
+            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Wand2 className="w-5 h-5 animate-spin text-blue-600" />
+                <p className="text-sm font-medium text-blue-800">
+                  Extraindo informações do produto...
+                </p>
+              </div>
+              <p className="text-xs text-blue-600">
+                Este processo pode levar alguns segundos
               </p>
             </div>
           )}
