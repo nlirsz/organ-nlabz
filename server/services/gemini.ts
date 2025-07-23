@@ -59,11 +59,18 @@ function optimizeImageUrl(imageUrl: string, domain: string): string {
     if (domain.includes('amazon.com') && url.hostname.includes('media-amazon.com')) {
       let pathname = url.pathname;
       
-      // Otimiza para melhor compatibilidade (SX679 é mais estável que SL1500)
+      // CRÍTICO: Apenas otimiza se a URL tem problemas específicos
+      // Se já tem _AC_SX679_ ou _AC_UY400_, mantém como está
+      if (pathname.includes('_AC_SX679_') || pathname.includes('_AC_UY400_')) {
+        return imageUrl; // Retorna URL original se já está otimizada
+      }
+      
+      // Apenas converte formatos problemáticos
       pathname = pathname
-        .replace(/_AC_SL\d+_/g, '_AC_SX679_')
-        .replace(/_AC_UY\d+_/g, '_AC_UY400_')
-        .replace(/_AC_UL\d+_/g, '_AC_SX679_');
+        .replace(/_AC_SL1500_/g, '_AC_SX679_')    // SL1500 é muito pesado
+        .replace(/_AC_SL\d{4,}_/g, '_AC_SX679_')  // Qualquer SL com 4+ dígitos
+        .replace(/_AC_UL\d+_/g, '_AC_SX679_')     // UL para SX679
+        .replace(/_AC_UY\d{4,}_/g, '_AC_UY400_'); // UY muito grande para 400
       
       return `https://${url.hostname}${pathname}`;
     }
@@ -119,17 +126,18 @@ PREÇO (OBRIGATÓRIO - VALOR INCORRETO REPORTADO):
 - IGNORE: valores muito baixos (< R$ 1000 para iPhones)
 - VALIDAÇÃO: preço deve ser razoável (iPhone 15 Plus > R$ 3500)
 
-IMAGEM (OBRIGATÓRIA - COMPATIBILIDADE MÁXIMA):
+IMAGEM (OBRIGATÓRIA - MÁXIMA COMPATIBILIDADE):
 - PRIORIDADE 1: meta[property="og:image"] - SEMPRE funciona e é otimizada
 - PRIORIDADE 2: #landingImage[src] (imagem principal do produto)
 - PRIORIDADE 3: img[data-a-image-name="landingImage"] com src válido
-- PRIORIDADE 4: .a-dynamic-image[src] com resolução moderada
+- PRIORIDADE 4: .a-dynamic-image[src] da primeira imagem válida
 - PRIORIDADE 5: JSON-LD com @type="Product" → "image"
 - VALIDAÇÃO CRÍTICA: URL deve começar com https:// e conter "media-amazon.com"
-- VALIDAÇÃO: URL deve terminar com .jpg ou .jpeg (evite .webp)
-- OTIMIZAÇÃO: Prefira URLs com "_AC_SX679_" ou "_AC_UY400_" (boa qualidade + compatível)
+- VALIDAÇÃO CRÍTICA: URL deve terminar com .jpg ou .jpeg (NUNCA .webp)
+- PREFERÊNCIA ABSOLUTA: URLs que já contêm "_AC_SX679_" (formato ideal)
 - EXEMPLO PERFEITO: https://m.media-amazon.com/images/I/51nHt+jXdjL._AC_SX679_.jpg
-- REJEITE: URLs com "_SL1500_" (muito pesadas), placeholder ou quebradas
+- EVITE COMPLETAMENTE: URLs com "_SL1500_" (muito pesadas) ou dimensões >1000px
+- SEMPRE TESTE: A URL deve ser acessível e não retornar erro 403/404
 ` : ''}
 
 ${domain.includes('mercadolivre.com') ? `
