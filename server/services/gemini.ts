@@ -15,8 +15,8 @@ const generationConfig = {
 
 export interface ScrapedProduct {
   name: string;
-  price?: number;
-  originalPrice?: number;
+  price: number | null;
+  originalPrice: number | null;
   imageUrl?: string;
   store?: string;
   description?: string;
@@ -495,12 +495,12 @@ export async function extractProductInfo(url: string, htmlContent?: string): Pro
 
         console.log(`[Gemini] ✓ Success with HTML method - Price: R$ ${htmlResult.price}`);
 
-    // Pós-processamento de imagens para melhor compatibilidade
-    if (htmlResult.imageUrl) {
-      htmlResult.imageUrl = optimizeImageUrl(htmlResult.imageUrl, url);
-    }
+          // Pós-processamento de imagens para melhor compatibilidade
+          if (htmlResult.imageUrl) {
+            htmlResult.imageUrl = optimizeImageUrl(htmlResult.imageUrl, url);
+          }
 
-    return htmlResult;
+          return htmlResult;
 
         if (htmlResult.name && htmlResult.name !== "Produto Desconhecido") {
           console.log(`[Gemini] HTML method found product without price: ${htmlResult.name}`);
