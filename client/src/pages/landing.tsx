@@ -155,9 +155,11 @@ export default function LandingPage() {
           <div className="flex flex-col items-center justify-center mb-12">
             <div className="mb-8 relative">
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-green-400/20 blur-2xl rounded-full"></div>
-              <h1 className="text-7xl md:text-8xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent relative z-10 drop-shadow-2xl">
-                orgaN
-              </h1>
+              <img 
+                src="/assets/organ png2.png" 
+                alt="orgaN" 
+                className="h-32 md:h-40 w-auto relative z-10 drop-shadow-2xl"
+              />
             </div>
             <div className="w-32 h-1 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full opacity-60"></div>
           </div>
@@ -253,83 +255,40 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Plano Gratuito */}
-            <TiltedCard className="h-full group">
-              <div className="bg-gradient-to-br from-slate-800/90 to-gray-900/90 backdrop-blur-sm p-8 h-full rounded-2xl border border-emerald-400/30 shadow-2xl group-hover:border-emerald-400/50 transition-all duration-300">
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mb-4">
-                    <Package className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-2">Gratuito</h3>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
-                      R$ 0
-                    </span>
-                    <span className="text-gray-400 text-lg">/mês</span>
-                  </div>
-                  <p className="text-gray-300 text-sm">
-                    Perfeito para começar e experimentar todas as funcionalidades básicas
-                  </p>
-                </div>
-
-                <ul className="space-y-3 mb-8">
-                  {[
-                    "Até 100 produtos",
-                    "IA Gemini para extração",
-                    "Dashboard financeiro básico",
-                    "Controle de parcelamentos",
-                    "1 usuário",
-                    "Suporte por email"
-                  ].map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center text-sm">
-                      <Check className="w-4 h-4 text-emerald-400 mr-3 flex-shrink-0" />
-                      <span className="text-gray-300">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Button className="w-full rounded-xl py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-lg transition-all duration-300 font-semibold">
-                  Começar Gratuitamente
-                </Button>
-              </div>
-            </TiltedCard>
-
-            {/* Plano Pro - Mais Popular */}
+            {/* Plano Gratuito - Principal com borda em movimento */}
             <TiltedCard className="h-full group transform lg:scale-105">
               <AnimatedBorder className="relative">
                 <div className="bg-gradient-to-br from-slate-800/95 to-gray-900/95 backdrop-blur-sm p-8 h-full rounded-2xl border border-emerald-400/50 shadow-2xl">
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                     <span className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
-                      Mais Popular
+                      Recomendado
                     </span>
                   </div>
 
                   <div className="text-center mb-8 mt-4">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mb-4">
-                      <TrendingUp className="w-8 h-8 text-white" />
+                      <Package className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
+                    <h3 className="text-2xl font-bold text-white mb-2">Gratuito</h3>
                     <div className="mb-4">
                       <span className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
-                        R$ 19,90
+                        R$ 0
                       </span>
                       <span className="text-gray-400 text-lg">/mês</span>
                     </div>
                     <p className="text-gray-300 text-sm">
-                      Para usuários que querem aproveitar todo o potencial da plataforma
+                      Perfeito para começar e experimentar todas as funcionalidades básicas
                     </p>
                   </div>
 
                   <ul className="space-y-3 mb-8">
                     {[
-                      "Produtos ilimitados",
-                      "IA Gemini avançada",
-                      "Dashboard completo com analytics",
-                      "Parcelamento inteligente",
-                      "Histórico de preços",
-                      "Notificações personalizadas",
-                      "Múltiplos usuários (até 5)",
-                      "Suporte prioritário"
+                      "Até 100 produtos",
+                      "IA Gemini para extração",
+                      "Dashboard financeiro básico",
+                      "Controle de parcelamentos",
+                      "1 usuário",
+                      "Suporte por email"
                     ].map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-center text-sm">
                         <Check className="w-4 h-4 text-emerald-400 mr-3 flex-shrink-0" />
@@ -339,13 +298,56 @@ export default function LandingPage() {
                   </ul>
 
                   <Button className="w-full rounded-xl py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-lg transition-all duration-300 font-semibold">
-                    Começar Teste Grátis
+                    Começar Gratuitamente
                   </Button>
-                  <p className="text-xs text-gray-400 text-center mt-2">
-                    14 dias grátis, cancele quando quiser
-                  </p>
                 </div>
               </AnimatedBorder>
+            </TiltedCard>
+
+            {/* Plano Pro */}
+            <TiltedCard className="h-full group">
+              <div className="bg-gradient-to-br from-slate-800/90 to-gray-900/90 backdrop-blur-sm p-8 h-full rounded-2xl border border-gray-700/50 shadow-2xl group-hover:border-emerald-400/30 transition-all duration-300">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mb-4">
+                    <TrendingUp className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
+                  <div className="mb-4">
+                    <span className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
+                      R$ 19,90
+                    </span>
+                    <span className="text-gray-400 text-lg">/mês</span>
+                  </div>
+                  <p className="text-gray-300 text-sm">
+                    Para usuários que querem aproveitar todo o potencial da plataforma
+                  </p>
+                </div>
+
+                <ul className="space-y-3 mb-8">
+                  {[
+                    "Produtos ilimitados",
+                    "IA Gemini avançada",
+                    "Dashboard completo com analytics",
+                    "Parcelamento inteligente",
+                    "Histórico de preços",
+                    "Notificações personalizadas",
+                    "Múltiplos usuários (até 5)",
+                    "Suporte prioritário"
+                  ].map((feature, featureIndex) => (
+                    <li key={featureIndex} className="flex items-center text-sm">
+                      <Check className="w-4 h-4 text-emerald-400 mr-3 flex-shrink-0" />
+                      <span className="text-gray-300">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button className="w-full rounded-xl py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-lg transition-all duration-300 font-semibold">
+                  Começar Teste Grátis
+                </Button>
+                <p className="text-xs text-gray-400 text-center mt-2">
+                  14 dias grátis, cancele quando quiser
+                </p>
+              </div>
             </TiltedCard>
 
             {/* Plano Enterprise */}
@@ -438,9 +440,11 @@ export default function LandingPage() {
       <footer className="relative z-10 py-12 px-4 bg-slate-900/50 backdrop-blur-sm border-t border-gray-700/50">
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex items-center justify-center mb-6">
-            <h3 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent opacity-80">
-              orgaN
-            </h3>
+            <img 
+              src="/assets/organ png2.png" 
+              alt="orgaN" 
+              className="h-12 w-auto opacity-80"
+            />
           </div>
           <p className="text-gray-400 mb-4">
             A lista de compras mais inteligente e organizada do Brasil
