@@ -32,7 +32,7 @@ function normalizePrice(price: any): number | null {
 
   // Remove símbolos de moeda e espaços extras
   let priceStr = price.replace(/[R$€£¥\s]/g, '').trim();
-  
+
   console.log(`[Price Normalize] Após limpar símbolos: "${priceStr}"`);
 
   // Para preços brasileiros (formato: 1.234,56 ou 1234,56)
@@ -58,15 +58,15 @@ function normalizePrice(price: any): number | null {
 
   const priceNum = parseFloat(priceStr);
   const finalPrice = isNaN(priceNum) ? null : priceNum;
-  
+
   console.log(`[Price Normalize] Resultado final: ${finalPrice}`);
-  
+
   // Validação de sanidade
   if (finalPrice && (finalPrice < 1 || finalPrice > 50000)) {
     console.warn(`[Price Normalize] Preço suspeito: ${finalPrice}, retornando null`);
     return null;
   }
-  
+
   return finalPrice;
 }
 
@@ -270,47 +270,79 @@ Retorne JSON válido:
 - IGNORE: preços com texto "a partir de", "até", "frete"`;
     }
 
-    if (domain.includes('amazon.com')) {
-      return `- PRIORIDADE 1: span.a-price-whole + span.a-price-fraction dentro de .a-price[data-a-color="price"]
-- PRIORIDADE 2: .a-price-current .a-offscreen (texto oculto com preço completo "R$ X.XXX,XX")
-- PRIORIDADE 3: #corePrice_feature_div .a-price .a-offscreen
-- PRIORIDADE 4: #price_inside_buybox .a-price-current .a-offscreen
-- PRIORIDADE 5: JSON-LD com @type="Product" → "offers" → "price"
-- PRIORIDADE 6: meta[property="product:price:amount"]
-- FORMATO CRÍTICO: "R$ 3.899,99" → 3899.99 (pontos são milhares, vírgula é decimal)
-- VALIDAÇÃO: preço deve estar entre R$ 50,00 e R$ 20.000,00
-- IGNORE TOTALMENTE: preços Prime, frete, parcelamento, cashback, economia, "a partir de"
-- FOQUE: no preço principal em destaque do produto individual`;
-    }
+    if (domain.includes('amazon.com') || domain.includes('amazon.com.br')) {
+    return `⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL - PREÇO:
 
-    return `- Procure pelo preço PRINCIPAL do produto individual
-- Ignore preços de combo, frete ou parcelamento
-- Priorize: preços em destaque, classes "price", "valor", "preco-principal"
-- Para sites brasileiros: formato R$ 1.299,99 → 1299.99
-- Para sites internacionais: converta para BRL se necessário
-- Formato final: números com ponto decimal (ex: 1299.99)`;
+ESTRATÉGIA DE BUSCA POR PREÇO (ORDEM DE PRIORIDADE):
+1. **PRIORIDADE MÁXIMA**: Procure por R$ seguido de números com vírgula decimal
+   - Padrão: "R$4.859,10" ou "R$ 4.859,10" 
+   - Localização: próximo ao título do produto, área principal de preço
+   - Classes possíveis: .a-price-current, .a-price-whole + .a-price-fraction
+
+2. **PRIORIDADE 2**: span.a-price-whole seguido de span.a-price-fraction 
+   - Combine: "4.859" + ",10" = 4859.10
+   - Dentro de: .a-price[data-a-color="price"] ou .a-price-current
+
+3. **PRIORIDADE 3**: .a-offscreen dentro de .a-price-current
+   - Texto oculto completo: "R$ 4.859,10"
+
+4. **PRIORIDADE 4**: JSON-LD estruturado @type="Product" → "offers" → "price"
+
+5. **PRIORIDADE 5**: Meta tags de preço
+
+FORMATO BRASILEIRO CRÍTICO:
+- "R$ 4.859,10" → 4859.10 (PONTO como separador de milhares, VÍRGULA como decimal)
+- "R$4859,10" → 4859.10 
+- Remova símbolos: R$, espaços
+- Converta pontos de milhares para nada: "4.859" → "4859"
+- Mantenha vírgula decimal: ",10" → ".10"
+
+VALIDAÇÃO OBRIGATÓRIA:
+- Deve estar entre R$ 1.000,00 e R$ 15.000,00 para iPhones
+- IGNORE completamente: preços de frete, Prime, parcelamento, "a partir de"
+- IGNORE: valores muito baixos (< R$ 500) ou textos promocionais
+
+EXEMPLO ESPERADO:
+Se encontrar "R$ 4.859,10", retorne: 4859.10`;
   }
 
   function getSpecificImageRules(domain: string): string {
   if (domain.includes('amazon.com')) {
-    return `- PRIORIDADE 1: meta[property="og:image"] - URL EXATA como botão direito > copiar link
-- PRIORIDADE 2: img[data-a-dynamic-image] - primeira URL da lista (maior resolução)
-- PRIORIDADE 3: img[src*="images-amazon.com"] ou img[src*="m.media-amazon.com"] - URL direta
-- PRIORIDADE 4: JSON-LD "image" dentro de @type="Product" - URL sem modificações
+    return `⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL - IMAGEM:
 
-REGRAS CRÍTICAS (simula copiar link da imagem):
-- MANTENHA a URL exatamente como encontrada no HTML
-- NÃO modifique códigos como "_AC_SX679_", "_AC_SL1500_" 
-- PREFIRA URLs com "_AC_SX679_" ou maiores (boa resolução)
-- EVITE URLs com "_AC_SX200_" ou menores (muito pequenas)
-- MANTENHA parâmetros originais se presentes
-- URL deve carregar diretamente no navegador
+ESTRATÉGIA DE BUSCA POR IMAGEM (ORDEM DE PRIORIDADE):
+1. **PRIORIDADE MÁXIMA**: Imagem principal do produto na galeria
+   - Procure por: img com src contendo "m.media-amazon.com/images/I/"
+   - Padrão esperado: "https://m.media-amazon.com/images/I/31fMLLW7VNL._AC_SX679_.jpg"
+   - Localização: galeria principal de imagens do produto
 
-EXEMPLOS IDEAIS:
-- https://m.media-amazon.com/images/I/71k-y-f-XEL._AC_SX679_.jpg
-- https://images-amazon.com/images/I/81abc123def._AC_SL1500_.jpg
+2. **PRIORIDADE 2**: meta[property="og:image"] 
+   - URL exata como "copiar link da imagem"
+   - Deve conter "media-amazon.com"
 
-VALIDAÇÃO: URL deve funcionar como link direto da imagem`;
+3. **PRIORIDADE 3**: img[data-a-dynamic-image] 
+   - Primeira URL da lista JSON
+   - Extraia a URL de maior resolução
+
+4. **PRIORIDADE 4**: #landingImage[src] ou .a-dynamic-image[src]
+   - Imagem principal da landing page
+
+5. **PRIORIDADE 5**: JSON-LD "image" - URL original
+
+VALIDAÇÃO DE URL:
+- DEVE conter: "media-amazon.com" ou "images-amazon.com"
+- DEVE terminar com: .jpg, .png, .webp
+- DEVE começar com: https://
+- MANTENHA parâmetros originais: _AC_SX679_, _AC_SL1500_, etc.
+- NÃO modifique a URL encontrada
+
+FORMATO ESPERADO:
+"https://m.media-amazon.com/images/I/[ID]._AC_SX679_.jpg"
+
+FILOSOFIA: Simula exatamente "botão direito > copiar link da imagem"
+- MANTENHA URL original sem alterações
+- PREFIRA imagens de alta resolução (_AC_SX679_ é boa resolução)
+- URL deve carregar diretamente no navegador`;
   }
   if (domain.includes('mercadolivre.com')) {
     return `- PRIORIDADE 1: meta[property="og:image"] - URL EXATA como aparece (simula 'copiar link da imagem')

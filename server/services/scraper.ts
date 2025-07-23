@@ -20,23 +20,42 @@ function normalizePrice(price: any): number | null {
   if (typeof price === 'number') return price;
   if (typeof price !== 'string') return null;
 
-  // Remove símbolos de moeda e espaços
-  let priceStr = price.replace(/[R$€£¥\s]/g, '');
+  console.log(`[Price Normalize] Input: "${price}"`);
 
-  // Para preços brasileiros (R$ 1.234,56), converte para formato americano
+  // Remove símbolos de moeda e espaços
+  let priceStr = price.replace(/[R$€£¥\s]/g, '').trim();
+  console.log(`[Price Normalize] After symbol removal: "${priceStr}"`);
+
+  // Para preços brasileiros (4.859,10), converte para formato americano
   if (priceStr.includes(',')) {
     // Se tem vírgula, assume formato brasileiro
     const parts = priceStr.split(',');
     if (parts.length === 2) {
-      // Remove pontos como separadores de milhares
+      // Remove pontos como separadores de milhares apenas da parte inteira
       const integerPart = parts[0].replace(/\./g, '');
       const decimalPart = parts[1];
       priceStr = `${integerPart}.${decimalPart}`;
+      console.log(`[Price Normalize] Brazilian format converted: "${integerPart}" + "." + "${decimalPart}" = "${priceStr}"`);
+    }
+  } else if (priceStr.includes('.')) {
+    // Se tem apenas ponto, verifica se é decimal ou separador de milhares
+    const parts = priceStr.split('.');
+    if (parts.length === 2 && parts[1].length <= 2) {
+      // Provável decimal (ex: 4859.10)
+      console.log(`[Price Normalize] Decimal format detected: "${priceStr}"`);
+    } else if (parts.length > 2 || (parts.length === 2 && parts[1].length > 2)) {
+      // Provável separador de milhares (ex: 4.859.10 ou 4.85900)
+      priceStr = priceStr.replace(/\./g, '');
+      console.log(`[Price Normalize] Thousands separator removed: "${priceStr}"`);
     }
   }
 
   const priceNum = parseFloat(priceStr);
-  return isNaN(priceNum) ? null : priceNum;
+  const isValid = !isNaN(priceNum) && priceNum > 0;
+  
+  console.log(`[Price Normalize] Final result: ${isValid ? priceNum : 'null'}`);
+  
+  return isValid ? priceNum : null;
 }
 
 // Lista de User-Agents rotativos para evitar detecção
