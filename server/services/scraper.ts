@@ -1,3 +1,4 @@
+
 import { chromium, Browser, Page } from 'playwright';
 import * as cheerio from 'cheerio';
 import { extractProductInfo } from './gemini.js';
@@ -17,59 +18,80 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
   let browser: Browser | null = null;
 
   try {
-    console.log(`[Scraper] Iniciando scraping para: ${url}`);
+    console.log(`[Scraper] 🚀 Iniciando scraping para: ${url}`);
 
-    // Inicializa o navegador Chromium
+    // Inicializa o navegador Chromium com configurações otimizadas
     browser = await chromium.launch({ 
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox', 
+        '--disable-dev-shm-usage',
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor'
+      ]
     });
 
-    // Cria contexto com User-Agent real
+    // Cria contexto com User-Agent real e configurações de navegador
     const context = await browser.newContext({
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       viewport: { width: 1366, height: 768 },
-      locale: 'pt-BR'
+      locale: 'pt-BR',
+      ignoreHTTPSErrors: true
     });
 
     const page = await context.newPage();
 
-    // Bloqueia recursos desnecessários para acelerar
+    // Bloqueia recursos desnecessários para acelerar carregamento
     await page.route('**/*', (route) => {
       const resourceType = route.request().resourceType();
-      if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+      if (['image', 'stylesheet', 'font', 'media', 'websocket'].includes(resourceType)) {
         route.abort();
       } else {
         route.continue();
       }
     });
 
-    // Navega até a página
-    console.log(`[Scraper] Navegando para: ${url}`);
+    // Navega até a página com timeouts otimizados
+    console.log(`[Scraper] 🌐 Navegando para: ${url}`);
     await page.goto(url, { 
       waitUntil: 'domcontentloaded',
-      timeout: 30000 
+      timeout: 45000 
     });
 
-    // Aguarda um pouco para JavaScript carregar conteúdo dinâmico
-    await page.waitForTimeout(3000);
+    // Aguarda conteúdo dinâmico carregar
+    console.log(`[Scraper] ⏳ Aguardando carregamento do conteúdo dinâmico...`);
+    await page.waitForTimeout(4000);
+
+    // Tenta aguardar elementos específicos aparecerem
+    try {
+      await page.waitForSelector('h1, [class*="title"], [class*="name"]', { timeout: 5000 });
+    } catch (e) {
+      console.log(`[Scraper] ⚠️ Headers não encontrados, continuando...`);
+    }
 
     // Extrai o HTML completo
     const html = await page.content();
-    console.log(`[Scraper] HTML extraído com sucesso (${html.length} caracteres)`);
+    console.log(`[Scraper] ✅ HTML extraído com sucesso (${Math.round(html.length / 1000)}KB)`);
 
-    // Processa o HTML para extrair informações do produto
+    // Processa o HTML usando a estratégia hierárquica em gemini.ts
     const productInfo = await extractProductInfo(url, html);
 
-    console.log(`[Scraper] Produto extraído:`, productInfo);
+    console.log(`[Scraper] 🎯 Produto extraído:`, {
+      name: productInfo.name,
+      price: productInfo.price,
+      store: productInfo.store,
+      hasImage: !!productInfo.imageUrl
+    });
+
     return productInfo;
 
   } catch (error) {
-    console.error(`[Scraper] Erro ao fazer scraping:`, error);
+    console.error(`[Scraper] ❌ Erro durante scraping:`, error.message);
 
     // Fallback: tenta criar produto básico a partir da URL
     const fallbackProduct = createFallbackProduct(url);
-    console.log(`[Scraper] Usando produto fallback:`, fallbackProduct);
+    console.log(`[Scraper] 🔄 Usando produto fallback:`, fallbackProduct);
     return fallbackProduct;
 
   } finally {
@@ -77,9 +99,9 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
     if (browser) {
       try {
         await browser.close();
-        console.log(`[Scraper] Navegador fechado com sucesso`);
+        console.log(`[Scraper] 🔒 Navegador fechado com sucesso`);
       } catch (error) {
-        console.error(`[Scraper] Erro ao fechar navegador:`, error);
+        console.error(`[Scraper] ⚠️ Erro ao fechar navegador:`, error.message);
       }
     }
   }
@@ -101,7 +123,9 @@ function createFallbackProduct(url: string): ScrapedProduct {
       'shopee.com.br': 'Shopee',
       'zara.com': 'Zara',
       'nike.com.br': 'Nike Brasil',
-      'netshoes.com.br': 'Netshoes'
+      'netshoes.com.br': 'Netshoes',
+      'kabum.com.br': 'KaBuM',
+      'pichau.com.br': 'Pichau'
     };
 
     for (const [domain, name] of Object.entries(storeMap)) {
@@ -122,9 +146,9 @@ function createFallbackProduct(url: string): ScrapedProduct {
     name: `Produto de ${store}`,
     price: null,
     originalPrice: null,
-    imageUrl: 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto',
+    imageUrl: 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto+Não+Encontrado',
     store: store,
-    description: 'Produto adicionado manualmente - informações não extraídas automaticamente',
+    description: 'Produto adicionado via fallback - informações não puderam ser extraídas automaticamente',
     category: 'Outros',
     brand: null
   };
@@ -133,11 +157,12 @@ function createFallbackProduct(url: string): ScrapedProduct {
 // Função auxiliar para extrair dados JSON-LD
 export function extractJSONLD(html: string): Partial<ScrapedProduct> | null {
   try {
-    console.log(`[JSON-LD] Tentando extrair dados estruturados...`);
+    console.log(`[JSON-LD] 🔍 Procurando dados estruturados...`);
     const $ = cheerio.load(html);
 
     // Procura por scripts JSON-LD
     const jsonLdScripts = $('script[type="application/ld+json"]');
+    console.log(`[JSON-LD] 📄 Encontrados ${jsonLdScripts.length} scripts JSON-LD`);
 
     for (let i = 0; i < jsonLdScripts.length; i++) {
       const scriptContent = $(jsonLdScripts[i]).html();
@@ -147,20 +172,23 @@ export function extractJSONLD(html: string): Partial<ScrapedProduct> | null {
         const jsonData = JSON.parse(scriptContent);
         const product = findProductInJsonLd(jsonData);
 
-        if (product) {
-          console.log(`[JSON-LD] Produto encontrado:`, product);
+        if (product?.name && product?.price) {
+          console.log(`[JSON-LD] ✅ Produto encontrado no script ${i}:`, {
+            name: product.name,
+            price: product.price
+          });
           return product;
         }
       } catch (parseError) {
-        console.warn(`[JSON-LD] Erro ao parsear script ${i}:`, parseError);
+        console.warn(`[JSON-LD] ⚠️ Erro ao parsear script ${i}:`, parseError.message);
         continue;
       }
     }
 
-    console.log(`[JSON-LD] Nenhum produto encontrado em ${jsonLdScripts.length} scripts`);
+    console.log(`[JSON-LD] ❌ Nenhum produto válido encontrado nos ${jsonLdScripts.length} scripts`);
     return null;
   } catch (error) {
-    console.error(`[JSON-LD] Erro geral:`, error);
+    console.error(`[JSON-LD] ❌ Erro geral:`, error.message);
     return null;
   }
 }
@@ -183,7 +211,8 @@ function findProductInJsonLd(data: any): Partial<ScrapedProduct> | null {
     }
 
     // Procura em propriedades aninhadas
-    for (const key in data) {
+    const relevantKeys = ['product', 'mainEntity', '@graph', 'offers', 'itemListElement'];
+    for (const key of relevantKeys) {
       if (data[key] && typeof data[key] === 'object') {
         const product = findProductInJsonLd(data[key]);
         if (product) return product;
@@ -199,34 +228,39 @@ function extractProductFromJsonLd(productData: any): Partial<ScrapedProduct> | n
     const name = productData.name || productData.title;
     if (!name) return null;
 
-    // Extrai preço
+    // Extrai preço com lógica robusta
     let price: number | null = null;
     let originalPrice: number | null = null;
 
     // Verifica várias estruturas de preço
     if (productData.offers) {
       const offer = Array.isArray(productData.offers) ? productData.offers[0] : productData.offers;
+      
+      // Preço atual
       if (offer.price) {
-        price = parseFloat(offer.price);
+        price = parseFloat(String(offer.price).replace(',', '.'));
       } else if (offer.priceSpecification?.price) {
-        price = parseFloat(offer.priceSpecification.price);
+        price = parseFloat(String(offer.priceSpecification.price).replace(',', '.'));
+      } else if (offer.lowPrice) {
+        price = parseFloat(String(offer.lowPrice).replace(',', '.'));
       }
 
       // Preço original (se em promoção)
-      if (offer.priceValidUntil && offer.originalPrice) {
-        originalPrice = parseFloat(offer.originalPrice);
+      if (offer.highPrice && offer.highPrice !== price) {
+        originalPrice = parseFloat(String(offer.highPrice).replace(',', '.'));
       }
     } else if (productData.price) {
-      price = parseFloat(productData.price);
+      price = parseFloat(String(productData.price).replace(',', '.'));
     }
 
-    // Extrai imagem
+    // Extrai imagem com prioridade
     let imageUrl: string | null = null;
     if (productData.image) {
       if (typeof productData.image === 'string') {
         imageUrl = productData.image;
       } else if (Array.isArray(productData.image) && productData.image.length > 0) {
-        imageUrl = typeof productData.image[0] === 'string' ? productData.image[0] : productData.image[0].url;
+        const img = productData.image[0];
+        imageUrl = typeof img === 'string' ? img : img.url;
       } else if (productData.image.url) {
         imageUrl = productData.image.url;
       }
@@ -235,21 +269,21 @@ function extractProductFromJsonLd(productData: any): Partial<ScrapedProduct> | n
     // Extrai outras informações
     const description = productData.description || null;
     const brand = productData.brand?.name || productData.brand || null;
-    const category = productData.category || null;
+    const category = productData.category || productData.productCategory || null;
 
-    console.log(`[JSON-LD] Dados extraídos: ${name}, R$ ${price}`);
+    console.log(`[JSON-LD] 📊 Dados extraídos: "${name}", R$ ${price}`);
 
     return {
-      name,
-      price,
-      originalPrice,
-      imageUrl,
-      description,
-      brand,
-      category
+      name: String(name).trim(),
+      price: price && !isNaN(price) ? price : null,
+      originalPrice: originalPrice && !isNaN(originalPrice) ? originalPrice : null,
+      imageUrl: imageUrl && imageUrl.startsWith('http') ? imageUrl : null,
+      description: description ? String(description).trim() : null,
+      brand: brand ? String(brand).trim() : null,
+      category: category ? String(category).trim() : null
     };
   } catch (error) {
-    console.error(`[JSON-LD] Erro ao extrair produto:`, error);
+    console.error(`[JSON-LD] ❌ Erro ao extrair produto:`, error.message);
     return null;
   }
 }

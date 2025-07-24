@@ -1,3 +1,4 @@
+
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as cheerio from 'cheerio';
 import { extractJSONLD } from './scraper.js';
@@ -15,16 +16,22 @@ interface ProductInfo {
   brand?: string | null;
 }
 
+/**
+ * ESTRATÉGIA HIERÁRQUICA DE EXTRAÇÃO:
+ * 1. Tentativa JSON-LD (mais confiável)
+ * 2. Tentativa Gemini AI (plano B inteligente)
+ * 3. Fallback com seletores CSS (último recurso)
+ */
 export async function extractProductInfo(url: string, html: string): Promise<ProductInfo> {
-  console.log(`[ExtractInfo] Iniciando extração para: ${url}`);
+  console.log(`[ExtractInfo] 🎯 Iniciando extração hierárquica para: ${url}`);
 
-  // PRIMEIRA TENTATIVA: Extrair dados JSON-LD estruturados
+  // ========== TENTATIVA #1: EXTRAÇÃO JSON-LD (MAIS CONFIÁVEL) ==========
   try {
-    console.log(`[ExtractInfo] Tentativa 1: Extração via JSON-LD`);
+    console.log(`[ExtractInfo] 🥇 TENTATIVA 1: Extração via JSON-LD`);
     const jsonLdData = extractJSONLD(html);
 
-    if (jsonLdData?.name && jsonLdData?.price) {
-      console.log(`[ExtractInfo] ✅ JSON-LD bem-sucedido: ${jsonLdData.name}`);
+    if (jsonLdData?.name && jsonLdData?.price && jsonLdData.price > 0) {
+      console.log(`[ExtractInfo] ✅ JSON-LD SUCESSO: "${jsonLdData.name}" - R$ ${jsonLdData.price}`);
 
       return {
         name: jsonLdData.name,
@@ -37,94 +44,116 @@ export async function extractProductInfo(url: string, html: string): Promise<Pro
         brand: jsonLdData.brand || null
       };
     } else {
-      console.log(`[ExtractInfo] JSON-LD incompleto ou não encontrado`);
+      console.log(`[ExtractInfo] ⚠️ JSON-LD incompleto:`, {
+        hasName: !!jsonLdData?.name,
+        hasPrice: !!jsonLdData?.price,
+        priceValue: jsonLdData?.price
+      });
     }
   } catch (error) {
-    console.warn(`[ExtractInfo] Erro no JSON-LD:`, error);
+    console.warn(`[ExtractInfo] ❌ Erro no JSON-LD:`, error.message);
   }
 
-  // SEGUNDA TENTATIVA: Usar API Gemini
+  // ========== TENTATIVA #2: GEMINI AI (PLANO B INTELIGENTE) ==========
   if (GEMINI_API_KEY) {
     try {
-      console.log(`[ExtractInfo] Tentativa 2: Extração via Gemini AI`);
-      const geminiData = await scrapeByAnalyzingHtml(html, url);
+      console.log(`[ExtractInfo] 🥈 TENTATIVA 2: Extração via Gemini AI`);
+      const geminiData = await extractViaGeminiAI(html, url);
 
-      if (geminiData?.name && geminiData?.price) {
-        console.log(`[ExtractInfo] ✅ Gemini bem-sucedido: ${geminiData.name}`);
+      if (geminiData?.name && geminiData?.price && geminiData.price > 0) {
+        console.log(`[ExtractInfo] ✅ GEMINI SUCESSO: "${geminiData.name}" - R$ ${geminiData.price}`);
         return geminiData;
       } else {
-        console.log(`[ExtractInfo] Gemini retornou dados incompletos`);
+        console.log(`[ExtractInfo] ⚠️ Gemini retornou dados incompletos:`, {
+          hasName: !!geminiData?.name,
+          hasPrice: !!geminiData?.price,
+          priceValue: geminiData?.price
+        });
       }
     } catch (error) {
-      console.warn(`[ExtractInfo] Erro na API Gemini:`, error);
+      console.warn(`[ExtractInfo] ❌ Erro na Gemini AI:`, error.message);
     }
   } else {
-    console.log(`[ExtractInfo] API Gemini não configurada`);
+    console.log(`[ExtractInfo] ⚠️ GEMINI_API_KEY não configurada, pulando tentativa 2`);
   }
 
-  // TERCEIRA TENTATIVA: Fallback com extração básica
-  console.log(`[ExtractInfo] Tentativa 3: Fallback com extração básica`);
-  return createFallbackProductFromHtml(url, html);
+  // ========== TENTATIVA #3: FALLBACK COM SELETORES CSS (ÚLTIMO RECURSO) ==========
+  console.log(`[ExtractInfo] 🥉 TENTATIVA 3: Fallback com seletores CSS`);
+  return extractViaCSSelectors(url, html);
 }
 
-async function scrapeByAnalyzingHtml(html: string, url: string): Promise<ProductInfo | null> {
+/**
+ * TENTATIVA #2: Extração via Gemini AI com prompt otimizado
+ */
+async function extractViaGeminiAI(html: string, url: string): Promise<ProductInfo | null> {
   if (!GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY não configurada");
   }
 
   try {
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json"
+      }
+    });
 
-    // Limpa o HTML mantendo apenas o essencial
-    const cleanHtml = cleanHtmlForAnalysis(html);
+    // Limpa o HTML para análise mais eficiente
+    const cleanHtml = cleanHtmlForGeminiAnalysis(html);
 
-    const prompt = `
-INSTRUÇÃO: Analise este HTML de uma página de produto e extraia as informações principais.
+    const optimizedPrompt = `
+TAREFA: Extrair informações de produto de uma página web.
 URL: ${url}
 
-REGRAS IMPORTANTES:
-1. PREÇO: Extraia apenas o preço principal do produto, ignore valores de frete, parcelamento ou taxas
-2. IMAGEM: Prefira URLs de imagem em alta resolução, evite miniaturas
-3. NOME: Use o título principal do produto, sem informações de entrega ou promoção
-4. RETORNO: Responda APENAS com um objeto JSON válido, sem texto adicional
+INSTRUÇÕES CRÍTICAS:
+1. FOQUE NO PREÇO PRINCIPAL - ignore frete, parcelamento, taxas adicionais
+2. NOME DO PRODUTO - título principal, sem informações de entrega/promoção  
+3. IMAGEM - URL da melhor qualidade disponível
+4. RESPONDA APENAS COM JSON VÁLIDO - sem markdown, sem texto adicional
 
-FORMATO DE RESPOSTA (JSON):
+FORMATO DE RESPOSTA OBRIGATÓRIO:
 {
   "name": "Nome exato do produto",
   "price": 99.99,
   "originalPrice": 129.99,
-  "imageUrl": "URL da melhor imagem disponível",
-  "description": "Descrição concisa do produto",
+  "imageUrl": "URL completa da imagem",
+  "description": "Descrição concisa",
   "brand": "Marca do produto",
-  "category": "Categoria do produto"
+  "category": "Categoria"
 }
 
-HTML para análise:
+HTML PARA ANÁLISE:
 ${cleanHtml}
 `;
 
-    console.log(`[Gemini] Enviando requisição para análise...`);
-    const result = await model.generateContent(prompt);
+    console.log(`[Gemini] 🤖 Enviando prompt otimizado...`);
+    const result = await model.generateContent(optimizedPrompt);
     const response = result.response;
     const text = response.text();
 
-    console.log(`[Gemini] Resposta recebida: ${text.substring(0, 200)}...`);
+    console.log(`[Gemini] 📥 Resposta recebida (${text.length} chars)`);
 
-    // Tenta extrair JSON da resposta
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("Resposta não contém JSON válido");
+    // Parse da resposta JSON
+    let productData;
+    try {
+      productData = JSON.parse(text);
+    } catch (jsonError) {
+      // Tenta extrair JSON se vier com markdown
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("Resposta não contém JSON válido");
+      }
+      productData = JSON.parse(jsonMatch[0]);
     }
 
-    const productData = JSON.parse(jsonMatch[0]);
-
-    // Valida se tem dados essenciais
-    if (!productData.name) {
+    // Valida e normaliza os dados
+    if (!productData.name || typeof productData.name !== 'string') {
       throw new Error("Nome do produto não encontrado na resposta");
     }
 
-    // Normaliza o preço
+    // Normaliza preços
     let price: number | null = null;
     if (productData.price && !isNaN(parseFloat(productData.price))) {
       price = parseFloat(productData.price);
@@ -139,7 +168,9 @@ ${cleanHtml}
       name: productData.name.trim(),
       price: price,
       originalPrice: originalPrice,
-      imageUrl: productData.imageUrl || extractFallbackImage(html),
+      imageUrl: productData.imageUrl && productData.imageUrl.startsWith('http') 
+        ? productData.imageUrl 
+        : extractFallbackImage(html),
       store: extractStoreFromUrl(url),
       description: productData.description?.trim() || null,
       category: productData.category || extractCategoryFromUrl(url),
@@ -147,107 +178,116 @@ ${cleanHtml}
     };
 
   } catch (error) {
-    console.error(`[Gemini] Erro na análise:`, error);
+    console.error(`[Gemini] ❌ Erro na análise:`, error.message);
     throw error;
   }
 }
 
-function cleanHtmlForAnalysis(html: string): string {
-  try {
-    const $ = cheerio.load(html);
-
-    // Remove scripts, styles e outros elementos desnecessários
-    $('script, style, noscript, iframe, svg').remove();
-
-    // Foca em elementos relevantes para produtos
-    const relevantSelectors = [
-      'h1, h2, h3',
-      '[class*="price"], [class*="valor"], [class*="cost"]',
-      '[class*="product"], [class*="item"]',
-      '[class*="title"], [class*="name"], [class*="titulo"]',
-      '[class*="description"], [class*="desc"]',
-      '[class*="brand"], [class*="marca"]',
-      'img[src*="product"], img[alt*="product"]'
-    ].join(', ');
-
-    let relevantContent = '';
-    $(relevantSelectors).each((_, element) => {
-      const $el = $(element);
-      const text = $el.text().trim();
-      const src = $el.attr('src');
-      const alt = $el.attr('alt');
-
-      if (text && text.length > 2) {
-        relevantContent += `${text}\n`;
-      }
-      if (src) {
-        relevantContent += `IMG: ${src}\n`;
-      }
-      if (alt && alt.length > 2) {
-        relevantContent += `ALT: ${alt}\n`;
-      }
-    });
-
-    // Limita o tamanho para não exceder limites da API
-    const maxLength = 8000;
-    if (relevantContent.length > maxLength) {
-      relevantContent = relevantContent.substring(0, maxLength) + '...';
-    }
-
-    return relevantContent || html.substring(0, maxLength);
-  } catch (error) {
-    console.warn(`[Gemini] Erro ao limpar HTML:`, error);
-    return html.substring(0, 8000);
-  }
-}
-
-function createFallbackProductFromHtml(url: string, html: string): ProductInfo {
-  console.log(`[Fallback] Criando produto fallback...`);
+/**
+ * TENTATIVA #3: Fallback com seletores CSS
+ */
+function extractViaCSSelectors(url: string, html: string): ProductInfo {
+  console.log(`[CSS-Fallback] 🔧 Iniciando extração com seletores CSS...`);
 
   const $ = cheerio.load(html);
   let name = 'Produto encontrado';
   let price: number | null = null;
   let imageUrl: string | null = null;
   let description: string | null = null;
+  let brand: string | null = null;
 
-  // Tenta extrair nome do title ou h1
-  const title = $('title').text().trim() || $('h1').first().text().trim();
-  if (title && title.length > 3) {
-    name = title.substring(0, 100);
-  }
-
-  // Tenta extrair preço com seletores comuns
-  const priceSelectors = [
-    '[class*="price"]',
-    '[class*="valor"]',
-    '[class*="cost"]',
-    '[data-price]'
+  // Extrai nome com seletores hierárquicos
+  const nameSelectors = [
+    'h1[class*="title"], h1[class*="name"], h1[class*="product"]',
+    'h1',
+    '[class*="product-title"], [class*="product-name"]',
+    '[data-testid*="title"], [data-testid*="name"]',
+    'title'
   ];
 
-  for (const selector of priceSelectors) {
-    const priceText = $(selector).first().text();
-    const priceMatch = priceText.match(/[\d,]+\.?\d*/);
-    if (priceMatch) {
-      const priceValue = parseFloat(priceMatch[0].replace(',', '.'));
-      if (!isNaN(priceValue) && priceValue > 0) {
-        price = priceValue;
-        break;
-      }
-    }
-  }
-
-  // Tenta extrair imagem
-  imageUrl = extractFallbackImage(html);
-
-  // Tenta extrair descrição
-  const descSelectors = ['[class*="description"]', '[class*="desc"]', 'meta[name="description"]'];
-  for (const selector of descSelectors) {
-    const desc = $(selector).first().text().trim() || $(selector).attr('content');
-    if (desc && desc.length > 10) {
-      description = desc.substring(0, 200);
+  for (const selector of nameSelectors) {
+    const nameText = $(selector).first().text().trim();
+    if (nameText && nameText.length > 3 && nameText.length < 200) {
+      name = nameText;
+      console.log(`[CSS-Fallback] 📛 Nome encontrado via ${selector}: ${name}`);
       break;
     }
   }
+
+  // Extrai preço com seletores hierárquicos
+  const priceSelectors = [
+    '[class*="price"]:not([class*="original"]):not([class*="old"])',
+    '[data-testid*="price"]',
+    '[class*="valor"]',
+    '[class*="cost"]',
+    '[data-price]',
+    '.price, .valor, .preco'
+  ];
+
+  for (const selector of priceSelectors) {
+    const priceElements = $(selector);
+    for (let i = 0; i < priceElements.length; i++) {
+      const priceText = $(priceElements[i]).text();
+      const priceMatch = priceText.match(/[\d.,]+/);
+      if (priceMatch) {
+        // Normaliza formato brasileiro (1.234,56 -> 1234.56)
+        let priceStr = priceMatch[0];
+        if (priceStr.includes(',') && priceStr.includes('.')) {
+          priceStr = priceStr.replace(/\./g, '').replace(',', '.');
+        } else if (priceStr.includes(',') && !priceStr.includes('.')) {
+          priceStr = priceStr.replace(',', '.');
+        }
+        
+        const priceValue = parseFloat(priceStr);
+        if (!isNaN(priceValue) && priceValue > 0 && priceValue < 1000000) {
+          price = priceValue;
+          console.log(`[CSS-Fallback] 💰 Preço encontrado via ${selector}: R$ ${price}`);
+          break;
+        }
+      }
+    }
+    if (price) break;
+  }
+
+  // Extrai imagem
+  imageUrl = extractFallbackImage(html);
+
+  // Extrai descrição
+  const descSelectors = [
+    '[class*="description"], [class*="desc"]', 
+    'meta[name="description"]',
+    '[class*="detail"], [class*="info"]'
+  ];
+  
+  for (const selector of descSelectors) {
+    const descText = $(selector).first().text().trim() || $(selector).attr('content');
+    if (descText && descText.length > 10) {
+      description = descText.substring(0, 300);
+      break;
+    }
+  }
+
+  // Extrai marca
+  const brandSelectors = [
+    '[class*="brand"], [class*="marca"]',
+    'meta[property="product:brand"]'
+  ];
+  
+  for (const selector of brandSelectors) {
+    const brandText = $(selector).first().text().trim() || $(selector).attr('content');
+    if (brandText && brandText.length > 1 && brandText.length < 50) {
+      brand = brandText;
+      break;
+    }
+  }
+
+  console.log(`[CSS-Fallback] 📊 Extração concluída:`, {
+    name: name,
+    price: price,
+    hasImage: !!imageUrl,
+    hasDescription: !!description,
+    hasBrand: !!brand
+  });
 
   return {
     name: name,
@@ -257,10 +297,83 @@ function createFallbackProductFromHtml(url: string, html: string): ProductInfo {
     store: extractStoreFromUrl(url),
     description: description,
     category: extractCategoryFromUrl(url),
-    brand: null
+    brand: brand
   };
 }
 
+/**
+ * Limpa HTML para análise mais eficiente pela Gemini
+ */
+function cleanHtmlForGeminiAnalysis(html: string): string {
+  try {
+    const $ = cheerio.load(html);
+
+    // Remove elementos desnecessários
+    $('script, style, noscript, iframe, svg, nav, footer, header').remove();
+
+    // Foca em elementos relevantes para produtos
+    const relevantSelectors = [
+      // Títulos e nomes
+      'h1, h2, h3',
+      '[class*="title"], [class*="name"], [class*="titulo"]',
+      
+      // Preços
+      '[class*="price"], [class*="valor"], [class*="cost"], [class*="preco"]',
+      
+      // Produto geral
+      '[class*="product"], [class*="item"]',
+      
+      // Descrições
+      '[class*="description"], [class*="desc"], [class*="detail"]',
+      
+      // Marcas
+      '[class*="brand"], [class*="marca"]',
+      
+      // Imagens
+      'img[src*="product"], img[alt*="product"]',
+      
+      // Meta tags importantes
+      'meta[property*="og:"], meta[name="description"]'
+    ].join(', ');
+
+    let relevantContent = '';
+    $(relevantSelectors).each((_, element) => {
+      const $el = $(element);
+      const text = $el.text().trim();
+      const src = $el.attr('src');
+      const alt = $el.attr('alt');
+      const content = $el.attr('content');
+
+      if (text && text.length > 2 && text.length < 500) {
+        relevantContent += `${text}\n`;
+      }
+      if (src && src.startsWith('http')) {
+        relevantContent += `IMG: ${src}\n`;
+      }
+      if (alt && alt.length > 2) {
+        relevantContent += `ALT: ${alt}\n`;
+      }
+      if (content && content.length > 2) {
+        relevantContent += `META: ${content}\n`;
+      }
+    });
+
+    // Limita o tamanho para otimizar a API
+    const maxLength = 12000;
+    if (relevantContent.length > maxLength) {
+      relevantContent = relevantContent.substring(0, maxLength) + '\n[CONTEÚDO TRUNCADO...]';
+    }
+
+    return relevantContent || html.substring(0, maxLength);
+  } catch (error) {
+    console.warn(`[Gemini] ⚠️ Erro ao limpar HTML:`, error.message);
+    return html.substring(0, 12000);
+  }
+}
+
+/**
+ * Extrai imagem com múltiplas estratégias
+ */
 function extractFallbackImage(html: string): string | null {
   try {
     const $ = cheerio.load(html);
@@ -269,32 +382,36 @@ function extractFallbackImage(html: string): string | null {
     const imageSelectors = [
       'meta[property="og:image"]',
       'meta[name="twitter:image"]',
-      'img[class*="product"]',
-      'img[class*="main"]',
-      'img[alt*="product"]'
+      'img[class*="product"][class*="main"], img[class*="produto"][class*="principal"]',
+      'img[class*="product"]:not([class*="thumb"]):not([class*="mini"])',
+      'img[alt*="product"], img[alt*="produto"]',
+      'img[src*="product"], img[src*="produto"]'
     ];
 
     for (const selector of imageSelectors) {
       const imgSrc = $(selector).attr('content') || $(selector).attr('src');
-      if (imgSrc && imgSrc.startsWith('http')) {
-        console.log(`[Fallback] Imagem encontrada: ${imgSrc}`);
+      if (imgSrc && imgSrc.startsWith('http') && !imgSrc.includes('placeholder')) {
+        console.log(`[FallbackImage] 🖼️ Imagem encontrada via ${selector}: ${imgSrc}`);
         return imgSrc;
       }
     }
 
-    // Se não encontrar, usa primeira imagem válida
+    // Se não encontrar, usa primeira imagem http válida
     const firstImg = $('img[src^="http"]').first().attr('src');
-    if (firstImg) {
+    if (firstImg && !firstImg.includes('placeholder')) {
       return firstImg;
     }
 
-    return 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
+    return 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Sem+Imagem';
   } catch (error) {
-    console.warn(`[Fallback] Erro ao extrair imagem:`, error);
-    return 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
+    console.warn(`[FallbackImage] ⚠️ Erro ao extrair imagem:`, error.message);
+    return 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Erro+Imagem';
   }
 }
 
+/**
+ * Extrai nome da loja da URL
+ */
 function extractStoreFromUrl(url: string): string {
   try {
     const hostname = new URL(url).hostname.replace('www.', '');
@@ -309,7 +426,9 @@ function extractStoreFromUrl(url: string): string {
       'shopee.com.br': 'Shopee',
       'zara.com': 'Zara',
       'nike.com.br': 'Nike Brasil',
-      'netshoes.com.br': 'Netshoes'
+      'netshoes.com.br': 'Netshoes',
+      'kabum.com.br': 'KaBuM',
+      'pichau.com.br': 'Pichau'
     };
 
     for (const [domain, name] of Object.entries(storeMap)) {
@@ -322,18 +441,27 @@ function extractStoreFromUrl(url: string): string {
   }
 }
 
+/**
+ * Extrai categoria da URL
+ */
 function extractCategoryFromUrl(url: string): string {
   const categoryMap: Record<string, string> = {
     'celular': 'Eletrônicos',
     'smartphone': 'Eletrônicos',
+    'iphone': 'Eletrônicos',
     'notebook': 'Eletrônicos',
+    'computador': 'Eletrônicos',
     'tenis': 'Roupas e Acessórios',
     'roupa': 'Roupas e Acessórios',
+    'camisa': 'Roupas e Acessórios',
     'casa': 'Casa e Decoração',
     'decoracao': 'Casa e Decoração',
+    'movel': 'Casa e Decoração',
     'livro': 'Livros e Mídia',
     'jogo': 'Games',
-    'game': 'Games'
+    'game': 'Games',
+    'esporte': 'Esportes e Lazer',
+    'fitness': 'Esportes e Lazer'
   };
 
   const urlLower = url.toLowerCase();
