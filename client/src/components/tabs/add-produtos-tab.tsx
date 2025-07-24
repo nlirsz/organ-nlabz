@@ -114,16 +114,31 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
       onProductAdded();
-      toast({
-        title: "Sucesso",
-        description: `Produto "${productData.name}" adicionado à lista!`,
-      });
+
+      // Feedback baseado na qualidade do scraping
+      if (productData.scrapingSuccess) {
+        toast({
+          title: "Sucesso completo!",
+          description: `Produto "${productData.name}" adicionado com todas as informações extraídas automaticamente!`,
+        });
+      } else if (productData.needsManualInput) {
+        toast({
+          title: "Produto adicionado",
+          description: `"${productData.name}" foi adicionado, mas algumas informações podem precisar ser editadas manualmente.`,
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: `Produto "${productData.name}" adicionado à lista!`,
+        });
+      }
+      
       setUrl("");
     },
     onError: (error: Error) => {
       toast({
-        title: "Erro",
-        description: error.message || "Falha ao analisar produto",
+        title: "Erro no scraping",
+        description: error.message || "Falha ao analisar produto. Tente adicionar manualmente.",
         variant: "destructive",
       });
     },

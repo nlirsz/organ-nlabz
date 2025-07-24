@@ -208,6 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Valid URL is required" });
       }
 
+      console.log(`[API] Iniciando scraping para: ${url}`);
       const scrapedProduct = await scrapeProductFromUrl(url);
 
       const productData = {
@@ -219,24 +220,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imageUrl: scrapedProduct.imageUrl,
         store: scrapedProduct.store,
         description: scrapedProduct.description,
-        category: scrapedProduct.category || "Geral",
+        category: scrapedProduct.category || "Outros",
         brand: scrapedProduct.brand,
         isPurchased: false
       };
 
       const product = await storage.createProduct(productData);
+      console.log(`[API] Produto criado com sucesso: ${product.name}`);
 
-      // Retorna o produto com informação se foi scraping bem-sucedido
+      // Determina se o scraping foi bem-sucedido
+      const isGenericProduct = scrapedProduct.name === `Produto de ${scrapedProduct.store}` || 
+                              scrapedProduct.name === 'Produto encontrado';
+      const hasPrice = scrapedProduct.price && scrapedProduct.price > 0;
+      const hasValidImage = scrapedProduct.imageUrl && 
+                           !scrapedProduct.imageUrl.includes('placeholder');
+
+      const scrapingSuccess = !isGenericProduct && hasPrice && hasValidImage;
+      const needsManualInput = !hasPrice || isGenericProduct;
+
+      // Retorna o produto com informações de qualidade do scraping
       res.json({
         ...product,
-        scrapingSuccess: scrapedProduct.name !== `Produto de ${scrapedProduct.store}`,
-        needsManualInput: !scrapedProduct.price || scrapedProduct.name === `Produto de ${scrapedProduct.store}`
+        scrapingSuccess,
+        needsManualInput,
+        extractionMethod: isGenericProduct ? 'fallback' : 
+                         hasPrice ? 'structured' : 'partial',
+        quality: {
+          hasName: !isGenericProduct,
+          hasPrice: hasPrice,
+          hasImage: hasValidImage,
+          hasDescription: !!scrapedProduct.description,
+          hasBrand: !!scrapedProduct.brand
+        }
       });
     } catch (error) {
       console.error("Scraping error:", error);
       res.status(500).json({ 
         error: "Failed to scrape and add product",
-        canRetryWithManual: true 
+        details: error.message,
+        canRetryWithManual: true,
+        suggestion: "Tente adicionar o produto manualmente com as informações que você possui"
       });
     }
   });

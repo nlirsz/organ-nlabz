@@ -1,631 +1,347 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import * as cheerio from 'cheerio';
+import { extractJSONLD } from './scraper.js';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-if (!GEMINI_API_KEY) {
-  throw new Error("GEMINI_API_KEY not found in environment variables");
-}
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-const generationConfig = {
-  temperature: 0.2,
-  responseMimeType: "application/json",
-};
-
-export interface ScrapedProduct {
+interface ProductInfo {
   name: string;
   price: number | null;
-  originalPrice: number | null;
-  imageUrl?: string;
-  store?: string;
-  description?: string;
-  category?: string;
-  brand?: string;
+  originalPrice?: number | null;
+  imageUrl: string | null;
+  store: string;
+  description?: string | null;
+  category?: string | null;
+  brand?: string | null;
 }
 
-function normalizePrice(price: any): number | null {
-  if (typeof price === 'number') return price;
-  if (typeof price !== 'string') return null;
+export async function extractProductInfo(url: string, html: string): Promise<ProductInfo> {
+  console.log(`[ExtractInfo] Iniciando extração para: ${url}`);
 
-  console.log(`[Price Normalize] Entrada: "${price}"`);
+  // PRIMEIRA TENTATIVA: Extrair dados JSON-LD estruturados
+  try {
+    console.log(`[ExtractInfo] Tentativa 1: Extração via JSON-LD`);
+    const jsonLdData = extractJSONLD(html);
 
-  // Remove símbolos de moeda e espaços extras
-  let priceStr = price.replace(/[R$€£¥\s]/g, '').trim();
+    if (jsonLdData?.name && jsonLdData?.price) {
+      console.log(`[ExtractInfo] ✅ JSON-LD bem-sucedido: ${jsonLdData.name}`);
 
-  console.log(`[Price Normalize] Após limpar símbolos: "${priceStr}"`);
-
-  // Para preços brasileiros (formato: 1.234,56 ou 1234,56)
-  if (priceStr.includes(',')) {
-    const parts = priceStr.split(',');
-    if (parts.length === 2 && parts[1].length <= 2) {
-      // Remove pontos como separadores de milhares da parte inteira
-      const integerPart = parts[0].replace(/\./g, '');
-      const decimalPart = parts[1].padEnd(2, '0'); // Garante 2 dígitos decimais
-      priceStr = `${integerPart}.${decimalPart}`;
-      console.log(`[Price Normalize] Formato brasileiro convertido: "${priceStr}"`);
+      return {
+        name: jsonLdData.name,
+        price: jsonLdData.price,
+        originalPrice: jsonLdData.originalPrice || null,
+        imageUrl: jsonLdData.imageUrl || extractFallbackImage(html),
+        store: extractStoreFromUrl(url),
+        description: jsonLdData.description || null,
+        category: jsonLdData.category || extractCategoryFromUrl(url),
+        brand: jsonLdData.brand || null
+      };
+    } else {
+      console.log(`[ExtractInfo] JSON-LD incompleto ou não encontrado`);
     }
+  } catch (error) {
+    console.warn(`[ExtractInfo] Erro no JSON-LD:`, error);
   }
-  // Para preços sem vírgula mas com pontos (ex: 1.234 → pode ser 1234.00)
-  else if (priceStr.includes('.')) {
-    const parts = priceStr.split('.');
-    // Se tem só uma parte após o ponto e são 3+ dígitos, provavelmente é separador de milhares
-    if (parts.length === 2 && parts[1].length >= 3) {
-      priceStr = parts.join('') + '.00';
-      console.log(`[Price Normalize] Assumindo separador de milhares: "${priceStr}"`);
+
+  // SEGUNDA TENTATIVA: Usar API Gemini
+  if (GEMINI_API_KEY) {
+    try {
+      console.log(`[ExtractInfo] Tentativa 2: Extração via Gemini AI`);
+      const geminiData = await scrapeByAnalyzingHtml(html, url);
+
+      if (geminiData?.name && geminiData?.price) {
+        console.log(`[ExtractInfo] ✅ Gemini bem-sucedido: ${geminiData.name}`);
+        return geminiData;
+      } else {
+        console.log(`[ExtractInfo] Gemini retornou dados incompletos`);
+      }
+    } catch (error) {
+      console.warn(`[ExtractInfo] Erro na API Gemini:`, error);
     }
+  } else {
+    console.log(`[ExtractInfo] API Gemini não configurada`);
   }
 
-  const priceNum = parseFloat(priceStr);
-  const finalPrice = isNaN(priceNum) ? null : priceNum;
-
-  console.log(`[Price Normalize] Resultado final: ${finalPrice}`);
-
-  // Validação de sanidade
-  if (finalPrice && (finalPrice < 1 || finalPrice > 50000)) {
-    console.warn(`[Price Normalize] Preço suspeito: ${finalPrice}, retornando null`);
-    return null;
-  }
-
-  return finalPrice;
+  // TERCEIRA TENTATIVA: Fallback com extração básica
+  console.log(`[ExtractInfo] Tentativa 3: Fallback com extração básica`);
+  return createFallbackProductFromHtml(url, html);
 }
 
-function optimizeImageUrl(imageUrl: string, domain: string): string {
-  if (!imageUrl || !imageUrl.startsWith('http')) {
-    return 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
+async function scrapeByAnalyzingHtml(html: string, url: string): Promise<ProductInfo | null> {
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY não configurada");
   }
 
   try {
-    const url = new URL(imageUrl);
-
-    // ESTRATÉGIA: Simula o "copiar link da imagem" do navegador
-    // Remove parâmetros desnecessários que podem quebrar a imagem
-    const cleanUrl = new URL(imageUrl);
-
-    // Remove parâmetros de tracking e cache que podem causar problemas
-    const paramsToRemove = ['cache', 'v', 'timestamp', 't', '_', 'cb', 'nocache'];
-    paramsToRemove.forEach(param => cleanUrl.searchParams.delete(param));
-
-    // Otimizações específicas por domínio
-    if (domain.includes('amazon.com') && url.hostname.includes('media-amazon.com')) {
-      let pathname = cleanUrl.pathname;
-
-      // Otimiza para melhor compatibilidade e carregamento
-      pathname = pathname
-        .replace(/_AC_SL\d+_/g, '_AC_SX679_')     // Tamanho mais compatível
-        .replace(/_AC_UY\d+_/g, '_AC_UY400_')     // Altura otimizada
-        .replace(/_AC_UL\d+_/g, '_AC_SX679_')     // Lista para produto
-        .replace(/_SL\d+_/g, '_SX679_');          // Remove SL alto
-
-      // Reconstrói URL limpa
-      return `https://${url.hostname}${pathname}`;
-    }
-
-    if (domain.includes('mercadolivre.com') && url.hostname.includes('mlstatic.com')) {
-      let pathname = cleanUrl.pathname;
-
-      // ESTRATÉGIA NOVA: Mantém a URL mais original possível, apenas melhora formato
-      // Remove .webp apenas se presente (para compatibilidade máxima)
-      if (pathname.includes('.webp')) {
-        pathname = pathname.replace(/\.webp$/i, '.jpg');
-      }
-
-      // Melhora resolução apenas se for muito baixa
-      if (pathname.includes('-I.')) {
-        pathname = pathname.replace(/-I\.(jpg|webp)$/i, '-O.jpg');
-      } else if (pathname.includes('-S.')) {
-        pathname = pathname.replace(/-S\.(jpg|webp)$/i, '-O.jpg');
-      }
-
-      // Reconstrói URL sem parâmetros problemáticos
-      const finalUrl = `https://${url.hostname}${pathname}`;
-      console.log(`[ML Image] Original: ${imageUrl} → Otimizada: ${finalUrl}`);
-      return finalUrl;
-    }
-
-    // Para outros domínios, remove apenas parâmetros problemáticos
-    return cleanUrl.toString();
-
-  } catch (error) {
-    console.warn(`[Image Optimizer] Erro ao processar URL: ${imageUrl}`, error);
-    return 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
-  }
-}
-
-async function scrapeByAnalyzingHtml(productUrl: string, htmlContent: string): Promise<ScrapedProduct> {
-  console.log(`[Gemini HTML Mode] Starting for: ${productUrl}`);
-
-  const domain = new URL(productUrl).hostname;
-
-  const prompt = `Analise esta página de produto brasileira e extraia informações estruturadas.
-
-URL: ${productUrl}
-Domínio: ${domain}
-
-REGRAS CRÍTICAS PARA PREÇO:
-${getSpecificPriceRules(domain)}
-
-${domain.includes('amazon.com.br') ? `
-⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL:
-
-PREÇO (ALTÍSSIMA PRIORIDADE - SIGA EXATAMENTE):
-- PRIORIDADE 1: span.a-price-whole seguido de span.a-price-fraction dentro de .a-price[data-a-color="price"]
-- PRIORIDADE 2: .a-price-current .a-offscreen (texto oculto completo, ex: "R$ 3.899,99")
-- PRIORIDADE 3: #corePrice_feature_div .a-price .a-offscreen
-- PRIORIDADE 4: #price_inside_buybox .a-price-current .a-offscreen
-- PRIORIDADE 5: span[aria-hidden="true"] dentro de .a-price que contenha "R$"
-- PRIORIDADE 6: JSON-LD @type="Product" → "offers" → "price"
-- PRIORIDADE 7: meta[property="product:price:amount"]
-
-VALIDAÇÃO CRÍTICA DE PREÇO:
-- DEVE estar entre R$ 100,00 e R$ 15.000,00 para ser válido
-- FORMATO CORRETO: "R$ 3.899,99" → 3899.99 (remova R$, mantenha pontos como milhares, vírgula como decimal)
-- IGNORE COMPLETAMENTE: preços com "Prime", "frete", "parcelamento", "economia", "a partir de", "até"
-- IGNORE: preços muito baixos (< R$ 50) ou muito altos (> R$ 20.000) que podem ser códigos ou erros
-- SE encontrar partes separadas (ex: "3.899" + ",99"), combine corretamente
-
-CONTEXTO IMPORTANTE:
-- Foque no preço principal do produto individual na página
-- Amazon exibe preço em elementos com classe .a-price[data-a-color="price"] ou .a-price[data-a-color="base"]
-- Preço está frequentemente em <span class="a-offscreen">R$ X.XXX,XX</span>
-
-IMAGEM (OBRIGATÓRIA):
-- PRIORIDADE 1: meta[property="og:image"]
-- PRIORIDADE 2: #landingImage[src]
-- PRIORIDADE 3: .a-dynamic-image[src] da primeira imagem
-- VALIDAÇÃO: URL deve começar com https:// e conter "media-amazon.com"
-
-EXEMPLO ESPERADO:
-Se a página contém "R$ 3.899,99", retorne price: 3899.99
-` : ''}
-
-${domain.includes('mercadolivre.com') ? `
-⚠️ INSTRUÇÕES CRÍTICAS PARA MERCADO LIVRE:
-
-PREÇO (ALTÍSSIMA PRIORIDADE):
-- PRIORIDADE 1: .andes-money-amount__fraction dentro de [data-testid="price-part"]
-- PRIORIDADE 2: .price-tag-fraction (classe principal de preço)
-- PRIORIDADE 3: span[data-testid="price-part-integer"] + span[data-testid="price-part-decimal"]
-- PRIORIDADE 4: .ui-pdp-price__fraction (páginas de produto)
-- PRIORIDADE 5: JSON-LD com @type="Product" → "offers" → "price"
-- PRIORIDADE 6: meta[property="product:price:amount"]
-- COMBINAÇÃO INTELIGENTE: Se encontrar partes separadas, combine corretamente
-- FORMATO CORRETO: "8.320" + ",00" = 8320.00 (note a vírgula decimal)
-- IGNORE COMPLETAMENTE: preços com "frete", "entrega", "parcelamento", "a partir de", "Pix"
-- VALIDAÇÃO: iPhone 16 Pro Max deve estar entre R$ 7000-10000
-
-IMAGEM (ESTRATÉGIA LINK DIRETO - COMO COPIAR LINK NO NAVEGADOR):
-- PRIORIDADE 1: meta[property="og:image"] - URL direta e sempre acessível
-- PRIORIDADE 2: .ui-pdp-gallery__figure img[src] - imagem principal da galeria
-- PRIORIDADE 3: img[data-zoom][src] - imagem com zoom (alta resolução)
-- PRIORIDADE 4: img[data-testid*="gallery"][src] - primeira imagem da galeria
-- PRIORIDADE 5: JSON-LD @type="Product" → "image" (primeira do array)
-- PRIORIDADE 6: figure img[src] - imagem do produto principal
-
-VALIDAÇÃO CRÍTICA DE IMAGEM:
-- URL DEVE começar com https:// e conter "mlstatic.com"
-- URL DEVE ser acessível diretamente (como copiar link da imagem no navegador)
-- PREFIRA URLs que terminam com -O.jpg ou -W.jpg (alta resolução)
-- SE encontrar .webp, mantenha mas adicione fallback .jpg
-- EVITE URLs com parâmetros ?timestamp ou &cache (podem expirar)
-
-EXEMPLOS DE URLs PERFEITAS:
-- https://http2.mlstatic.com/D_NQ_NP_652166-MLA83590374671_042025-O.jpg
-- https://http2.mlstatic.com/D_NQ_NP_2X_731724-MLB5242628388_112023-O.jpg
-
-TESTE FINAL: A URL deve carregar a imagem diretamente no navegador
-` : ''}
-
-REGRAS PARA IMAGEM:
-${getSpecificImageRules(domain)}
-
-REGRAS GERAIS:
-- "name": Título limpo, sem promoções ou texto desnecessário
-- "store": Nome da loja extraído da página ou domínio
-- "category": Eletrônicos, Roupas, Casa, Livros, Games, Automotivo, Esportes, Outros
-
-HTML (primeiros 80k caracteres):
-\`\`\`html
-${htmlContent.substring(0, 80000)}
-\`\`\`
-
-Retorne JSON válido:
-{
-  "name": "Nome do produto",
-  "price": 3899.99,
-  "originalPrice": 4999.99,
-  "imageUrl": "https://images.exemplo.com/produto.jpg",
-  "store": "Nome da Loja",
-  "description": "Descrição",
-  "category": "Categoria",
-  "brand": "Marca"
-}`;
-
-  function getSpecificPriceRules(domain: string): string {
-    if (domain.includes('zara.com')) {
-      return `- PRIORIDADE 1: Procure por [data-qa-anchor="product.price.current"] ou classes .money-amount, .price
-- PRIORIDADE 2: meta[property="product:price:amount"] 
-- PRIORIDADE 3: JSON-LD estruturado com @type="Product"
-- PRIORIDADE 4: span ou div contendo "€" seguido de números
-- Para preços em EUR, converta para BRL multiplicando por 6.2
-- Exemplo: se encontrar "89,95 €", calcule: 89.95 * 6.2 = 557.69
-- Ignore preços de frete, taxas ou valores promocionais pequenos`;
-    }
-
-    if (domain.includes('nike.com')) {
-      return `- Procure por classes: .price-current, .product-price, .price-reduced
-- Meta tags: meta[property="product:price:amount"]
-- Ignore preços de parcelamento ou frete`;
-    }
-
-    
-if (domain.includes('amazon.com.br')) {
-    return `⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL - PREÇO:
-
-ESTRATÉGIA DE BUSCA POR PREÇO (ORDEM DE PRIORIDADE):
-1. **PRIORIDADE MÁXIMA**: .a-offscreen dentro de .a-price-current ou .a-price
-   - Procure por texto oculto completo como "R$ 4.859,10"
-   - Localização: <span class="a-offscreen">R$ X.XXX,XX</span>
-
-2. **PRIORIDADE 2**: Combinação span.a-price-whole + span.a-price-fraction
-   - Exemplo: <span class="a-price-whole">4.859</span><span class="a-price-fraction">,10</span>
-   - Combine: "4.859" + ",10" = "4.859,10"
-
-3. **PRIORIDADE 3**: Elementos com classes contendo "price" e texto "R$"
-   - Procure por: .a-price-current, .a-price[data-a-color="price"]
-   - Deve conter "R$" seguido de números
-
-4. **PRIORIDADE 4**: JSON-LD @type="Product" → "offers" → "price"
-   - Valide se o valor está em formato brasileiro
-
-5. **PRIORIDADE 5**: Meta tags product:price:amount
-
-REGRAS CRÍTICAS DE VALIDAÇÃO:
-- FORMATO ESPERADO: "R$ 4.859,10" deve retornar 4859.10
-- IGNORE COMPLETAMENTE: 
-  * Textos contendo "Prime", "frete", "entrega"
-  * Valores com "parcelado", "de R$", "por R$"
-  * Preços em seções de "Outros vendedores"
-  * Valores muito baixos (< R$ 10) ou muito altos (> R$ 50.000)
-
-CONTEXTO IMPORTANTE:
-- Foque APENAS no preço principal do produto individual
-- Amazon exibe preço principal em elementos .a-price com data-a-color="price"
-- Ignore preços de marketplace/terceiros que aparecem abaixo
-
-EXEMPLO DE CONVERSÃO:
-- HTML: "R$ 3.899,99" → JSON: 3899.99
-- HTML: "R$1.234,56" → JSON: 1234.56
-- HTML: "2.599,00" → JSON: 2599.00`;
-  }
-
-if (domain.includes('mercadolivre.com')) {
-    return `⚠️ INSTRUÇÕES CRÍTICAS PARA MERCADO LIVRE:
-
-PREÇO (ALTÍSSIMA PRIORIDADE):
-- PRIORIDADE 1: .andes-money-amount__fraction dentro do preço principal
-- PRIORIDADE 2: Combinação de elementos separados:
-  * span[data-testid="price-part-integer"] para parte inteira
-  * span[data-testid="price-part-decimal"] para centavos
-  * Combine: "8.320" + ",00" = "8.320,00"
-
-- PRIORIDADE 3: .ui-pdp-price__fraction (preço na página do produto)
-- PRIORIDADE 4: .price-tag-fraction (classe legada)
-- PRIORIDADE 5: JSON-LD @type="Product" → "offers" → "price"
-
-REGRAS CRÍTICAS DE IDENTIFICAÇÃO:
-- PROCURE o preço que esteja DESTACADO visualmente (maior, colorido)
-- IGNORE preços em seções: "Outros vendedores", "Anúncios relacionados"
-- IGNORE valores com texto: "frete", "entrega", "parcelado", "à vista", "no Pix"
-- IGNORE preços com "a partir de R$" ou "até R$"
-
-FORMATO E VALIDAÇÃO:
-- FORMATO BRASILEIRO: "R$ 8.320,00" → 8320.00
-- Combine partes separadas corretamente: "8.320" + ",00" = 8320.00
-- VALIDAÇÃO: Preço deve estar entre R$ 50,00 e R$ 50.000,00
-- SE encontrar múltiplos preços, pegue o PRINCIPAL (não o menor ou maior)
-
-CONTEXTO ESPECÍFICO:
-- ML separa frequentemente o preço em integer + decimal
-- Preço principal geralmente está próximo ao título do produto
-- Cores indicativas: preços principais em verde ou azul escuro
-`;
-  }
-
-    if (domain.includes('amazon.com') || domain.includes('amazon.com.br')) {
-    return `⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL - PREÇO:
-
-ESTRATÉGIA DE BUSCA POR PREÇO (ORDEM DE PRIORIDADE):
-1. **PRIORIDADE MÁXIMA**: Procure por R$ seguido de números com vírgula decimal
-   - Padrão: "R$4.859,10" ou "R$ 4.859,10" 
-   - Localização: próximo ao título do produto, área principal de preço
-   - Classes possíveis: .a-price-current, .a-price-whole + .a-price-fraction
-
-2. **PRIORIDADE 2**: span.a-price-whole seguido de span.a-price-fraction 
-   - Combine: "4.859" + ",10" = 4859.10
-   - Dentro de: .a-price[data-a-color="price"] ou .a-price-current
-
-3. **PRIORIDADE 3**: .a-offscreen dentro de .a-price-current
-   - Texto oculto completo: "R$ 4.859,10"
-
-4. **PRIORIDADE 4**: JSON-LD estruturado @type="Product" → "offers" → "price"
-
-5. **PRIORIDADE 5**: Meta tags de preço
-
-FORMATO BRASILEIRO CRÍTICO:
-- "R$ 4.859,10" → 4859.10 (PONTO como separador de milhares, VÍRGULA como decimal)
-- "R$4859,10" → 4859.10 
-- Remova símbolos: R$, espaços
-- Converta pontos de milhares para nada: "4.859" → "4859"
-- Mantenha vírgula decimal: ",10" → ".10"
-
-VALIDAÇÃO OBRIGATÓRIA:
-- Deve estar entre R$ 1.000,00 e R$ 15.000,00 para iPhones
-- IGNORE completamente: preços de frete, Prime, parcelamento, "a partir de"
-- IGNORE: valores muito baixos (< R$ 500) ou textos promocionais
-
-EXEMPLO ESPERADO:
-Se encontrar "R$ 4.859,10", retorne: 4859.10`;
-  }
-
-  return '- PRIORIDADE 1: meta[property="og:image"]\n- PRIORIDADE 2: img dentro de divs de produto com maior resolução';
-}
-
-function getSpecificImageRules(domain: string): string {
-  if (domain.includes('amazon.com')) {
-    return `⚠️ INSTRUÇÕES CRÍTICAS PARA AMAZON BRASIL - IMAGEM:
-
-ESTRATÉGIA DE BUSCA POR IMAGEM (ORDEM DE PRIORIDADE):
-1. **PRIORIDADE MÁXIMA**: Imagem principal do produto na galeria
-   - Procure por: img com src contendo "m.media-amazon.com/images/I/"
-   - Padrão esperado: "https://m.media-amazon.com/images/I/31fMLLW7VNL._AC_SX679_.jpg"
-   - Localização: galeria principal de imagens do produto
-
-2. **PRIORIDADE 2**: meta[property="og:image"] 
-   - URL exata como "copiar link da imagem"
-   - Deve conter "media-amazon.com"
-
-3. **PRIORIDADE 3**: img[data-a-dynamic-image] 
-   - Primeira URL da lista JSON
-   - Extraia a URL de maior resolução
-
-4. **PRIORIDADE 4**: #landingImage[src] ou .a-dynamic-image[src]
-   - Imagem principal da landing page
-
-5. **PRIORIDADE 5**: JSON-LD "image" - URL original
-
-VALIDAÇÃO DE URL:
-- DEVE conter: "media-amazon.com" ou "images-amazon.com"
-- DEVE terminar com: .jpg, .png, .webp
-- DEVE começar com: https://
-- MANTENHA parâmetros originais: _AC_SX679_, _AC_SL1500_, etc.
-- NÃO modifique a URL encontrada
-
-FORMATO ESPERADO:
-"https://m.media-amazon.com/images/I/[ID]._AC_SX679_.jpg"
-
-FILOSOFIA: Simula exatamente "botão direito > copiar link da imagem"
-- MANTENHA URL original sem alterações
-- PREFIRA imagens de alta resolução (_AC_SX679_ é boa resolução)
-- URL deve carregar diretamente no navegador`;
-  }
-  if (domain.includes('mercadolivre.com')) {
-    return `- PRIORIDADE 1: meta[property="og:image"] - URL EXATA como aparece (simula 'copiar link da imagem')
-- PRIORIDADE 2: meta[name="twitter:image"] - URL DIRETA sem modificações
-- PRIORIDADE 3: img[src*="mlstatic.com"] da galeria principal - primeira imagem grande
-- PRIORIDADE 4: picture source com srcset - escolha URL de maior resolução SEM parâmetros extras
-- PRIORIDADE 5: .gallery img[src] - URL direta da primeira imagem
-- PRIORIDADE 6: figure img[src] - imagem do produto principal
-
-REGRAS CRÍTICAS (simula botão direito > copiar link da imagem):
-- NUNCA adicione parâmetros extras à URL da imagem
-- MANTENHA a URL exatamente como está no HTML
-- PREFIRA URLs que terminam com -O.jpg, -W.jpg ou _2X (alta resolução)
-- SE a URL termina com .webp, mantenha assim (será convertida depois se necessário)
-- IGNORE URLs com parâmetros ?timestamp, &cache, &token (são temporárias)
-- URL deve ser DIRETAMENTE acessível como se copiasse o link da imagem
-
-EXEMPLOS DE URLs IDEAIS (como copiar link funciona):
-- https://http2.mlstatic.com/D_NQ_NP_652166-MLA83590374671_042025-O.jpg
-- https://http2.mlstatic.com/D_NQ_NP_2X_731724-MLB5242628388_112023-O.jpg
-- https://http2.mlstatic.com/D_NQ_NP_731724-MLB5242628388_112023-W.webp
-
-VALIDAÇÃO: A URL deve funcionar se colada diretamente no navegador
-`;
-  }
-  if (domain.includes('nike.com')) {
-    return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: img[data-qa="product-image"]';
-  }
-  if (domain.includes('zara.com')) {
-    return `- PRIORIDADE 1: meta[property="og:image"] - deve ser URL completa e válida
-- PRIORIDADE 2: meta[name="twitter:image"]
-- PRIORIDADE 3: JSON-LD procure por "image" dentro de @type="Product"
-- PRIORIDADE 4: picture source com maior resolução (procure por width=2048 ou similar)
-- PRIORIDADE 5: img[src*="static.zara.net/assets/public"] (prefira URLs com /assets/public/)
-- PRIORIDADE 6: img[src*="static.zara.net"] que NÃO contenha "/photos///" (evite URLs com barras triplas)
-- IMPORTANTE: URL deve começar com https:// e ser acessível
-- IMPORTANTE: Evite URLs que contenham "/photos///" ou barras duplas/triplas
-- IMPORTANTE: Prefira URLs que contenham "/assets/public/" e parâmetros como "&w=1500"
-- TESTE: Valide se a URL não contém "/photos///" que indica URL quebrada`;
-  }
-  if (domain.includes('dafiti.com') || domain.includes('netshoes.com')) {
-    return '- PRIORIDADE: meta[property="og:image"]\n- Alternativa: .product-image img';
-  }
-  return '- PRIORIDADE 1: meta[property="og:image"]\n- PRIORIDADE 2: img dentro de divs de produto com maior resolução';
-}
-
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig
-  });
-
-  let responseText = result.response.text();
-
-  // Limpa markdown se presente
-  if (responseText.includes('```')) {
-    responseText = responseText.replace(/```json\s*|\s*```/g, '');
-  }
-
-  let jsonData = JSON.parse(responseText);
-
-  if (jsonData && jsonData.price) {
-    jsonData.price = normalizePrice(jsonData.price);
-  }
-  if (jsonData && jsonData.originalPrice) {
-    jsonData.originalPrice = normalizePrice(jsonData.originalPrice);
-  }
-
-  // Otimiza URLs de imagem para melhor compatibilidade
-  if (jsonData && jsonData.imageUrl) {
-    jsonData.imageUrl = optimizeImageUrl(jsonData.imageUrl, domain);
-  }
-
-  if (!jsonData.store) {
-    try {
-      const urlObj = new URL(productUrl);
-      const hostname = urlObj.hostname.replace('www.', '');
-      const storeName = hostname.split('.')[0];
-      jsonData.store = storeName.charAt(0).toUpperCase() + storeName.slice(1);
-    } catch (e) {
-      jsonData.store = "Loja Online";
-    }
-  }
-
-  return jsonData;
-}
-
-async function scrapeBySearching(productUrl: string): Promise<ScrapedProduct> {
-  console.log(`[Gemini Search Mode] Starting for: ${productUrl}`);
-
-  const prompt = `Busque informações precisas sobre o produto nesta URL: "${productUrl}".
-
-FOQUE NO PREÇO CORRETO:
-- Encontre o preço de venda atual do produto individual
-- Ignore preços de frete, parcelamento ou valores promocionais
-- Se há desconto, retorne o preço atual e o original
-- Para moedas estrangeiras, converta para BRL (EUR * 6.2)
-- Formato numérico: 3899.99 (não texto)
-
-FOQUE NA IMAGEM:
-- Encontre uma URL de imagem de alta qualidade do produto
-- Prefira imagens oficiais do produto, não logos da loja
-- URL deve ser acessível publicamente
-
-Retorne JSON com:
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // Limpa o HTML mantendo apenas o essencial
+    const cleanHtml = cleanHtmlForAnalysis(html);
+
+    const prompt = `
+INSTRUÇÃO: Analise este HTML de uma página de produto e extraia as informações principais.
+URL: ${url}
+
+REGRAS IMPORTANTES:
+1. PREÇO: Extraia apenas o preço principal do produto, ignore valores de frete, parcelamento ou taxas
+2. IMAGEM: Prefira URLs de imagem em alta resolução, evite miniaturas
+3. NOME: Use o título principal do produto, sem informações de entrega ou promoção
+4. RETORNO: Responda APENAS com um objeto JSON válido, sem texto adicional
+
+FORMATO DE RESPOSTA (JSON):
 {
   "name": "Nome exato do produto",
-  "price": 3899.99,
-  "originalPrice": null,
-  "imageUrl": "https://images.site.com/produto-hd.jpg",
-  "store": "Nome da Loja",
-  "description": "Descrição técnica",
-  "category": "Categoria específica",
-  "brand": "Marca do produto"
+  "price": 99.99,
+  "originalPrice": 129.99,
+  "imageUrl": "URL da melhor imagem disponível",
+  "description": "Descrição concisa do produto",
+  "brand": "Marca do produto",
+  "category": "Categoria do produto"
 }
 
-Categorias: Eletrônicos, Roupas, Casa, Livros, Games, Automotivo, Esportes, Outros`;
+HTML para análise:
+${cleanHtml}
+`;
 
-  const result = await model.generateContent({
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig
-  });
+    console.log(`[Gemini] Enviando requisição para análise...`);
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.text();
 
-  let responseText = result.response.text();
+    console.log(`[Gemini] Resposta recebida: ${text.substring(0, 200)}...`);
 
-  // Limpa markdown se presente
-  if (responseText.includes('```')) {
-    responseText = responseText.replace(/```json\s*|\s*```/g, '');
-  }
-
-  let jsonData = JSON.parse(responseText);
-
-  if (jsonData && jsonData.price) {
-    jsonData.price = normalizePrice(jsonData.price);
-  }
-  if (jsonData && jsonData.originalPrice) {
-    jsonData.originalPrice = normalizePrice(jsonData.originalPrice);
-  }
-
-  return jsonData;
-}
-
-export async function extractProductInfo(url: string, htmlContent?: string): Promise<ScrapedProduct> {
-  console.log(`[Gemini] Starting extraction for: ${url}`);
-
-  try {
-    if (htmlContent) {
-      try {
-        console.log(`[Gemini] Trying HTML method...`);
-        const htmlResult = await scrapeByAnalyzingHtml(url, htmlContent);
-
-        if (htmlResult.price && htmlResult.price > 0) {
-          console.log(`[Gemini] ✓ Success with HTML method - Price: R$ ${htmlResult.price}`);
-
-          // Pós-processamento de imagens para melhor compatibilidade
-          if (htmlResult.imageUrl) {
-            htmlResult.imageUrl = optimizeImageUrl(htmlResult.imageUrl, url);
-          }
-
-          return htmlResult;
-        }
-
-        if (htmlResult.name && htmlResult.name !== "Produto Desconhecido") {
-          console.log(`[Gemini] HTML method found product without price: ${htmlResult.name}`);
-
-          try {
-            console.log(`[Gemini] Trying Search method for price...`);
-            const searchResult = await scrapeBySearching(url);
-
-            if (searchResult.price && searchResult.price > 0) {
-              console.log(`[Gemini] ✓ Found price with Search method: R$ ${searchResult.price}`);
-              return {
-                ...htmlResult,
-                price: searchResult.price,
-                originalPrice: searchResult.originalPrice
-              };
-            }
-          } catch (searchError) {
-            console.warn(`[Gemini] Search method failed:`, searchError);
-          }
-
-          return htmlResult;
-        }
-      } catch (htmlError) {
-        console.warn(`[Gemini] HTML method failed:`, htmlError);
-      }
+    // Tenta extrair JSON da resposta
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Resposta não contém JSON válido");
     }
 
-    try {
-      console.log(`[Gemini] Trying Search method as fallback...`);
-      const searchResult = await scrapeBySearching(url);
+    const productData = JSON.parse(jsonMatch[0]);
 
-      if (searchResult.price && searchResult.price > 0) {
-        console.log(`[Gemini] ✓ Success with Search method - Price: R$ ${searchResult.price}`);
-        return searchResult;
-      }
-
-      if (searchResult.name && searchResult.name !== "Produto Desconhecido") {
-        console.log(`[Gemini] Search method found product without price: ${searchResult.name}`);
-        return searchResult;
-      }
-    } catch (searchError) {
-      console.warn(`[Gemini] Search method failed:`, searchError);
+    // Valida se tem dados essenciais
+    if (!productData.name) {
+      throw new Error("Nome do produto não encontrado na resposta");
     }
 
-    throw new Error("Both extraction methods failed");
+    // Normaliza o preço
+    let price: number | null = null;
+    if (productData.price && !isNaN(parseFloat(productData.price))) {
+      price = parseFloat(productData.price);
+    }
 
-  } catch (error) {
-    console.error(`[Gemini] Complete extraction failed for ${url}:`, error);
+    let originalPrice: number | null = null;
+    if (productData.originalPrice && !isNaN(parseFloat(productData.originalPrice))) {
+      originalPrice = parseFloat(productData.originalPrice);
+    }
 
     return {
-      name: "Produto extraído da URL: " + url.substring(0, 50) + "...",
-      price: null,
-      originalPrice: null,
-      imageUrl: "https://via.placeholder.com/300x300/CCCCCC/666666?text=Produto",
-      store: "Loja Online",
-      description: "Produto extraído da URL: " + url,
-      category: "Outros",
-      brand: "N/A"
+      name: productData.name.trim(),
+      price: price,
+      originalPrice: originalPrice,
+      imageUrl: productData.imageUrl || extractFallbackImage(html),
+      store: extractStoreFromUrl(url),
+      description: productData.description?.trim() || null,
+      category: productData.category || extractCategoryFromUrl(url),
+      brand: productData.brand?.trim() || null
     };
+
+  } catch (error) {
+    console.error(`[Gemini] Erro na análise:`, error);
+    throw error;
   }
+}
+
+function cleanHtmlForAnalysis(html: string): string {
+  try {
+    const $ = cheerio.load(html);
+
+    // Remove scripts, styles e outros elementos desnecessários
+    $('script, style, noscript, iframe, svg').remove();
+
+    // Foca em elementos relevantes para produtos
+    const relevantSelectors = [
+      'h1, h2, h3',
+      '[class*="price"], [class*="valor"], [class*="cost"]',
+      '[class*="product"], [class*="item"]',
+      '[class*="title"], [class*="name"], [class*="titulo"]',
+      '[class*="description"], [class*="desc"]',
+      '[class*="brand"], [class*="marca"]',
+      'img[src*="product"], img[alt*="product"]'
+    ].join(', ');
+
+    let relevantContent = '';
+    $(relevantSelectors).each((_, element) => {
+      const $el = $(element);
+      const text = $el.text().trim();
+      const src = $el.attr('src');
+      const alt = $el.attr('alt');
+
+      if (text && text.length > 2) {
+        relevantContent += `${text}\n`;
+      }
+      if (src) {
+        relevantContent += `IMG: ${src}\n`;
+      }
+      if (alt && alt.length > 2) {
+        relevantContent += `ALT: ${alt}\n`;
+      }
+    });
+
+    // Limita o tamanho para não exceder limites da API
+    const maxLength = 8000;
+    if (relevantContent.length > maxLength) {
+      relevantContent = relevantContent.substring(0, maxLength) + '...';
+    }
+
+    return relevantContent || html.substring(0, maxLength);
+  } catch (error) {
+    console.warn(`[Gemini] Erro ao limpar HTML:`, error);
+    return html.substring(0, 8000);
+  }
+}
+
+function createFallbackProductFromHtml(url: string, html: string): ProductInfo {
+  console.log(`[Fallback] Criando produto fallback...`);
+
+  const $ = cheerio.load(html);
+  let name = 'Produto encontrado';
+  let price: number | null = null;
+  let imageUrl: string | null = null;
+  let description: string | null = null;
+
+  // Tenta extrair nome do title ou h1
+  const title = $('title').text().trim() || $('h1').first().text().trim();
+  if (title && title.length > 3) {
+    name = title.substring(0, 100);
+  }
+
+  // Tenta extrair preço com seletores comuns
+  const priceSelectors = [
+    '[class*="price"]',
+    '[class*="valor"]',
+    '[class*="cost"]',
+    '[data-price]'
+  ];
+
+  for (const selector of priceSelectors) {
+    const priceText = $(selector).first().text();
+    const priceMatch = priceText.match(/[\d,]+\.?\d*/);
+    if (priceMatch) {
+      const priceValue = parseFloat(priceMatch[0].replace(',', '.'));
+      if (!isNaN(priceValue) && priceValue > 0) {
+        price = priceValue;
+        break;
+      }
+    }
+  }
+
+  // Tenta extrair imagem
+  imageUrl = extractFallbackImage(html);
+
+  // Tenta extrair descrição
+  const descSelectors = ['[class*="description"]', '[class*="desc"]', 'meta[name="description"]'];
+  for (const selector of descSelectors) {
+    const desc = $(selector).first().text().trim() || $(selector).attr('content');
+    if (desc && desc.length > 10) {
+      description = desc.substring(0, 200);
+      break;
+    }
+  }
+
+  return {
+    name: name,
+    price: price,
+    originalPrice: null,
+    imageUrl: imageUrl,
+    store: extractStoreFromUrl(url),
+    description: description,
+    category: extractCategoryFromUrl(url),
+    brand: null
+  };
+}
+
+function extractFallbackImage(html: string): string | null {
+  try {
+    const $ = cheerio.load(html);
+
+    // Prioridade de seletores para imagem
+    const imageSelectors = [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      'img[class*="product"]',
+      'img[class*="main"]',
+      'img[alt*="product"]'
+    ];
+
+    for (const selector of imageSelectors) {
+      const imgSrc = $(selector).attr('content') || $(selector).attr('src');
+      if (imgSrc && imgSrc.startsWith('http')) {
+        console.log(`[Fallback] Imagem encontrada: ${imgSrc}`);
+        return imgSrc;
+      }
+    }
+
+    // Se não encontrar, usa primeira imagem válida
+    const firstImg = $('img[src^="http"]').first().attr('src');
+    if (firstImg) {
+      return firstImg;
+    }
+
+    return 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
+  } catch (error) {
+    console.warn(`[Fallback] Erro ao extrair imagem:`, error);
+    return 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
+  }
+}
+
+function extractStoreFromUrl(url: string): string {
+  try {
+    const hostname = new URL(url).hostname.replace('www.', '');
+    const storeMap: Record<string, string> = {
+      'mercadolivre.com.br': 'Mercado Livre',
+      'amazon.com.br': 'Amazon Brasil',
+      'magazineluiza.com.br': 'Magazine Luiza',
+      'americanas.com.br': 'Americanas',
+      'submarino.com.br': 'Submarino',
+      'casasbahia.com.br': 'Casas Bahia',
+      'extra.com.br': 'Extra',
+      'shopee.com.br': 'Shopee',
+      'zara.com': 'Zara',
+      'nike.com.br': 'Nike Brasil',
+      'netshoes.com.br': 'Netshoes'
+    };
+
+    for (const [domain, name] of Object.entries(storeMap)) {
+      if (hostname.includes(domain)) return name;
+    }
+
+    return hostname.split('.')[0].charAt(0).toUpperCase() + hostname.split('.')[0].slice(1);
+  } catch {
+    return 'Loja Online';
+  }
+}
+
+function extractCategoryFromUrl(url: string): string {
+  const categoryMap: Record<string, string> = {
+    'celular': 'Eletrônicos',
+    'smartphone': 'Eletrônicos',
+    'notebook': 'Eletrônicos',
+    'tenis': 'Roupas e Acessórios',
+    'roupa': 'Roupas e Acessórios',
+    'casa': 'Casa e Decoração',
+    'decoracao': 'Casa e Decoração',
+    'livro': 'Livros e Mídia',
+    'jogo': 'Games',
+    'game': 'Games'
+  };
+
+  const urlLower = url.toLowerCase();
+  for (const [keyword, category] of Object.entries(categoryMap)) {
+    if (urlLower.includes(keyword)) {
+      return category;
+    }
+  }
+
+  return 'Outros';
 }
