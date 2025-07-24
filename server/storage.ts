@@ -140,11 +140,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProduct(id: number, userId: number): Promise<boolean> {
-    const result = await db
-      .delete(products)
-      .where(and(eq(products.id, id), eq(products.userId, userId)))
-      .returning();
-    return result.length > 0;
+    try {
+      // First verify the product belongs to the user
+      const product = await db
+        .select({ id: products.id })
+        .from(products)
+        .where(and(eq(products.id, id), eq(products.userId, userId)))
+        .limit(1);
+
+      if (product.length === 0) {
+        return false; // Product not found or doesn't belong to user
+      }
+
+      // Get all payments for this product
+      const productPayments = await db
+        .select({ id: payments.id })
+        .from(payments)
+        .where(eq(payments.productId, id));
+
+      // Delete all installments for each payment
+      for (const payment of productPayments) {
+        await db
+          .delete(installments)
+          .where(eq(installments.payment_id, payment.id));
+      }
+
+      // Delete all payments for this product
+      await db
+        .delete(payments)
+        .where(eq(payments.productId, id));
+
+      // Finally delete the product
+      const result = await db
+        .delete(products)
+        .where(and(eq(products.id, id), eq(products.userId, userId)))
+        .returning();
+
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error deleting product with cascade:", error);
+      return false;
+    }
   }
 
   async getProductStats(userId: number): Promise<{

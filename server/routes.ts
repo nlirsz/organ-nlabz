@@ -324,16 +324,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const productId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);
 
+      if (isNaN(productId)) {
+        return res.status(400).json({ error: "Invalid product ID" });
+      }
+
+      console.log(`[DELETE Product] Attempting to delete product ${productId} for user ${userId}`);
+
       const success = await storage.deleteProduct(productId, userId);
 
       if (!success) {
-        return res.status(404).json({ error: "Product not found" });
+        console.log(`[DELETE Product] Product ${productId} not found or not owned by user ${userId}`);
+        return res.status(404).json({ error: "Product not found or access denied" });
       }
 
-      res.json({ success: true });
+      console.log(`[DELETE Product] Successfully deleted product ${productId}`);
+      res.json({ success: true, message: "Product deleted successfully" });
     } catch (error) {
       console.error("Delete error:", error);
-      res.status(500).json({ error: "Failed to delete product" });
+      res.status(500).json({ error: "Failed to delete product", details: error.message });
     }
   });
 
@@ -569,6 +577,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error deleting finance record:", error);
       res.status(500).json({ error: "Failed to delete finance record" });
     }
+  });
+
+  // API route not found handler - prevents HTML responses for API calls
+  app.use("/api/*", (req, res) => {
+    console.error(`[API] Route not found: ${req.method} ${req.path}`);
+    res.status(404).json({ 
+      error: "API endpoint not found",
+      path: req.path,
+      method: req.method
+    });
   });
 
   const httpServer = createServer(app);
