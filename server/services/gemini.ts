@@ -102,33 +102,43 @@ async function extractViaGeminiAI(html: string, url: string): Promise<ProductInf
 
     // Limpa o HTML para análise mais eficiente
     const cleanHtml = cleanHtmlForGeminiAnalysis(html);
+    const store = extractStoreFromUrl(url);
 
     const optimizedPrompt = `
-TAREFA: Extrair informações de produto de uma página web.
+ESPECIALISTA EM E-COMMERCE: Extraia informações de produto desta página ${store}.
+
 URL: ${url}
 
-INSTRUÇÕES CRÍTICAS:
-1. FOQUE NO PREÇO PRINCIPAL - ignore frete, parcelamento, taxas adicionais
-2. NOME DO PRODUTO - título principal, sem informações de entrega/promoção  
-3. IMAGEM - URL da melhor qualidade disponível
-4. RESPONDA APENAS COM JSON VÁLIDO - sem markdown, sem texto adicional
+INSTRUÇÕES ESPECÍFICAS:
+1. PREÇO: Identifique o preço de venda atual (não frete, parcelamento ou desconto)
+2. NOME: Título principal do produto (sem informações promocionais)
+3. IMAGEM: URL da imagem principal do produto
+4. MARCA: Identifique a marca/fabricante
+5. DESCRIÇÃO: Resumo das características principais
+6. CATEGORIA: Classifique o produto (Eletrônicos, Moda, Casa, etc.)
 
-FORMATO DE RESPOSTA OBRIGATÓRIO:
+REGRAS CRÍTICAS:
+- Preços devem ser números decimais (ex: 299.99)
+- URLs de imagem devem começar com http/https
+- Responda APENAS JSON válido, sem markdown
+- Se não encontrar informação, use null
+
+FORMATO OBRIGATÓRIO:
 {
-  "name": "Nome exato do produto",
-  "price": 99.99,
-  "originalPrice": 129.99,
-  "imageUrl": "URL completa da imagem",
-  "description": "Descrição concisa",
-  "brand": "Marca do produto",
+  "name": "Nome do produto",
+  "price": 299.99,
+  "originalPrice": 399.99,
+  "imageUrl": "https://...",
+  "description": "Descrição breve",
+  "brand": "Marca",
   "category": "Categoria"
 }
 
-HTML PARA ANÁLISE:
+CONTEÚDO DA PÁGINA:
 ${cleanHtml}
 `;
 
-    console.log(`[Gemini] 🤖 Enviando prompt otimizado...`);
+    console.log(`[Gemini] 🤖 Enviando análise especializada para ${store}...`);
     const result = await model.generateContent(optimizedPrompt);
     const response = result.response;
     const text = response.text();
@@ -138,44 +148,81 @@ ${cleanHtml}
     // Parse da resposta JSON
     let productData;
     try {
-      productData = JSON.parse(text);
+      // Remove possível markdown se presente
+      let cleanText = text.trim();
+      if (cleanText.startsWith('```json')) {
+        cleanText = cleanText.replace(/```json\n/, '').replace(/\n```$/, '');
+      } else if (cleanText.startsWith('```')) {
+        cleanText = cleanText.replace(/```\n/, '').replace(/\n```$/, '');
+      }
+      
+      productData = JSON.parse(cleanText);
     } catch (jsonError) {
-      // Tenta extrair JSON se vier com markdown
+      // Último recurso: busca por JSON no texto
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error("Resposta não contém JSON válido");
+        throw new Error("Resposta não contém JSON válido: " + text.substring(0, 200));
       }
       productData = JSON.parse(jsonMatch[0]);
     }
 
-    // Valida e normaliza os dados
-    if (!productData.name || typeof productData.name !== 'string') {
-      throw new Error("Nome do produto não encontrado na resposta");
+    // Valida campos obrigatórios
+    if (!productData.name || typeof productData.name !== 'string' || productData.name.trim().length === 0) {
+      throw new Error("Nome do produto não encontrado ou inválido");
     }
 
-    // Normaliza preços
+    // Normaliza preços com validação
     let price: number | null = null;
-    if (productData.price && !isNaN(parseFloat(productData.price))) {
-      price = parseFloat(productData.price);
+    if (productData.price !== null && productData.price !== undefined) {
+      const priceNum = parseFloat(String(productData.price).replace(',', '.'));
+      if (!isNaN(priceNum) && priceNum > 0 && priceNum < 1000000) {
+        price = priceNum;
+      }
     }
 
     let originalPrice: number | null = null;
-    if (productData.originalPrice && !isNaN(parseFloat(productData.originalPrice))) {
-      originalPrice = parseFloat(productData.originalPrice);
+    if (productData.originalPrice !== null && productData.originalPrice !== undefined) {
+      const origPriceNum = parseFloat(String(productData.originalPrice).replace(',', '.'));
+      if (!isNaN(origPriceNum) && origPriceNum > 0 && origPriceNum < 1000000) {
+        originalPrice = origPriceNum;
+      }
     }
 
-    return {
+    // Valida URL da imagem
+    let imageUrl: string | null = null;
+    if (productData.imageUrl && 
+        typeof productData.imageUrl === 'string' && 
+        productData.imageUrl.startsWith('http')) {
+      imageUrl = productData.imageUrl;
+    } else {
+      imageUrl = extractFallbackImage(html);
+    }
+
+    const result_product = {
       name: productData.name.trim(),
       price: price,
       originalPrice: originalPrice,
-      imageUrl: productData.imageUrl && productData.imageUrl.startsWith('http') 
-        ? productData.imageUrl 
-        : extractFallbackImage(html),
-      store: extractStoreFromUrl(url),
-      description: productData.description?.trim() || null,
-      category: productData.category || extractCategoryFromUrl(url),
-      brand: productData.brand?.trim() || null
+      imageUrl: imageUrl,
+      store: store,
+      description: productData.description && typeof productData.description === 'string' 
+        ? productData.description.trim().substring(0, 500) 
+        : null,
+      category: productData.category && typeof productData.category === 'string'
+        ? productData.category.trim()
+        : extractCategoryFromUrl(url),
+      brand: productData.brand && typeof productData.brand === 'string'
+        ? productData.brand.trim()
+        : null
     };
+
+    console.log(`[Gemini] ✅ Produto extraído:`, {
+      name: result_product.name,
+      price: result_product.price,
+      hasImage: !!result_product.imageUrl,
+      brand: result_product.brand
+    });
+
+    return result_product;
 
   } catch (error) {
     console.error(`[Gemini] ❌ Erro na análise:`, error.message);

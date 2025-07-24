@@ -2,6 +2,7 @@
 import { chromium, Browser, Page } from 'playwright';
 import * as cheerio from 'cheerio';
 import { extractProductInfo } from './gemini.js';
+import axios from 'axios';
 
 interface ScrapedProduct {
   name: string;
@@ -15,12 +16,42 @@ interface ScrapedProduct {
 }
 
 export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct> {
+  console.log(`[Scraper] 🚀 Iniciando scraping multi-estratégia para: ${url}`);
+
+  // ESTRATÉGIA 1: Playwright (mais robusta)
+  try {
+    console.log(`[Scraper] 📱 TENTATIVA 1: Playwright com navegador real`);
+    const playwrightResult = await scrapeWithPlaywright(url);
+    if (playwrightResult && playwrightResult.name !== `Produto de ${playwrightResult.store}`) {
+      console.log(`[Scraper] ✅ PLAYWRIGHT SUCESSO: "${playwrightResult.name}"`);
+      return playwrightResult;
+    }
+  } catch (error) {
+    console.warn(`[Scraper] ⚠️ Playwright falhou:`, error.message);
+  }
+
+  // ESTRATÉGIA 2: HTTP + Cheerio (mais leve)
+  try {
+    console.log(`[Scraper] 🌐 TENTATIVA 2: HTTP direto + Cheerio`);
+    const httpResult = await scrapeWithHttp(url);
+    if (httpResult && httpResult.name !== `Produto de ${httpResult.store}`) {
+      console.log(`[Scraper] ✅ HTTP SUCESSO: "${httpResult.name}"`);
+      return httpResult;
+    }
+  } catch (error) {
+    console.warn(`[Scraper] ⚠️ HTTP falhou:`, error.message);
+  }
+
+  // ESTRATÉGIA 3: Fallback com informações básicas
+  console.log(`[Scraper] 🔄 TODAS TENTATIVAS FALHARAM - Usando fallback`);
+  return createFallbackProduct(url);
+}
+
+async function scrapeWithPlaywright(url: string): Promise<ScrapedProduct> {
   let browser: Browser | null = null;
 
   try {
-    console.log(`[Scraper] 🚀 Iniciando scraping para: ${url}`);
-
-    // Inicializa o navegador Chromium com configurações otimizadas
+    // Inicializa o navegador com configurações otimizadas
     browser = await chromium.launch({ 
       headless: true,
       args: [
@@ -28,11 +59,12 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
         '--disable-setuid-sandbox', 
         '--disable-dev-shm-usage',
         '--disable-web-security',
-        '--disable-features=VizDisplayCompositor'
+        '--disable-features=VizDisplayCompositor',
+        '--disable-gpu',
+        '--disable-software-rasterizer'
       ]
     });
 
-    // Cria contexto com User-Agent real e configurações de navegador
     const context = await browser.newContext({
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       viewport: { width: 1366, height: 768 },
@@ -42,7 +74,7 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
 
     const page = await context.newPage();
 
-    // Bloqueia recursos desnecessários para acelerar carregamento
+    // Bloqueia recursos desnecessários
     await page.route('**/*', (route) => {
       const resourceType = route.request().resourceType();
       if (['image', 'stylesheet', 'font', 'media', 'websocket'].includes(resourceType)) {
@@ -52,66 +84,80 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
       }
     });
 
-    // Navega até a página com timeouts otimizados
-    console.log(`[Scraper] 🌐 Navegando para: ${url}`);
+    console.log(`[Playwright] 🌐 Navegando para: ${url}`);
     await page.goto(url, { 
       waitUntil: 'domcontentloaded',
-      timeout: 45000 
+      timeout: 30000 
     });
 
-    // Aguarda conteúdo dinâmico carregar
-    console.log(`[Scraper] ⏳ Aguardando carregamento do conteúdo dinâmico...`);
-    await page.waitForTimeout(4000);
+    // Aguarda conteúdo dinâmico
+    await page.waitForTimeout(3000);
 
-    // Tenta aguardar elementos específicos aparecerem
+    // Tenta aguardar elementos específicos
     try {
-      await page.waitForSelector('h1, [class*="title"], [class*="name"]', { timeout: 5000 });
+      await page.waitForSelector('h1, [data-testid*="title"], [class*="product"]', { timeout: 5000 });
     } catch (e) {
-      console.log(`[Scraper] ⚠️ Headers não encontrados, continuando...`);
+      console.log(`[Playwright] ⚠️ Elementos não encontrados rapidamente, continuando...`);
     }
 
-    // Extrai o HTML completo
     const html = await page.content();
-    console.log(`[Scraper] ✅ HTML extraído com sucesso (${Math.round(html.length / 1000)}KB)`);
+    console.log(`[Playwright] ✅ HTML capturado: ${Math.round(html.length / 1000)}KB`);
 
-    // Processa o HTML usando a estratégia hierárquica em gemini.ts
-    const productInfo = await extractProductInfo(url, html);
-
-    console.log(`[Scraper] 🎯 Produto extraído:`, {
-      name: productInfo.name,
-      price: productInfo.price,
-      store: productInfo.store,
-      hasImage: !!productInfo.imageUrl
-    });
-
-    return productInfo;
-
-  } catch (error) {
-    console.error(`[Scraper] ❌ Erro durante scraping:`, error.message);
-
-    // Fallback: tenta criar produto básico a partir da URL
-    const fallbackProduct = createFallbackProduct(url);
-    console.log(`[Scraper] 🔄 Usando produto fallback:`, fallbackProduct);
-    return fallbackProduct;
+    return await extractProductInfo(url, html);
 
   } finally {
-    // Garante que o navegador sempre será fechado
     if (browser) {
       try {
         await browser.close();
-        console.log(`[Scraper] 🔒 Navegador fechado com sucesso`);
       } catch (error) {
-        console.error(`[Scraper] ⚠️ Erro ao fechar navegador:`, error.message);
+        console.error(`[Playwright] ⚠️ Erro ao fechar navegador:`, error.message);
       }
     }
   }
 }
 
-function createFallbackProduct(url: string): ScrapedProduct {
-  // Extrai o nome da loja a partir da URL
-  let store = 'Loja Online';
+async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
   try {
-    const hostname = new URL(url).hostname.replace('www.', '');
+    console.log(`[HTTP] 🌐 Fazendo requisição HTTP para: ${url}`);
+    
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+      },
+      timeout: 15000,
+      maxRedirects: 5
+    });
+
+    const html = response.data;
+    console.log(`[HTTP] ✅ HTML recebido: ${Math.round(html.length / 1000)}KB`);
+
+    return await extractProductInfo(url, html);
+    
+  } catch (error) {
+    console.error(`[HTTP] ❌ Erro na requisição:`, error.message);
+    throw error;
+  }
+}
+
+function createFallbackProduct(url: string): ScrapedProduct {
+  console.log(`[Fallback] 🔄 Criando produto fallback para: ${url}`);
+  
+  // Extrai informações básicas da URL
+  let store = 'Loja Online';
+  let productName = 'Produto';
+  let category = 'Outros';
+
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.replace('www.', '');
+    const pathname = urlObj.pathname;
+
+    // Mapeia lojas conhecidas
     const storeMap: Record<string, string> = {
       'mercadolivre.com.br': 'Mercado Livre',
       'amazon.com.br': 'Amazon Brasil',
@@ -125,9 +171,12 @@ function createFallbackProduct(url: string): ScrapedProduct {
       'nike.com.br': 'Nike Brasil',
       'netshoes.com.br': 'Netshoes',
       'kabum.com.br': 'KaBuM',
-      'pichau.com.br': 'Pichau'
+      'pichau.com.br': 'Pichau',
+      'aliexpress.com': 'AliExpress',
+      'shoptime.com.br': 'Shoptime'
     };
 
+    // Identifica a loja
     for (const [domain, name] of Object.entries(storeMap)) {
       if (hostname.includes(domain)) {
         store = name;
@@ -136,31 +185,80 @@ function createFallbackProduct(url: string): ScrapedProduct {
     }
 
     if (store === 'Loja Online') {
-      store = hostname.split('.')[0].charAt(0).toUpperCase() + hostname.split('.')[0].slice(1);
+      const domainParts = hostname.split('.');
+      store = domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1);
     }
+
+    // Tenta extrair nome do produto da URL
+    const pathSegments = pathname.split('/').filter(segment => segment.length > 3);
+    if (pathSegments.length > 0) {
+      // Pega o último segmento significativo
+      let productSlug = pathSegments[pathSegments.length - 1];
+      
+      // Remove códigos de produto comuns
+      productSlug = productSlug.replace(/dp\/[A-Z0-9]+/i, '');
+      productSlug = productSlug.replace(/\/p\/\d+/i, '');
+      productSlug = productSlug.replace(/\?.*$/, '');
+      
+      // Converte slug em nome legível
+      if (productSlug.length > 3) {
+        productName = productSlug
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase())
+          .substring(0, 50);
+      }
+    }
+
+    // Detecta categoria básica pela URL
+    const urlLower = url.toLowerCase();
+    const categoryMap: Record<string, string> = {
+      'celular': 'Eletrônicos',
+      'smartphone': 'Eletrônicos', 
+      'iphone': 'Eletrônicos',
+      'notebook': 'Eletrônicos',
+      'computador': 'Eletrônicos',
+      'tenis': 'Roupas e Acessórios',
+      'roupa': 'Roupas e Acessórios',
+      'camisa': 'Roupas e Acessórios',
+      'casa': 'Casa e Decoração',
+      'movel': 'Casa e Decoração',
+      'livro': 'Livros',
+      'jogo': 'Games',
+      'esporte': 'Esportes'
+    };
+
+    for (const [keyword, cat] of Object.entries(categoryMap)) {
+      if (urlLower.includes(keyword)) {
+        category = cat;
+        break;
+      }
+    }
+
   } catch (error) {
-    console.error('[Scraper] Erro ao extrair loja da URL:', error);
+    console.error('[Fallback] ❌ Erro ao processar URL:', error.message);
   }
 
-  return {
-    name: `Produto de ${store}`,
+  const fallbackProduct = {
+    name: productName === 'Produto' ? `Produto de ${store}` : productName,
     price: null,
     originalPrice: null,
     imageUrl: 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto+Não+Encontrado',
     store: store,
-    description: 'Produto adicionado via fallback - informações não puderam ser extraídas automaticamente',
-    category: 'Outros',
+    description: 'Produto adicionado automaticamente - informações precisam ser verificadas manualmente',
+    category: category,
     brand: null
   };
+
+  console.log(`[Fallback] 📦 Produto fallback criado:`, fallbackProduct);
+  return fallbackProduct;
 }
 
-// Função auxiliar para extrair dados JSON-LD
+// Função auxiliar para extrair dados JSON-LD (mantida da versão anterior)
 export function extractJSONLD(html: string): Partial<ScrapedProduct> | null {
   try {
     console.log(`[JSON-LD] 🔍 Procurando dados estruturados...`);
     const $ = cheerio.load(html);
 
-    // Procura por scripts JSON-LD
     const jsonLdScripts = $('script[type="application/ld+json"]');
     console.log(`[JSON-LD] 📄 Encontrados ${jsonLdScripts.length} scripts JSON-LD`);
 
@@ -185,7 +283,7 @@ export function extractJSONLD(html: string): Partial<ScrapedProduct> | null {
       }
     }
 
-    console.log(`[JSON-LD] ❌ Nenhum produto válido encontrado nos ${jsonLdScripts.length} scripts`);
+    console.log(`[JSON-LD] ❌ Nenhum produto válido encontrado`);
     return null;
   } catch (error) {
     console.error(`[JSON-LD] ❌ Erro geral:`, error.message);
@@ -194,7 +292,6 @@ export function extractJSONLD(html: string): Partial<ScrapedProduct> | null {
 }
 
 function findProductInJsonLd(data: any): Partial<ScrapedProduct> | null {
-  // Se for um array, procura em cada item
   if (Array.isArray(data)) {
     for (const item of data) {
       const product = findProductInJsonLd(item);
@@ -203,14 +300,11 @@ function findProductInJsonLd(data: any): Partial<ScrapedProduct> | null {
     return null;
   }
 
-  // Se for um objeto, verifica se é um produto
   if (data && typeof data === 'object') {
-    // Produto direto
     if (data['@type'] === 'Product' || data.type === 'Product') {
       return extractProductFromJsonLd(data);
     }
 
-    // Procura em propriedades aninhadas
     const relevantKeys = ['product', 'mainEntity', '@graph', 'offers', 'itemListElement'];
     for (const key of relevantKeys) {
       if (data[key] && typeof data[key] === 'object') {
@@ -228,15 +322,12 @@ function extractProductFromJsonLd(productData: any): Partial<ScrapedProduct> | n
     const name = productData.name || productData.title;
     if (!name) return null;
 
-    // Extrai preço com lógica robusta
     let price: number | null = null;
     let originalPrice: number | null = null;
 
-    // Verifica várias estruturas de preço
     if (productData.offers) {
       const offer = Array.isArray(productData.offers) ? productData.offers[0] : productData.offers;
       
-      // Preço atual
       if (offer.price) {
         price = parseFloat(String(offer.price).replace(',', '.'));
       } else if (offer.priceSpecification?.price) {
@@ -245,7 +336,6 @@ function extractProductFromJsonLd(productData: any): Partial<ScrapedProduct> | n
         price = parseFloat(String(offer.lowPrice).replace(',', '.'));
       }
 
-      // Preço original (se em promoção)
       if (offer.highPrice && offer.highPrice !== price) {
         originalPrice = parseFloat(String(offer.highPrice).replace(',', '.'));
       }
@@ -253,7 +343,6 @@ function extractProductFromJsonLd(productData: any): Partial<ScrapedProduct> | n
       price = parseFloat(String(productData.price).replace(',', '.'));
     }
 
-    // Extrai imagem com prioridade
     let imageUrl: string | null = null;
     if (productData.image) {
       if (typeof productData.image === 'string') {
@@ -266,7 +355,6 @@ function extractProductFromJsonLd(productData: any): Partial<ScrapedProduct> | n
       }
     }
 
-    // Extrai outras informações
     const description = productData.description || null;
     const brand = productData.brand?.name || productData.brand || null;
     const category = productData.category || productData.productCategory || null;
