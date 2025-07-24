@@ -20,7 +20,8 @@ import {
   Eye,
   ExternalLink,
   Edit,
-  Info
+  Info,
+  Trash2
 } from 'lucide-react';
 import { CategoryProductsModal } from '@/components/category-products-modal';
 import { StoreProductsModal } from '@/components/store-products-modal';
@@ -28,6 +29,7 @@ import { EditProductWithPaymentModal } from '@/components/edit-product-with-paym
 import { PriceHistoryChart } from '@/components/price-history-chart';
 import { InstallmentsTimeline } from '@/components/installments-timeline';
 import { ProfileCard } from '@/components/ui/profile-card';
+import { toast } from 'sonner';
 
 // Componente TiltCard para efeito 3D no desktop
 const TiltCard = ({ children, className = "", ...props }: any) => {
@@ -77,6 +79,7 @@ interface Product {
   purchaseDate?: string;
   imageUrl?: string;
   url?: string;
+  createdAt: string;
 }
 
 interface FinanceData {
@@ -162,6 +165,32 @@ export function HistoricoTab() {
 
     fetchData();
   }, [authToken, userId]);
+
+  const handleDeletePurchasedProduct = async (productId: number, productName: string) => {
+    if (window.confirm(`Deseja realmente excluir o produto "${productName}"?`)) {
+      try {
+        const response = await fetch(`/api/products/${productId}`, {
+          method: 'DELETE',
+          headers: {
+            'x-auth-token': authToken || ''
+          }
+        });
+
+        if (response.ok) {
+          // Atualizar a lista de produtos após a exclusão
+          const updatedProducts = products.filter(product => product.id !== productId);
+          setProducts(updatedProducts);
+          toast.success(`Produto "${productName}" excluído com sucesso!`);
+        } else {
+          toast.error(`Erro ao excluir o produto "${productName}".`);
+          console.error('Erro ao excluir o produto:', response.status);
+        }
+      } catch (error) {
+        toast.error(`Erro ao excluir o produto "${productName}".`);
+        console.error('Erro ao excluir o produto:', error);
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -580,33 +609,33 @@ export function HistoricoTab() {
                                 <Calendar className="w-3 h-3 mr-1" />
                                 Comprado em {new Date(product.createdAt).toLocaleDateString('pt-BR')}
                               </div>
-                              <div className="flex items-center justify-center gap-3 px-2">
+                              <div className="flex items-center justify-center gap-2 px-2">
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleViewProduct(product)}
                                   title="Ver detalhes"
-                                  className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
+                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                 >
-                                  <Info className="h-4 w-4" />
+                                  <Info className="h-3 w-3" />
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleEditProduct(product)}
                                   title="Editar produto"
-                                  className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
+                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  <Edit className="h-3 w-3" />
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleEditProduct(product)}
                                   title="Gerenciar pagamento"
-                                  className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
+                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                 >
-                                  <CreditCard className="h-4 w-4" />
+                                  <CreditCard className="h-3 w-3" />
                                 </Button>
                                 {product.url && (
                                   <Button
@@ -614,11 +643,20 @@ export function HistoricoTab() {
                                     variant="ghost"
                                     onClick={() => window.open(product.url, '_blank')}
                                     title="Ver no site"
-                                    className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
+                                    className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                   >
-                                    <ExternalLink className="h-4 w-4" />
+                                    <ExternalLink className="h-3 w-3" />
                                   </Button>
                                 )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeletePurchasedProduct(product.id, product.name)}
+                                  title="Excluir produto"
+                                  className="h-8 w-8 p-0 hover:bg-red-500/20 text-gray-300 hover:text-red-400 transition-all duration-200 hover:scale-110"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -666,33 +704,33 @@ export function HistoricoTab() {
                                 <Calendar className="w-3 h-3 mr-1" />
                                 Comprado em {new Date(product.createdAt).toLocaleDateString('pt-BR')}
                               </div>
-                              <div className="flex items-center justify-center gap-3 px-2">
+                              <div className="flex items-center justify-center gap-2 px-2">
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleViewProduct(product)}
                                   title="Ver detalhes"
-                                  className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
+                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                 >
-                                  <Info className="h-4 w-4" />
+                                  <Info className="h-3 w-3" />
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleEditProduct(product)}
                                   title="Editar produto"
-                                  className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
+                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  <Edit className="h-3 w-3" />
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleEditProduct(product)}
                                   title="Gerenciar pagamento"
-                                  className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
+                                  className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                 >
-                                  <CreditCard className="h-4 w-4" />
+                                  <CreditCard className="h-3 w-3" />
                                 </Button>
                                 {product.url && (
                                   <Button
@@ -700,11 +738,20 @@ export function HistoricoTab() {
                                     variant="ghost"
                                     onClick={() => window.open(product.url, '_blank')}
                                     title="Ver no site"
-                                    className="h-9 w-9 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
+                                    className="h-8 w-8 p-0 hover:bg-green-500/20 text-gray-300 hover:text-green-300 transition-all duration-200 hover:scale-110"
                                   >
-                                    <ExternalLink className="h-4 w-4" />
+                                    <ExternalLink className="h-3 w-3" />
                                   </Button>
                                 )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeletePurchasedProduct(product.id, product.name)}
+                                  title="Excluir produto"
+                                  className="h-8 w-8 p-0 hover:bg-red-500/20 text-gray-300 hover:text-red-400 transition-all duration-200 hover:scale-110"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
                               </div>
                             </div>
                           </div>
