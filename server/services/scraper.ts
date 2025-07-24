@@ -1,4 +1,3 @@
-
 import { chromium, Browser, Page } from 'playwright';
 import * as cheerio from 'cheerio';
 import { extractProductInfo } from './gemini.js';
@@ -14,6 +13,19 @@ interface ScrapedProduct {
   category?: string | null;
   brand?: string | null;
 }
+
+// Configurações do navegador para Replit
+const REPLIT_BROWSER_CONFIG = {
+  timeouts: {
+    playwright: 30000, // Timeout geral do Playwright (ms)
+    waitForSelector: 5000, // Timeout para esperar por seletores (ms)
+  },
+  http: {
+    timeout: 15000, // Timeout para requisições HTTP (ms)
+    maxRedirects: 5, // Máximo de redirecionamentos
+  },
+  // Outras configurações...
+};
 
 export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct> {
   console.log(`[Scraper] 🚀 Iniciando scraping multi-estratégia para: ${url}`);
@@ -87,15 +99,17 @@ async function scrapeWithPlaywright(url: string): Promise<ScrapedProduct> {
     console.log(`[Playwright] 🌐 Navegando para: ${url}`);
     await page.goto(url, { 
       waitUntil: 'domcontentloaded',
-      timeout: 30000 
+      timeout: REPLIT_BROWSER_CONFIG.timeouts.playwright 
     });
 
-    // Aguarda conteúdo dinâmico
+    // Aguarda conteúdo dinâmico carregar
     await page.waitForTimeout(3000);
 
     // Tenta aguardar elementos específicos
     try {
-      await page.waitForSelector('h1, [data-testid*="title"], [class*="product"]', { timeout: 5000 });
+      await page.waitForSelector('h1, [data-testid*="title"], [class*="product"]', { 
+        timeout: REPLIT_BROWSER_CONFIG.timeouts.waitForSelector 
+      });
     } catch (e) {
       console.log(`[Playwright] ⚠️ Elementos não encontrados rapidamente, continuando...`);
     }
@@ -119,7 +133,7 @@ async function scrapeWithPlaywright(url: string): Promise<ScrapedProduct> {
 async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
   try {
     console.log(`[HTTP] 🌐 Fazendo requisição HTTP para: ${url}`);
-    
+
     const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -137,7 +151,7 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
     console.log(`[HTTP] ✅ HTML recebido: ${Math.round(html.length / 1000)}KB`);
 
     return await extractProductInfo(url, html);
-    
+
   } catch (error) {
     console.error(`[HTTP] ❌ Erro na requisição:`, error.message);
     throw error;
@@ -146,7 +160,7 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
 
 function createFallbackProduct(url: string): ScrapedProduct {
   console.log(`[Fallback] 🔄 Criando produto fallback para: ${url}`);
-  
+
   // Extrai informações básicas da URL
   let store = 'Loja Online';
   let productName = 'Produto';
@@ -194,12 +208,12 @@ function createFallbackProduct(url: string): ScrapedProduct {
     if (pathSegments.length > 0) {
       // Pega o último segmento significativo
       let productSlug = pathSegments[pathSegments.length - 1];
-      
+
       // Remove códigos de produto comuns
       productSlug = productSlug.replace(/dp\/[A-Z0-9]+/i, '');
       productSlug = productSlug.replace(/\/p\/\d+/i, '');
       productSlug = productSlug.replace(/\?.*$/, '');
-      
+
       // Converte slug em nome legível
       if (productSlug.length > 3) {
         productName = productSlug
@@ -327,7 +341,7 @@ function extractProductFromJsonLd(productData: any): Partial<ScrapedProduct> | n
 
     if (productData.offers) {
       const offer = Array.isArray(productData.offers) ? productData.offers[0] : productData.offers;
-      
+
       if (offer.price) {
         price = parseFloat(String(offer.price).replace(',', '.'));
       } else if (offer.priceSpecification?.price) {
