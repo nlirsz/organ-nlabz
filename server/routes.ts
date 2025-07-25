@@ -228,6 +228,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const product = await storage.createProduct(productData);
       console.log(`[API] Produto criado com sucesso: ${product.name}`);
 
+      // ÚLTIMO PASSO: Aplica partner tag da Amazon se necessário
+      if (url.includes('amazon.com') && !url.includes(`tag=${process.env.AMAZON_PARTNER_TAG}`)) {
+        try {
+          const { addPartnerTagToAmazonUrl, extractASINFromUrl } = await import('./services/amazon-api.js');
+          const asin = extractASINFromUrl(url);
+          if (asin && process.env.AMAZON_PARTNER_TAG) {
+            const updatedUrl = addPartnerTagToAmazonUrl(url, asin);
+            
+            // Atualiza a URL do produto no banco
+            await storage.updateProduct(product.id, { url: updatedUrl }, parseInt(req.user.userId));
+            product.url = updatedUrl; // Atualiza objeto para resposta
+            
+            console.log(`[API] ✅ Partner tag aplicado após criação: ${url} → ${updatedUrl}`);
+          }
+        } catch (error) {
+          console.warn(`[API] ⚠️ Erro ao aplicar partner tag após criação:`, error.message);
+        }
+      }
+
       // Determina se o scraping foi bem-sucedido
       const isGenericProduct = scrapedProduct.name === `Produto de ${scrapedProduct.store}` || 
                               scrapedProduct.name === 'Produto encontrado';
@@ -292,6 +311,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const product = await storage.createProduct(productData);
+
+      // ÚLTIMO PASSO: Aplica partner tag da Amazon se necessário
+      if (url.includes('amazon.com') && !url.includes(`tag=${process.env.AMAZON_PARTNER_TAG}`)) {
+        try {
+          const { addPartnerTagToAmazonUrl, extractASINFromUrl } = await import('./services/amazon-api.js');
+          const asin = extractASINFromUrl(url);
+          if (asin && process.env.AMAZON_PARTNER_TAG) {
+            const updatedUrl = addPartnerTagToAmazonUrl(url, asin);
+            
+            // Atualiza a URL do produto no banco
+            await storage.updateProduct(product.id, { url: updatedUrl }, parseInt(req.user.userId));
+            product.url = updatedUrl; // Atualiza objeto para resposta
+            
+            console.log(`[API Manual] ✅ Partner tag aplicado: ${url} → ${updatedUrl}`);
+          }
+        } catch (error) {
+          console.warn(`[API Manual] ⚠️ Erro ao aplicar partner tag:`, error.message);
+        }
+      }
+
       res.json(product);
     } catch (error) {
       console.error("Manual product creation error:", error);

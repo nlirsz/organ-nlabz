@@ -135,19 +135,16 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
 
     console.log(`[Amazon API] Sem credenciais da API, criando produto básico com partner tag: ${AMAZON_PARTNER_TAG}`);
     
-    // Sempre aplica o partner tag na URL original
-    const affiliatedUrl = addPartnerTagToAmazonUrl(url, asin);
-    
     return {
       name: 'Produto Amazon',
       price: null,
       originalPrice: null,
       imageUrl: null,
       store: 'Amazon Brasil',
-      description: 'Produto da Amazon - adicione as informações manualmente. Link já contém seu código de afiliado.',
+      description: 'Produto da Amazon - adicione as informações manualmente. Partner tag será aplicado automaticamente.',
       category: 'Outros',
       brand: null,
-      url: affiliatedUrl
+      url: url // URL original (partner tag aplicado na API)
     };
   }
 
@@ -220,9 +217,6 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
     const features = item.ItemInfo?.Features?.DisplayValues || [];
     const description = features.length > 0 ? features.slice(0, 3).join('. ') : null;
 
-    // Aplica partner tag na URL original ou cria URL limpa
-    const affiliatedUrl = addPartnerTagToAmazonUrl(url, asin);
-
     const result: AmazonProductResult = {
       name,
       price,
@@ -232,7 +226,7 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
       description,
       category,
       brand,
-      url: affiliatedUrl
+      url: url // URL original (partner tag aplicado na API)
     };
 
     console.log(`[Amazon API] ✅ Produto encontrado: ${name} - R$ ${price}`);
@@ -240,9 +234,6 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
 
   } catch (error) {
     console.error('[Amazon API] Erro ao buscar produto:', error.message);
-    
-    // Se a API falhar, retorna informações básicas da URL com partner tag
-    const affiliatedUrl = addPartnerTagToAmazonUrl(url, asin);
     
     return {
       name: 'Produto Amazon',
@@ -253,7 +244,7 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
       description: 'Produto da Amazon - informações precisam ser adicionadas manualmente',
       category: 'Outros',
       brand: null,
-      url: affiliatedUrl
+      url: url // URL original (partner tag aplicado na API)
     };
   }
 }
