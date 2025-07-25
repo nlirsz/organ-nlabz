@@ -56,7 +56,7 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
 
   // ESTRATÉGIA 3: Fallback com informações básicas
   console.log(`[Scraper] 🔄 TODAS TENTATIVAS FALHARAM - Usando fallback`);
-  return createFallbackProduct(url);
+  return await createFallbackProduct(url);
 }
 
 async function scrapeWithPlaywright(url: string): Promise<ScrapedProduct> {
@@ -158,7 +158,7 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
   }
 }
 
-function createFallbackProduct(url: string): ScrapedProduct {
+async function createFallbackProduct(url: string): Promise<ScrapedProduct> {
   console.log(`[Fallback] 🔄 Criando produto fallback para: ${url}`);
 
   // Extrai informações básicas da URL
@@ -248,34 +248,19 @@ function createFallbackProduct(url: string): ScrapedProduct {
       }
     }
 
-    // Se conseguiu extrair informações básicas, cria o produto
-    if (productName && productName.length > 3) {
-      console.log(`[Scraper] ✅ ${strategy.toUpperCase()} SUCESSO: "${productName}"`);
-
-      // Aplica partner tag para Amazon
-      let finalUrl = url;
-      if (url.includes('amazon.com')) {
+    // Aplica partner tag para Amazon na URL original
+    let finalUrl = url;
+    if (url.includes('amazon.com')) {
+      try {
         const { addPartnerTagToAmazonUrl, extractASINFromUrl } = await import('./amazon-api.js');
         const asin = extractASINFromUrl(url);
         if (asin) {
           finalUrl = addPartnerTagToAmazonUrl(url, asin);
-          console.log(`[Scraper] 🏷️ Partner tag aplicado: ${url} → ${finalUrl}`);
+          console.log(`[Fallback] 🏷️ Partner tag aplicado: ${url} → ${finalUrl}`);
         }
+      } catch (error) {
+        console.warn(`[Fallback] ⚠️ Erro ao aplicar partner tag:`, error.message);
       }
-
-      return {
-        name: productName,
-        price: price || null,
-        originalPrice: originalPrice || null,
-        imageUrl: imageUrl || null,
-        store: storeName,
-        description: description || null,
-        category,
-        brand: brand || null,
-        url: finalUrl, // URL com partner tag se for Amazon
-        scrapingSuccess: true,
-        needsManualInput: !price || !imageUrl
-      };
     }
 
   } catch (error) {
@@ -290,7 +275,8 @@ function createFallbackProduct(url: string): ScrapedProduct {
     store: store,
     description: 'Produto adicionado automaticamente - informações precisam ser verificadas manualmente',
     category: category,
-    brand: null
+    brand: null,
+    url: finalUrl // URL com partner tag aplicado se for Amazon
   };
 
   console.log(`[Fallback] 📦 Produto fallback criado:`, fallbackProduct);
