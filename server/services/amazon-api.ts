@@ -96,6 +96,28 @@ function extractASINFromUrl(url: string): string | null {
   }
 }
 
+// Função para adicionar partner tag a qualquer URL da Amazon
+function addPartnerTagToAmazonUrl(url: string, asin: string): string {
+  if (!AMAZON_PARTNER_TAG) {
+    return url;
+  }
+
+  try {
+    const urlObj = new URL(url);
+    
+    // Remove tag existente se houver
+    urlObj.searchParams.delete('tag');
+    
+    // Adiciona nosso partner tag
+    urlObj.searchParams.set('tag', AMAZON_PARTNER_TAG);
+    
+    return urlObj.toString();
+  } catch (error) {
+    // Se der erro no parse da URL, cria URL limpa com nosso tag
+    return `https://www.amazon.com.br/dp/${asin}?tag=${AMAZON_PARTNER_TAG}`;
+  }
+}
+
 // Busca produto na Amazon por ASIN
 export async function fetchAmazonProduct(url: string): Promise<AmazonProductResult | null> {
   const asin = extractASINFromUrl(url);
@@ -113,6 +135,9 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
 
     console.log(`[Amazon API] Sem credenciais da API, criando produto básico com partner tag: ${AMAZON_PARTNER_TAG}`);
     
+    // Sempre aplica o partner tag na URL original
+    const affiliatedUrl = addPartnerTagToAmazonUrl(url, asin);
+    
     return {
       name: 'Produto Amazon',
       price: null,
@@ -122,7 +147,7 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
       description: 'Produto da Amazon - adicione as informações manualmente. Link já contém seu código de afiliado.',
       category: 'Outros',
       brand: null,
-      url: `https://www.amazon.com.br/dp/${asin}?tag=${AMAZON_PARTNER_TAG}`
+      url: affiliatedUrl
     };
   }
 
@@ -195,6 +220,9 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
     const features = item.ItemInfo?.Features?.DisplayValues || [];
     const description = features.length > 0 ? features.slice(0, 3).join('. ') : null;
 
+    // Aplica partner tag na URL original ou cria URL limpa
+    const affiliatedUrl = addPartnerTagToAmazonUrl(url, asin);
+
     const result: AmazonProductResult = {
       name,
       price,
@@ -204,7 +232,7 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
       description,
       category,
       brand,
-      url: `https://www.amazon.com.br/dp/${asin}?tag=${AMAZON_PARTNER_TAG}`
+      url: affiliatedUrl
     };
 
     console.log(`[Amazon API] ✅ Produto encontrado: ${name} - R$ ${price}`);
@@ -213,7 +241,9 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
   } catch (error) {
     console.error('[Amazon API] Erro ao buscar produto:', error.message);
     
-    // Se a API falhar, retorna informações básicas da URL
+    // Se a API falhar, retorna informações básicas da URL com partner tag
+    const affiliatedUrl = addPartnerTagToAmazonUrl(url, asin);
+    
     return {
       name: 'Produto Amazon',
       price: null,
@@ -223,7 +253,7 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
       description: 'Produto da Amazon - informações precisam ser adicionadas manualmente',
       category: 'Outros',
       brand: null,
-      url: url
+      url: affiliatedUrl
     };
   }
 }
