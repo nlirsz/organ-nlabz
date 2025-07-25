@@ -601,13 +601,13 @@ export async function tryAPIFirst(url: string): Promise<APIProductResult | null>
 
       case 'amazon':
         try {
-          const result = await fetchAmazonProduct(productInfo.id);
-          if (result && (result.price > 0 || result.name !== 'Produto Amazon')) {
-            console.log(`[API First] ✅ Amazon API sucesso: ${result.name}`);
+          const result = await fetchAmazonProduct(url);
+          if (result) {
+            console.log(`[API First] ✅ Amazon processado: ${result.name}`);
             return result;
           }
         } catch (error) {
-          console.log(`[API First] Amazon API falhou:`, error);
+          console.log(`[API First] Amazon processing falhou:`, error);
         }
         break;
     }

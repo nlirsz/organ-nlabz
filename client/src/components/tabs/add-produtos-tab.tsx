@@ -532,30 +532,30 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
-            { name: "Amazon", hasAPI: true },
-            { name: "Mercado Livre", hasAPI: true },
-            { name: "Shopee", hasAPI: false },
-            { name: "Americanas", hasAPI: false },
-            { name: "Casas Bahia", hasAPI: false },
-            { name: "Extra", hasAPI: false },
-            { name: "Submarino", hasAPI: false },
-            { name: "Magazine Luiza", hasAPI: false },
-            { name: "Kabum", hasAPI: false },
-            { name: "Pichau", hasAPI: false },
-            { name: "Netshoes", hasAPI: false },
-            { name: "Zara", hasAPI: false }
+            { name: "Amazon", hasAPI: true, note: "Partner Tag" },
+            { name: "Mercado Livre", hasAPI: true, note: undefined },
+            { name: "Shopee", hasAPI: false, note: undefined },
+            { name: "Americanas", hasAPI: false, note: undefined },
+            { name: "Casas Bahia", hasAPI: false, note: undefined },
+            { name: "Extra", hasAPI: false, note: undefined },
+            { name: "Submarino", hasAPI: false, note: undefined },
+            { name: "Magazine Luiza", hasAPI: false, note: undefined },
+            { name: "Kabum", hasAPI: false, note: undefined },
+            { name: "Pichau", hasAPI: false, note: undefined },
+            { name: "Netshoes", hasAPI: false, note: undefined },
+            { name: "Zara", hasAPI: false, note: undefined }
           ].map((store, index) => (
             <div key={store.name} className={`text-center p-3 neomorphic-card rounded-xl smooth-hover staggered-fade ${store.hasAPI ? 'ring-2 ring-green-200' : ''}`} style={{ animationDelay: `${index * 0.05}s` }}>
               <span className="text-sm font-medium flex items-center justify-center gap-1" style={{ color: 'var(--text-primary)' }}>
                 {store.hasAPI ? (
-                  <div className="w-3 h-3 bg-green-500 rounded-full" title="API Oficial" />
+                  <div className="w-3 h-3 bg-green-500 rounded-full" title={store.note || "API Oficial"} />
                 ) : (
                   <Heart className="w-3 h-3 opacity-50" />
                 )}
                 {store.name}
               </span>
               {store.hasAPI && (
-                <div className="text-xs text-green-600 mt-1">API Oficial</div>
+                <div className="text-xs text-green-600 mt-1">{store.note || "API Oficial"}</div>
               )}
             </div>
           ))}

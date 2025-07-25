@@ -98,15 +98,32 @@ function extractASINFromUrl(url: string): string | null {
 
 // Busca produto na Amazon por ASIN
 export async function fetchAmazonProduct(url: string): Promise<AmazonProductResult | null> {
-  if (!AMAZON_ACCESS_KEY || !AMAZON_SECRET_KEY || !AMAZON_PARTNER_TAG) {
-    console.log('[Amazon API] Credenciais não configuradas');
-    return null;
-  }
-
   const asin = extractASINFromUrl(url);
   if (!asin) {
     console.log('[Amazon API] ASIN não encontrado na URL');
     return null;
+  }
+
+  // Se não temos credenciais da API, mas temos partner tag, retorna informações básicas com o link afiliado
+  if (!AMAZON_ACCESS_KEY || !AMAZON_SECRET_KEY) {
+    if (!AMAZON_PARTNER_TAG) {
+      console.log('[Amazon API] Partner tag não configurado');
+      return null;
+    }
+
+    console.log(`[Amazon API] Sem credenciais da API, criando produto básico com partner tag: ${AMAZON_PARTNER_TAG}`);
+    
+    return {
+      name: 'Produto Amazon',
+      price: null,
+      originalPrice: null,
+      imageUrl: null,
+      store: 'Amazon Brasil',
+      description: 'Produto da Amazon - adicione as informações manualmente. Link já contém seu código de afiliado.',
+      category: 'Outros',
+      brand: null,
+      url: `https://www.amazon.com.br/dp/${asin}?tag=${AMAZON_PARTNER_TAG}`
+    };
   }
 
   try {
@@ -214,7 +231,7 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
 // Busca produtos da Amazon por termo
 export async function searchAmazonProducts(searchTerm: string, maxResults: number = 5): Promise<AmazonProductResult[]> {
   if (!AMAZON_ACCESS_KEY || !AMAZON_SECRET_KEY || !AMAZON_PARTNER_TAG) {
-    console.log('[Amazon Search] Credenciais não configuradas');
+    console.log('[Amazon Search] Credenciais da API não configuradas');
     return [];
   }
 
