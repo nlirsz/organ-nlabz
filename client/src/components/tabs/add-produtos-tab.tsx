@@ -532,24 +532,31 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
-            "Mercado Livre",
-            "Amazon",
-            "Shopee", 
-            "Americanas",
-            "Casas Bahia",
-            "Extra",
-            "Submarino",
-            "Magazine Luiza",
-            "Kabum",
-            "Pichau",
-            "Netshoes",
-            "Zara"
+            { name: "Amazon", hasAPI: true },
+            { name: "Mercado Livre", hasAPI: true },
+            { name: "Shopee", hasAPI: false },
+            { name: "Americanas", hasAPI: false },
+            { name: "Casas Bahia", hasAPI: false },
+            { name: "Extra", hasAPI: false },
+            { name: "Submarino", hasAPI: false },
+            { name: "Magazine Luiza", hasAPI: false },
+            { name: "Kabum", hasAPI: false },
+            { name: "Pichau", hasAPI: false },
+            { name: "Netshoes", hasAPI: false },
+            { name: "Zara", hasAPI: false }
           ].map((store, index) => (
-            <div key={store} className={`text-center p-3 neomorphic-card rounded-xl smooth-hover staggered-fade`} style={{ animationDelay: `${index * 0.05}s` }}>
+            <div key={store.name} className={`text-center p-3 neomorphic-card rounded-xl smooth-hover staggered-fade ${store.hasAPI ? 'ring-2 ring-green-200' : ''}`} style={{ animationDelay: `${index * 0.05}s` }}>
               <span className="text-sm font-medium flex items-center justify-center gap-1" style={{ color: 'var(--text-primary)' }}>
-                <Heart className="w-3 h-3 opacity-50" />
-                {store}
+                {store.hasAPI ? (
+                  <div className="w-3 h-3 bg-green-500 rounded-full" title="API Oficial" />
+                ) : (
+                  <Heart className="w-3 h-3 opacity-50" />
+                )}
+                {store.name}
               </span>
+              {store.hasAPI && (
+                <div className="text-xs text-green-600 mt-1">API Oficial</div>
+              )}
             </div>
           ))}
         </div>

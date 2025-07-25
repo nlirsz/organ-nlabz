@@ -1,3 +1,5 @@
+import axios from 'axios';
+import { fetchAmazonProduct, searchAmazonProducts } from './amazon-api.js';
 
 export interface APIProductResult {
   name: string;
@@ -15,7 +17,7 @@ export interface APIProductResult {
 async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductResult | null> {
   try {
     console.log(`[Mercado Livre API] Buscando produto ID: ${productId}`);
-    
+
     const response = await fetch(`https://api.mercadolibre.com/items/${productId}`);
     if (!response.ok) {
       console.log(`[Mercado Livre API] Erro HTTP: ${response.status}`);
@@ -27,15 +29,15 @@ async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductRe
 
     // NOVA ESTRATÉGIA: Simula "copiar link da imagem" do navegador
     let imageUrl = 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
-    
+
     if (data.pictures && data.pictures.length > 0) {
       // Prioriza secure_url (HTTPS), depois url
       const originalUrl = data.pictures[0].secure_url || data.pictures[0].url;
-      
+
       if (originalUrl) {
         // ESTRATÉGIA: Mantém URL mais próxima do original (como copiar link funciona)
         imageUrl = originalUrl;
-        
+
         // Remove parâmetros que podem causar problemas
         try {
           const urlObj = new URL(imageUrl);
@@ -48,7 +50,7 @@ async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductRe
           // Se der erro no parse, mantém URL original
           console.warn('[ML API] Erro ao limpar URL, mantendo original:', e);
         }
-        
+
         // Otimizações mínimas apenas para compatibilidade
         if (imageUrl.includes('.webp')) {
           // Cria fallback .jpg apenas como backup
@@ -56,7 +58,7 @@ async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductRe
           console.log(`[ML API] WebP detectado, criando fallback: ${imageUrl} → ${jpgUrl}`);
           imageUrl = jpgUrl;
         }
-        
+
         // Melhora resolução apenas se for muito baixa
         if (imageUrl.includes('-I.jpg')) {
           imageUrl = imageUrl.replace(/-I\.jpg$/i, '-O.jpg');
@@ -65,13 +67,13 @@ async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductRe
           imageUrl = imageUrl.replace(/-S\.jpg$/i, '-O.jpg');
           console.log(`[ML API] Melhorando resolução: -S.jpg → -O.jpg`);
         }
-        
+
         console.log(`[ML API] Imagem final: ${originalUrl} → ${imageUrl}`);
       }
     } else if (data.thumbnail) {
       // Aplica mesma lógica para thumbnail
       imageUrl = data.thumbnail;
-      
+
       // Remove parâmetros problemáticos
       try {
         const urlObj = new URL(imageUrl);
@@ -82,18 +84,18 @@ async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductRe
       } catch (e) {
         console.warn('[ML API] Erro ao limpar thumbnail URL:', e);
       }
-      
+
       // Otimizações mínimas
       if (imageUrl.includes('.webp')) {
         imageUrl = imageUrl.replace(/\.webp$/i, '.jpg');
       }
-      
+
       if (imageUrl.includes('-I.jpg')) {
         imageUrl = imageUrl.replace(/-I\.jpg$/i, '-O.jpg');
       } else if (imageUrl.includes('-S.jpg')) {
         imageUrl = imageUrl.replace(/-S\.jpg$/i, '-O.jpg');
       }
-      
+
       console.log(`[ML API] Thumbnail processada: ${data.thumbnail} → ${imageUrl}`);
     }
 
@@ -152,17 +154,17 @@ async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductRe
 async function fetchFromMercadoLivre(searchTerm: string): Promise<APIProductResult[]> {
   try {
     console.log(`[Mercado Livre Search] Buscando: ${searchTerm}`);
-    
+
     const encodedTerm = encodeURIComponent(searchTerm);
     const response = await fetch(`https://api.mercadolibre.com/sites/MLB/search?q=${encodedTerm}&limit=5`);
-    
+
     if (!response.ok) {
       console.log(`[Mercado Livre Search] Erro HTTP: ${response.status}`);
       return [];
     }
 
     const data = await response.json();
-    
+
     if (!data.results || data.results.length === 0) {
       console.log(`[Mercado Livre Search] Nenhum resultado encontrado`);
       return [];
@@ -173,10 +175,10 @@ async function fetchFromMercadoLivre(searchTerm: string): Promise<APIProductResu
     for (const item of data.results.slice(0, 3)) {
       // ESTRATÉGIA: Link direto como copiar no navegador
       let imageUrl = 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
-      
+
       if (item.thumbnail) {
         imageUrl = item.thumbnail;
-        
+
         // Remove parâmetros que podem quebrar o link
         try {
           const urlObj = new URL(imageUrl);
@@ -188,25 +190,25 @@ async function fetchFromMercadoLivre(searchTerm: string): Promise<APIProductResu
           // Mantém original se der erro
           console.warn('[ML Search] Mantendo URL original devido a erro:', e);
         }
-        
+
         // Apenas converte .webp para .jpg (melhor compatibilidade)
         if (imageUrl.includes('.webp')) {
           imageUrl = imageUrl.replace(/\.webp$/i, '.jpg');
         }
-        
+
         // Melhora resolução apenas se muito baixa
         if (imageUrl.includes('-I.jpg')) {
           imageUrl = imageUrl.replace(/-I\.jpg$/i, '-O.jpg');
         } else if (imageUrl.includes('-S.jpg')) {
           imageUrl = imageUrl.replace(/-S\.jpg$/i, '-O.jpg');
         }
-        
+
         console.log(`[ML Search] Link direto: ${item.thumbnail} → ${imageUrl}`);
       }
 
       // Normaliza preço
       const price = typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0;
-      
+
       if (price > 0) {
         results.push({
           name: item.title || 'Produto Mercado Livre',
@@ -244,7 +246,7 @@ async function fetchFromGoogleShopping(urlOrQuery: string): Promise<APIProductRe
     if (urlOrQuery.startsWith('http')) {
       const urlObj = new URL(urlOrQuery);
       const domain = urlObj.hostname.replace('www.', '');
-      
+
       // Para Mercado Livre, extrai nome do produto da URL
       if (domain.includes('mercadolivre.com')) {
         const pathSegments = urlObj.pathname.split('/').filter(s => s.length > 2);
@@ -255,7 +257,7 @@ async function fetchFromGoogleShopping(urlOrQuery: string): Promise<APIProductRe
           .replace(/[-_]/g, ' ')
           .replace(/\d+gb/gi, '$& ')
           .trim();
-        
+
         searchQuery = `"${productName}" site:${domain}`;
       } else {
         const pathSegments = urlObj.pathname.split('/').filter(s => s.length > 2);
@@ -272,32 +274,32 @@ async function fetchFromGoogleShopping(urlOrQuery: string): Promise<APIProductRe
 
     if (!response.ok) {
       console.log(`[Google API] Erro HTTP: ${response.status} - ${response.statusText}`);
-      
+
       // Se der erro 400, tenta busca simplificada
       if (response.status === 400) {
         console.log(`[Google API] Tentando busca simplificada...`);
         const simpleQuery = urlOrQuery.startsWith('http') ? 
           extractSearchTermFromUrl(urlOrQuery) : 
           urlOrQuery.substring(0, 50); // Limita tamanho da query
-        
+
         if (simpleQuery && simpleQuery.length > 3) {
           const simpleResponse = await fetch(
             `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(simpleQuery)}&num=3`
           );
-          
+
           if (simpleResponse.ok) {
             const simpleData = await simpleResponse.json();
             return parseGoogleResults(simpleData);
           }
         }
       }
-      
+
       return [];
     }
 
     const data = await response.json();
     return parseGoogleResults(data);
-    
+
   } catch (error) {
     console.error('[Google API] Erro ao buscar:', error);
     return [];
@@ -315,10 +317,10 @@ function parseGoogleResults(data: any): APIProductResult[] {
 
   for (const item of data.items.slice(0, 3)) {
     const itemUrl = item.link || item.formattedUrl;
-    
+
     // Busca melhor imagem
     let imageUrl = 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Produto';
-    
+
     // Prioridades para imagem
     if (item.pagemap?.cse_image?.[0]?.src) {
       imageUrl = item.pagemap.cse_image[0].src;
@@ -423,7 +425,7 @@ function extractBrandFromSnippet(snippet: string): string | undefined {
   ];
 
   const snippetLower = snippet.toLowerCase();
-  
+
   for (const brand of brands) {
     if (snippetLower.includes(brand.toLowerCase())) {
       return brand;
@@ -456,9 +458,9 @@ function extractBrandFromMetatags(metatags: any): string | undefined {
 // Helper melhorado para categorias
 function guessCategory(text: string): string {
   if (!text) return 'Outros';
-  
+
   const textLower = text.toLowerCase();
-  
+
   const categoryMap = [
     { keywords: ['celular', 'smartphone', 'tablet', 'notebook', 'computador', 'tv', 'televisão', 'eletrônico'], category: 'Eletrônicos' },
     { keywords: ['tênis', 'sapato', 'calçado', 'camisa', 'camiseta', 'calça', 'vestido', 'roupa', 'blusa'], category: 'Roupas' },
@@ -469,13 +471,13 @@ function guessCategory(text: string): string {
     { keywords: ['esporte', 'fitness', 'academia', 'bicicleta'], category: 'Esportes' },
     { keywords: ['carro', 'auto', 'moto', 'pneu'], category: 'Automotivo' }
   ];
-  
+
   for (const { keywords, category } of categoryMap) {
     if (keywords.some(keyword => textLower.includes(keyword))) {
       return category;
     }
   }
-  
+
   return 'Outros';
 }
 
@@ -521,18 +523,18 @@ function extractSearchTermFromUrl(url: string): string {
     // Remove prefixos comuns e divide por separadores
     const cleanPath = pathname.replace(/^\/(pt|br|en)\//, '').replace(/\.[^/.]+$/, '');
     const segments = cleanPath.split(/[\/\-_]/).filter(s => s.length > 2);
-    
+
     // Remove palavras não descritivas
     const stopWords = ['produto', 'item', 'p', 'products', 'pd', 'buy', 'shop'];
     const descriptiveSegments = segments.filter(s => 
       !stopWords.includes(s.toLowerCase()) && 
       !/^\d+$/.test(s) // Remove números puros
     );
-    
+
     if (descriptiveSegments.length > 0) {
       return descriptiveSegments.slice(0, 5).join(' ');
     }
-    
+
     return '';
   } catch {
     return '';
@@ -598,8 +600,15 @@ export async function tryAPIFirst(url: string): Promise<APIProductResult | null>
         break;
 
       case 'amazon':
-        // Amazon API requer aprovação - usa Google como fallback
-        console.log(`[API First] Amazon detectada, usando Google como fallback`);
+        try {
+          const result = await fetchAmazonProduct(productInfo.id);
+          if (result && (result.price > 0 || result.name !== 'Produto Amazon')) {
+            console.log(`[API First] ✅ Amazon API sucesso: ${result.name}`);
+            return result;
+          }
+        } catch (error) {
+          console.log(`[API First] Amazon API falhou:`, error);
+        }
         break;
     }
   }
@@ -666,6 +675,22 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
         }
       } catch (error) {
         console.error('[API First] Erro no Mercado Livre:', error);
+      }
+    }
+
+     // PRIORIDADE 4: Amazon como complemento
+     if (searchTerm && searchTerm.length >= 3 && url.includes('amazon.com')) {
+      try {
+        const amazonResults = await searchAmazonProducts(searchTerm);
+        if (amazonResults && amazonResults.length > 0) {
+          console.log(`[API First] Amazon encontrou ${amazonResults.length} produtos`);
+          // Adiciona apenas se não temos resultados suficientes do Google e ML
+          if (results.length < 2) {
+            results.push(...amazonResults.slice(0, 2));
+          }
+        }
+      } catch (error) {
+        console.error('[API First] Erro no Amazon:', error);
       }
     }
 
