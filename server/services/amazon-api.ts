@@ -70,7 +70,7 @@ function createSignature(method: string, uri: string, queryParams: string, heade
 }
 
 // Extrai ASIN da URL da Amazon
-function extractASINFromUrl(url: string): string | null {
+export function extractASINFromUrl(url: string): string | null {
   try {
     const patterns = [
       /\/dp\/([A-Z0-9]{10})/i,
@@ -97,7 +97,7 @@ function extractASINFromUrl(url: string): string | null {
 }
 
 // Função para adicionar partner tag a qualquer URL da Amazon
-function addPartnerTagToAmazonUrl(url: string, asin: string): string {
+export function addPartnerTagToAmazonUrl(url: string, asin: string): string {
   if (!AMAZON_PARTNER_TAG) {
     return url;
   }

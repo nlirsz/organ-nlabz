@@ -318,6 +318,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fix Amazon URLs with partner tag
+  app.post("/api/products/fix-amazon-urls", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = parseInt(req.user.userId);
+      console.log(`[Fix Amazon URLs] Corrigindo URLs para usuário: ${userId}`);
+
+      const products = await storage.getProducts(userId);
+      const { addPartnerTagToAmazonUrl, extractASINFromUrl } = await import('./services/amazon-api.js');
+      
+      let updatedCount = 0;
+
+      for (const product of products) {
+        if (product.url && product.url.includes('amazon.com') && !product.url.includes('tag=')) {
+          const asin = extractASINFromUrl(product.url);
+          if (asin) {
+            const newUrl = addPartnerTagToAmazonUrl(product.url, asin);
+            if (newUrl !== product.url) {
+              await storage.updateProduct(product.id, { url: newUrl }, userId);
+              console.log(`[Fix Amazon URLs] Produto ${product.id}: ${product.url} → ${newUrl}`);
+              updatedCount++;
+            }
+          }
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: `${updatedCount} produtos atualizados com partner tag`,
+        updatedCount 
+      });
+    } catch (error) {
+      console.error("Fix Amazon URLs error:", error);
+      res.status(500).json({ error: "Failed to fix Amazon URLs" });
+    }
+  });
+
   // Delete product
   app.delete("/api/products/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {

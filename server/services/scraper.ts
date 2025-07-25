@@ -248,6 +248,36 @@ function createFallbackProduct(url: string): ScrapedProduct {
       }
     }
 
+    // Se conseguiu extrair informações básicas, cria o produto
+    if (productName && productName.length > 3) {
+      console.log(`[Scraper] ✅ ${strategy.toUpperCase()} SUCESSO: "${productName}"`);
+
+      // Aplica partner tag para Amazon
+      let finalUrl = url;
+      if (url.includes('amazon.com')) {
+        const { addPartnerTagToAmazonUrl, extractASINFromUrl } = await import('./amazon-api.js');
+        const asin = extractASINFromUrl(url);
+        if (asin) {
+          finalUrl = addPartnerTagToAmazonUrl(url, asin);
+          console.log(`[Scraper] 🏷️ Partner tag aplicado: ${url} → ${finalUrl}`);
+        }
+      }
+
+      return {
+        name: productName,
+        price: price || null,
+        originalPrice: originalPrice || null,
+        imageUrl: imageUrl || null,
+        store: storeName,
+        description: description || null,
+        category,
+        brand: brand || null,
+        url: finalUrl, // URL com partner tag se for Amazon
+        scrapingSuccess: true,
+        needsManualInput: !price || !imageUrl
+      };
+    }
+
   } catch (error) {
     console.error('[Fallback] ❌ Erro ao processar URL:', error.message);
   }
