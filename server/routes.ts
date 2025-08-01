@@ -98,13 +98,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all products for authenticated user
-  app.get('/api/products', authenticateToken, async (req, res) => {
+  app.post("/api/auth/logout", (req, res) => {
     try {
-      const userId = (req as any).user.id;
+      res.json({ message: "Logout realizado com sucesso" });
+    } catch (error) {
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  // Get all products for authenticated user
+  app.get('/api/products', authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = parseInt(req.user.userId);
       console.log(`🔍 Buscando produtos para o usuário: ${userId}`);
 
-      const products = await storage.getProductsByUserId(userId);
+      const products = await storage.getProducts(userId);
       console.log(`✅ Produtos encontrados: ${products.length}`);
 
       // Ensure we always return an array
@@ -540,10 +548,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user installments
-  app.get("/api/installments", authenticateToken, async (req, res) => {
+  app.get("/api/installments", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
-      console.log(`[API] Buscando parcelas para usuário: ${req.user.userId}`);
-      const installments = await storage.getUserInstallments(req.user.userId);
+      const userId = parseInt(req.user.userId);
+      console.log(`[API] Buscando parcelas para usuário: ${userId}`);
+      const installments = await storage.getUserInstallments(userId);
       console.log(`[API] Parcelas retornadas: ${installments.length}`);
       res.json(installments);
     } catch (error) {

@@ -18,14 +18,25 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
   const authToken = localStorage.getItem("authToken");
   const userId = localStorage.getItem("userId");
 
-  const { data: products = [] } = useQuery<Product[]>({
+  const { data: products = [], error: productsError } = useQuery<Product[]>({
     queryKey: ["/api/products", refreshKey],
-    queryFn: () => fetch("/api/products", {
-      headers: {
-        "x-auth-token": authToken || ""
+    queryFn: async () => {
+      const response = await fetch("/api/products", {
+        headers: {
+          "x-auth-token": authToken || ""
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    }).then(res => res.json()),
+      
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
     enabled: isOnline && !!authToken,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // Ensure products is always an array
@@ -53,6 +64,28 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
           </p>
         </div>
         {!isOnline && <OfflineMode />}
+      </div>
+    );
+  }
+
+  // Show error state if there's an error loading products
+  if (productsError) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center fade-in">
+          <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+            Dashboard Principal
+          </h2>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            Erro ao carregar dados: {productsError.message}
+          </p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Tentar Novamente
+          </button>
+        </div>
       </div>
     );
   }

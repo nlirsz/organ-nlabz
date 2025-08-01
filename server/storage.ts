@@ -106,6 +106,10 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async getProductsByUserId(userId: number): Promise<SelectProduct[]> {
+    return this.getProducts(userId);
+  }
+
   async getProduct(id: number, userId: number): Promise<SelectProduct | undefined> {
     const [product] = await db
       .select()
