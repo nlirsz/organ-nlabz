@@ -246,8 +246,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[API] 🛍️ Shopee detectada - tentando catálogo primeiro`);
             const catalogProduct = await fetchShopeeProduct(finalUrl);
             
-            if (catalogProduct && catalogProduct.name !== 'Produto Shopee') {
-              console.log(`[API] ✅ Produto encontrado no catálogo: ${catalogProduct.name}`);
+            if (catalogProduct && 
+                catalogProduct.name !== 'Produto Shopee' && 
+                catalogProduct.name && 
+                catalogProduct.name.length > 3 &&
+                !catalogProduct.name.includes('|') &&
+                catalogProduct.price && catalogProduct.price > 0) {
+              
+              console.log(`[API] ✅ Produto VÁLIDO encontrado no catálogo: ${catalogProduct.name} - R$ ${catalogProduct.price}`);
               
               const productData = {
                 userId: parseInt(req.user.userId),
@@ -273,11 +279,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 source: 'shopee_catalog'
               });
             } else {
-              console.log(`[API] 🛍️ Produto não encontrado no catálogo - usando scraping`);
+              console.log(`[API] 🛍️ Produto do catálogo inválido ou não encontrado - usando scraping`);
+              if (catalogProduct) {
+                console.log(`[API] 🛍️ Produto catálogo rejeitado:`, {
+                  name: catalogProduct.name?.substring(0, 50),
+                  price: catalogProduct.price,
+                  hasInvalidName: catalogProduct.name?.includes('|')
+                });
+              }
             }
           }
         } catch (error) {
-          console.warn(`[API] ⚠️ Erro ao processar Shopee:`, error.message);
+          console.warn(`[API] ⚠️ Erro ao processar catálogo Shopee:`, error.message);
         }
       }
 

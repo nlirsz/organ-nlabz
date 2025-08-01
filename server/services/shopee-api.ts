@@ -155,47 +155,52 @@ async function searchProductInCatalog(productId: string, originalUrl: string): P
     
     console.log(`[Shopee Catalog] Procurando shop_id: ${shopId}, item_id: ${itemId}`);
 
-    // Busca exata por shop_id e item_id
+    // BUSCA EXATA PRIORITÁRIA: shop_id E item_id devem coincidir
     let product = catalog.find((p: any) => 
-      p.shop_id === shopId && p.item_id === itemId
+      p.shop_id?.toString() === shopId && p.item_id?.toString() === itemId
     );
 
-    // Se não encontrou, tenta busca alternativa
-    if (!product) {
-      // Busca apenas por item_id (menos precisa)
-      product = catalog.find((p: any) => p.item_id === itemId);
+    if (product) {
+      console.log(`[Shopee Catalog] ✅ Busca exata encontrada: ${product.name}`);
+    } else {
+      console.log(`[Shopee Catalog] ❌ Busca exata falhou - produto não encontrado no catálogo`);
       
-      if (!product) {
-        // Busca por parte da URL ou nome similar
-        const urlKeywords = extractKeywordsFromUrl(originalUrl);
-        if (urlKeywords.length > 0) {
-          product = catalog.find((p: any) => {
-            const productName = p.name?.toLowerCase() || '';
-            return urlKeywords.some(keyword => 
-              productName.includes(keyword.toLowerCase())
-            );
-          });
-        }
-      }
+      // Log para debug: mostra alguns produtos do catálogo para comparação
+      const sampleProducts = catalog.slice(0, 5);
+      console.log('[Shopee Catalog] Exemplos do catálogo:', sampleProducts.map(p => ({
+        shop_id: p.shop_id,
+        item_id: p.item_id,
+        name: p.name?.substring(0, 50)
+      })));
+      
+      return null; // Não faz busca alternativa que pode dar erro
     }
 
-    if (!product) {
-      console.log(`[Shopee Catalog] Produto não encontrado no catálogo`);
+    // Validação adicional do produto encontrado
+    if (!product.name || product.name.length < 5) {
+      console.log(`[Shopee Catalog] ⚠️ Produto encontrado mas com nome inválido: "${product.name}"`);
       return null;
     }
 
-    console.log(`[Shopee Catalog] ✅ Produto encontrado: ${product.name}`);
+    // Validação de preço
+    const price = parseFloat(product.price);
+    if (!price || price <= 0) {
+      console.log(`[Shopee Catalog] ⚠️ Produto encontrado mas com preço inválido: ${product.price}`);
+      return null;
+    }
+
+    console.log(`[Shopee Catalog] ✅ Produto válido encontrado: ${product.name} - R$ ${price}`);
 
     // Converte para o formato padrão
     const affiliateUrl = addShopeeAffiliateParams(originalUrl);
     
     return {
-      name: product.name || 'Produto Shopee',
-      price: parseFloat(product.price) || null,
+      name: product.name.trim(),
+      price: price,
       originalPrice: product.original_price ? parseFloat(product.original_price) : null,
       imageUrl: product.image_url || null,
       store: 'Shopee',
-      description: product.description || `Produto da Shopee: ${product.name}`,
+      description: product.description?.trim() || `${product.name} - Produto da Shopee`,
       category: product.category || 'Outros',
       brand: product.brand || null,
       url: affiliateUrl
@@ -312,7 +317,7 @@ function parseShopeeCsv(csvData: string): ShopeeCatalogProduct[] {
     // Mapeia headers para índices (flexível para diferentes formatos)
     const headerMap = {
       item_id: findHeaderIndex(headers, ['item_id', 'itemid', 'product_id', 'id']),
-      shop_id: findHeaderIndex(headers, ['shop_id', 'shopid', 'seller_id']),
+      shop_id: findHeaderIndex(headers, ['shop_id', 'shopid', 'seller_id', 'shop']),
       name: findHeaderIndex(headers, ['name', 'title', 'product_name', 'item_name']),
       price: findHeaderIndex(headers, ['price', 'current_price', 'sale_price']),
       original_price: findHeaderIndex(headers, ['original_price', 'list_price', 'regular_price']),
@@ -347,9 +352,24 @@ function parseShopeeCsv(csvData: string): ShopeeCatalogProduct[] {
           description: getValue(values, headerMap.description) || undefined
         };
 
-        // Valida produto básico
-        if (product.item_id && product.name && product.price > 0) {
+        // Validação mais rigorosa
+        const isValidProduct = product.item_id && 
+                              product.item_id.length > 5 && 
+                              product.name && 
+                              product.name.length > 3 && 
+                              product.price > 0 &&
+                              !product.name.includes('|') && // Remove produtos com nomes estranhos
+                              !product.name.match(/^\d+$/) && // Remove produtos que são só números
+                              product.name.length < 200; // Remove nomes muito longos
+
+        if (isValidProduct) {
           products.push(product);
+        } else if (i <= 10) { // Log apenas primeiras linhas para debug
+          console.log(`[Shopee CSV] Produto inválido linha ${i}:`, {
+            item_id: product.item_id,
+            name: product.name?.substring(0, 50),
+            price: product.price
+          });
         }
 
       } catch (error) {
