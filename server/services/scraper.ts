@@ -1,6 +1,7 @@
 import { chromium, Browser, Page } from 'playwright';
 import * as cheerio from 'cheerio';
 import { extractProductInfo } from './gemini.js';
+import { isShopeeUrl, addShopeeAffiliateParams } from './shopee-api.js';
 import axios from 'axios';
 
 interface ScrapedProduct {
@@ -30,10 +31,17 @@ const REPLIT_BROWSER_CONFIG = {
 export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct> {
   console.log(`[Scraper] 🚀 Iniciando scraping multi-estratégia para: ${url}`);
 
+  // VERIFICAÇÃO ESPECÍFICA: Se for Shopee, converte URL para afiliado
+  let processedUrl = url;
+  if (isShopeeUrl(url)) {
+    processedUrl = addShopeeAffiliateParams(url);
+    console.log(`[Scraper] 🛍️ URL da Shopee convertida para afiliado: ${url} → ${processedUrl}`);
+  }
+
   // ESTRATÉGIA 1: Playwright (mais robusta)
   try {
     console.log(`[Scraper] 📱 TENTATIVA 1: Playwright com navegador real`);
-    const playwrightResult = await scrapeWithPlaywright(url);
+    const playwrightResult = await scrapeWithPlaywright(processedUrl);
     if (playwrightResult && playwrightResult.name !== `Produto de ${playwrightResult.store}`) {
       console.log(`[Scraper] ✅ PLAYWRIGHT SUCESSO: "${playwrightResult.name}"`);
       return playwrightResult;
@@ -45,7 +53,7 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
   // ESTRATÉGIA 2: HTTP + Cheerio (mais leve)
   try {
     console.log(`[Scraper] 🌐 TENTATIVA 2: HTTP direto + Cheerio`);
-    const httpResult = await scrapeWithHttp(url);
+    const httpResult = await scrapeWithHttp(processedUrl);
     if (httpResult && httpResult.name !== `Produto de ${httpResult.store}`) {
       console.log(`[Scraper] ✅ HTTP SUCESSO: "${httpResult.name}"`);
       return httpResult;
@@ -56,7 +64,11 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
 
   // ESTRATÉGIA 3: Fallback com informações básicas
   console.log(`[Scraper] 🔄 TODAS TENTATIVAS FALHARAM - Usando fallback`);
-  return await createFallbackProduct(url);
+  const fallback = await createFallbackProduct(processedUrl);
+  
+  // Garante que a URL final seja a processada (com afiliado se Shopee)
+  fallback.url = processedUrl;
+  return fallback;
 }
 
 async function scrapeWithPlaywright(url: string): Promise<ScrapedProduct> {
@@ -187,7 +199,9 @@ async function createFallbackProduct(url: string): Promise<ScrapedProduct> {
       'kabum.com.br': 'KaBuM',
       'pichau.com.br': 'Pichau',
       'aliexpress.com': 'AliExpress',
-      'shoptime.com.br': 'Shoptime'
+      'shoptime.com.br': 'Shoptime',
+      'shopee.com.br': 'Shopee',
+      'shopee.com': 'Shopee'
     };
 
     // Identifica a loja

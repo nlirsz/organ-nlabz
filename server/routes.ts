@@ -103,7 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.user.userId);
       const products = await storage.getProducts(userId);
-      
+
       res.json(products);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -128,13 +128,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.user.userId);
       const stats = await storage.getProductStats(userId);
-      
+
       // Cache stats por 1 minuto
       res.set({
         'Cache-Control': 'private, max-age=60',
         'ETag': `"stats-${userId}-${Date.now()}"`
       });
-      
+
       res.json(stats);
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -209,11 +209,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`[API] Iniciando scraping para: ${url}`);
-      const scrapedProduct = await scrapeProductFromUrl(url);
+      let finalUrl = url;
+
+      // Aplica partner tag da Shopee se necessário
+      if (url.includes('shopee.com.br')) {
+        try {
+          const { isShopeeUrl, addShopeeAffiliateParams } = await import('./services/shopee-api.js');
+          if (isShopeeUrl(url)) {
+            finalUrl = addShopeeAffiliateParams(url);
+            console.log(`[API] ✅ Partner tag da Shopee aplicado: ${url} → ${finalUrl}`);
+          }
+        } catch (error) {
+          console.warn(`[API] ⚠️ Erro ao aplicar partner tag da Shopee:`, error.message);
+        }
+      }
+
+      const scrapedProduct = await scrapeProductFromUrl(finalUrl);
 
       const productData = {
         userId: parseInt(req.user.userId),
-        url,
+        url: finalUrl,
         name: scrapedProduct.name,
         price: scrapedProduct.price?.toString() || null,
         originalPrice: scrapedProduct.originalPrice?.toString() || null,
@@ -232,14 +247,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (url.includes('amazon.com') && !url.includes(`tag=${process.env.AMAZON_PARTNER_TAG}`)) {
         try {
           const { addPartnerTagToAmazonUrl, extractASINFromUrl } = await import('./services/amazon-api.js');
+          const { isShopeeUrl, addShopeeAffiliateParams } = await import('./services/shopee-api.js');
           const asin = extractASINFromUrl(url);
           if (asin && process.env.AMAZON_PARTNER_TAG) {
             const updatedUrl = addPartnerTagToAmazonUrl(url, asin);
-            
+
             // Atualiza a URL do produto no banco
             await storage.updateProduct(product.id, { url: updatedUrl }, parseInt(req.user.userId));
             product.url = updatedUrl; // Atualiza objeto para resposta
-            
+
             console.log(`[API] ✅ Partner tag aplicado após criação: ${url} → ${updatedUrl}`);
           }
         } catch (error) {
@@ -288,6 +304,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { url, name, price, originalPrice, imageUrl, store, description, category, brand } = req.body;
 
+       let finalUrl = url;
+      // Aplica partner tag da Shopee se necessário
+      if (url.includes('shopee.com.br')) {
+        try {
+          const { isShopeeUrl, addShopeeAffiliateParams } = await import('./services/shopee-api.js');
+          if (isShopeeUrl(url)) {
+            finalUrl = addShopeeAffiliateParams(url);
+            console.log(`[API Manual] ✅ Partner tag da Shopee aplicado: ${url} → ${finalUrl}`);
+          }
+        } catch (error) {
+          console.warn(`[API Manual] ⚠️ Erro ao aplicar partner tag da Shopee:`, error.message);
+        }
+      }
+
+
       if (!url || typeof url !== 'string') {
         return res.status(400).json({ error: "Valid URL is required" });
       }
@@ -298,7 +329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const productData = {
         userId: parseInt(req.user.userId),
-        url,
+        url: finalUrl,
         name,
         price: price?.toString() || null,
         originalPrice: originalPrice?.toString() || null,
@@ -316,14 +347,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (url.includes('amazon.com') && !url.includes(`tag=${process.env.AMAZON_PARTNER_TAG}`)) {
         try {
           const { addPartnerTagToAmazonUrl, extractASINFromUrl } = await import('./services/amazon-api.js');
+          const { isShopeeUrl, addShopeeAffiliateParams } = await import('./services/shopee-api.js');
           const asin = extractASINFromUrl(url);
           if (asin && process.env.AMAZON_PARTNER_TAG) {
             const updatedUrl = addPartnerTagToAmazonUrl(url, asin);
-            
+
             // Atualiza a URL do produto no banco
             await storage.updateProduct(product.id, { url: updatedUrl }, parseInt(req.user.userId));
             product.url = updatedUrl; // Atualiza objeto para resposta
-            
+
             console.log(`[API Manual] ✅ Partner tag aplicado: ${url} → ${updatedUrl}`);
           }
         } catch (error) {
@@ -365,7 +397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const products = await storage.getProducts(userId);
       const { addPartnerTagToAmazonUrl, extractASINFromUrl } = await import('./services/amazon-api.js');
-      
+
       let updatedCount = 0;
 
       for (const product of products) {

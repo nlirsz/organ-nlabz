@@ -475,7 +475,9 @@ function extractStoreFromUrl(url: string): string {
       'nike.com.br': 'Nike Brasil',
       'netshoes.com.br': 'Netshoes',
       'kabum.com.br': 'KaBuM',
-      'pichau.com.br': 'Pichau'
+      'pichau.com.br': 'Pichau',
+      'shopee.com.br': 'Shopee',
+      'shopee.com': 'Shopee'
     };
 
     for (const [domain, name] of Object.entries(storeMap)) {

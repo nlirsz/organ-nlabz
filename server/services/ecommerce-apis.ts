@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { fetchAmazonProduct, searchAmazonProducts } from './amazon-api.js';
+import { fetchShopeeProduct, isShopeeUrl, addShopeeAffiliateParams } from './shopee-api.js';
 
 export interface APIProductResult {
   name: string;
@@ -556,8 +557,10 @@ function extractProductId(url: string): { platform: string; id: string } | null 
     { platform: 'amazon', regex: /amazon\.com\.br\/dp\/([A-Z0-9]{10})/i },
     { platform: 'amazon', regex: /amazon\.com\.br\/gp\/product\/([A-Z0-9]{10})/i },
 
-    // Shopee
+    // Shopee - ATUALIZADO
     { platform: 'shopee', regex: /shopee\.com\.br\/.*?-i\.(\d+)\.(\d+)/i },
+    { platform: 'shopee', regex: /shopee\.com\.br\/.*?\.(\d+)\.(\d+)/i },
+    { platform: 'shopee', regex: /product\/(\d+)\/(\d+)/i },
 
     // Magazine Luiza
     { platform: 'magazineluiza', regex: /magazineluiza\.com\.br\/.*\/([0-9]+)\/p/i }
@@ -580,6 +583,20 @@ function extractProductId(url: string): { platform: string; id: string } | null 
 export async function tryAPIFirst(url: string): Promise<APIProductResult | null> {
   console.log(`[API First] Tentando APIs para: ${url}`);
 
+  // Verificação específica para Shopee primeiro
+  if (isShopeeUrl(url)) {
+    try {
+      console.log(`[API First] URL da Shopee detectada, processando...`);
+      const result = await fetchShopeeProduct(url);
+      if (result) {
+        console.log(`[API First] ✅ Shopee API sucesso: ${result.name}`);
+        return result;
+      }
+    } catch (error) {
+      console.log(`[API First] Shopee API falhou:`, error);
+    }
+  }
+
   // Primeiro tenta extrair ID específico da plataforma
   const productInfo = extractProductId(url);
 
@@ -596,6 +613,18 @@ export async function tryAPIFirst(url: string): Promise<APIProductResult | null>
           }
         } catch (error) {
           console.log(`[API First] Mercado Livre API falhou:`, error);
+        }
+        break;
+
+      case 'shopee':
+        try {
+          const result = await fetchShopeeProduct(url);
+          if (result) {
+            console.log(`[API First] ✅ Shopee processado: ${result.name}`);
+            return result;
+          }
+        } catch (error) {
+          console.log(`[API First] Shopee processing falhou:`, error);
         }
         break;
 
