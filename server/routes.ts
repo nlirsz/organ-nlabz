@@ -234,19 +234,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[API] Iniciando scraping para: ${url}`);
       let finalUrl = url;
 
-      // Aplica partner tag da Shopee se necessário
+      // NOVA LÓGICA: Aplica partner tag da Shopee E verifica catálogo
       if (url.includes('shopee.com.br')) {
         try {
-          const { isShopeeUrl, addShopeeAffiliateParams } = await import('./services/shopee-api.js');
+          const { isShopeeUrl, addShopeeAffiliateParams, fetchShopeeProduct } = await import('./services/shopee-api.js');
           if (isShopeeUrl(url)) {
             finalUrl = addShopeeAffiliateParams(url);
             console.log(`[API] ✅ Partner tag da Shopee aplicado: ${url} → ${finalUrl}`);
+            
+            // Para Shopee: Tenta catálogo PRIMEIRO
+            try {
+              console.log(`[API] 🛍️ Buscando produto Shopee no catálogo...`);
+              const shopeeProduct = await fetchShopeeProduct(finalUrl);
+              if (shopeeProduct && shopeeProduct.name !== 'Produto Shopee') {
+                console.log(`[API] ✅ Produto Shopee encontrado no catálogo: ${shopeeProduct.name}`);
+                
+                const productData = {
+                  userId: parseInt(req.user.userId),
+                  url: finalUrl,
+                  name: shopeeProduct.name,
+                  price: shopeeProduct.price?.toString() || null,
+                  originalPrice: shopeeProduct.originalPrice?.toString() || null,
+                  imageUrl: shopeeProduct.imageUrl,
+                  store: shopeeProduct.store,
+                  description: shopeeProduct.description,
+                  category: shopeeProduct.category || "Outros",
+                  brand: shopeeProduct.brand,
+                  isPurchased: false
+                };
+
+                const product = await storage.createProduct(productData);
+                console.log(`[API] ✅ Produto Shopee criado via catálogo: ${product.name}`);
+                return res.json(product);
+              }
+            } catch (shopeeError) {
+              console.warn(`[API] ⚠️ Erro no catálogo Shopee, usando scraping:`, shopeeError.message);
+            }
           }
         } catch (error) {
           console.warn(`[API] ⚠️ Erro ao aplicar partner tag da Shopee:`, error.message);
         }
       }
 
+      // Para OUTRAS LOJAS ou se Shopee falhou: Usa scraping normal
+      console.log(`[API] 🌐 Usando scraping tradicional para: ${finalUrl}`);
       const scrapedProduct = await scrapeProductFromUrl(finalUrl);
 
       const productData = {

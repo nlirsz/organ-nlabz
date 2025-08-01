@@ -31,11 +31,32 @@ const REPLIT_BROWSER_CONFIG = {
 export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct> {
   console.log(`[Scraper] 🚀 Iniciando scraping multi-estratégia para: ${url}`);
 
-  // VERIFICAÇÃO ESPECÍFICA: Se for Shopee, converte URL para afiliado
+  // VERIFICAÇÃO ESPECÍFICA: Se for Shopee, converte URL para afiliado E usa dados do banco
   let processedUrl = url;
   if (isShopeeUrl(url)) {
     processedUrl = addShopeeAffiliateParams(url);
     console.log(`[Scraper] 🛍️ URL da Shopee convertida para afiliado: ${url} → ${processedUrl}`);
+    
+    // Para Shopee: Usa dados do banco/catálogo (implementação futura)
+    try {
+      console.log(`[Scraper] 🛍️ Shopee detectada - buscando dados do catálogo...`);
+      const shopeeResult = await fetchShopeeProduct(processedUrl);
+      if (shopeeResult) {
+        console.log(`[Scraper] ✅ SHOPEE CATÁLOGO SUCESSO: "${shopeeResult.name}"`);
+        return {
+          name: shopeeResult.name,
+          price: shopeeResult.price,
+          originalPrice: shopeeResult.originalPrice || null,
+          imageUrl: shopeeResult.imageUrl,
+          store: shopeeResult.store,
+          description: shopeeResult.description || null,
+          category: shopeeResult.category || 'Outros',
+          brand: shopeeResult.brand || null
+        };
+      }
+    } catch (error) {
+      console.warn(`[Scraper] ⚠️ Erro ao buscar catálogo Shopee, usando scraping normal:`, error.message);
+    }
   }
 
   // ESTRATÉGIA 1: Playwright (mais robusta)

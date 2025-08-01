@@ -583,19 +583,24 @@ function extractProductId(url: string): { platform: string; id: string } | null 
 export async function tryAPIFirst(url: string): Promise<APIProductResult | null> {
   console.log(`[API First] Tentando APIs para: ${url}`);
 
-  // Verificação específica para Shopee primeiro
+  // NOVA REGRA: Para Shopee, SEMPRE usa catálogo/banco primeiro
   if (isShopeeUrl(url)) {
     try {
-      console.log(`[API First] URL da Shopee detectada, processando...`);
+      console.log(`[API First] 🛍️ URL da Shopee detectada - priorizando catálogo...`);
       const result = await fetchShopeeProduct(url);
       if (result) {
-        console.log(`[API First] ✅ Shopee API sucesso: ${result.name}`);
+        console.log(`[API First] ✅ Shopee catálogo sucesso: ${result.name}`);
         return result;
       }
     } catch (error) {
-      console.log(`[API First] Shopee API falhou:`, error);
+      console.log(`[API First] ⚠️ Shopee catálogo falhou, continuará com scraping:`, error);
+      return null; // Retorna null para continuar com scraping normal
     }
   }
+
+  // Para OUTRAS LOJAS: Usa scraping normal SEM tentar APIs primeiro
+  console.log(`[API First] 🌐 Não é Shopee - usando scraping tradicional`);
+  return null;
 
   // Primeiro tenta extrair ID específico da plataforma
   const productInfo = extractProductId(url);
@@ -668,12 +673,21 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
   const results: APIProductResult[] = [];
 
   try {
-    // PRIORIDADE 1: Tenta API direta primeiro se possível
-    const directResult = await tryAPIFirst(url);
-    if (directResult && directResult.price > 0) {
-      console.log(`[API First] ✅ API direta bem-sucedida`);
-      return [directResult];
+    // NOVA LÓGICA: Para Shopee, tenta catálogo primeiro
+    if (isShopeeUrl(url)) {
+      console.log(`[API First] 🛍️ Shopee detectada - buscando no catálogo...`);
+      const shopeeResult = await tryAPIFirst(url);
+      if (shopeeResult) {
+        console.log(`[API First] ✅ Shopee catálogo bem-sucedido`);
+        return [shopeeResult];
+      }
+      console.log(`[API First] ⚠️ Catálogo Shopee falhou - voltando para scraping`);
+      return null;
     }
+
+    // Para OUTRAS LOJAS: Não usa APIs, vai direto para scraping
+    console.log(`[API First] 🌐 Não é Shopee - pulando APIs, usando scraping`);
+    return null;
 
     // PRIORIDADE 2: Google Shopping como principal (mais confiável)
     try {
