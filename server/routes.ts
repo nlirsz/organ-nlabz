@@ -294,6 +294,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // NOVA LÓGICA: Para AliExpress, tenta API primeiro
+      if (url.includes('aliexpress.com')) {
+        try {
+          const { isAliExpressUrl, addAliExpressAffiliateParams, fetchAliExpressProduct } = await import('./services/aliexpress-api.js');
+          if (isAliExpressUrl(url)) {
+            finalUrl = addAliExpressAffiliateParams(url);
+            console.log(`[API] ✅ Partner tag da AliExpress aplicado: ${url} → ${finalUrl}`);
+            
+            // Tenta API primeiro
+            console.log(`[API] 🛒 AliExpress detectada - tentando API primeiro`);
+            const apiProduct = await fetchAliExpressProduct(finalUrl);
+            
+            if (apiProduct && 
+                apiProduct.name !== 'Produto AliExpress' && 
+                apiProduct.name && 
+                apiProduct.name.length > 3 &&
+                apiProduct.price && apiProduct.price > 0) {
+              
+              console.log(`[API] ✅ Produto VÁLIDO encontrado na API: ${apiProduct.name} - $${apiProduct.price}`);
+              
+              const productData = {
+                userId: parseInt(req.user.userId),
+                url: finalUrl,
+                name: apiProduct.name,
+                price: apiProduct.price?.toString() || null,
+                originalPrice: apiProduct.originalPrice?.toString() || null,
+                imageUrl: apiProduct.imageUrl,
+                store: apiProduct.store,
+                description: apiProduct.description,
+                category: apiProduct.category || "Outros",
+                brand: apiProduct.brand,
+                isPurchased: false
+              };
+
+              const product = await storage.createProduct(productData);
+              console.log(`[API] Produto criado com sucesso via API da AliExpress: ${product.name}`);
+
+              return res.status(200).json({
+                success: true,
+                message: 'Produto adicionado com sucesso via API da AliExpress!',
+                product: product,
+                source: 'aliexpress_api'
+              });
+            } else {
+              console.log(`[API] 🛒 Produto da API inválido ou não encontrado - usando scraping`);
+              if (apiProduct) {
+                console.log(`[API] 🛒 Produto API rejeitado:`, {
+                  name: apiProduct.name?.substring(0, 50),
+                  price: apiProduct.price
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.warn(`[API] ⚠️ Erro ao processar API AliExpress:`, error.message);
+        }
+      }
+
       // Para OUTRAS LOJAS ou se Shopee catálogo falhou: Usa scraping normal
       console.log(`[API] 🌐 Usando scraping tradicional para: ${finalUrl}`);
       const scrapedProduct = await scrapeProductFromUrl(finalUrl);
@@ -387,6 +445,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } catch (error) {
           console.warn(`[API Manual] ⚠️ Erro ao aplicar partner tag da Shopee:`, error.message);
+        }
+      }
+
+      // Aplica partner tag da AliExpress se necessário
+      if (url.includes('aliexpress.com')) {
+        try {
+          const { isAliExpressUrl, addAliExpressAffiliateParams } = await import('./services/aliexpress-api.js');
+          if (isAliExpressUrl(url)) {
+            finalUrl = addAliExpressAffiliateParams(url);
+            console.log(`[API Manual] ✅ Partner tag da AliExpress aplicado: ${url} → ${finalUrl}`);
+          }
+        } catch (error) {
+          console.warn(`[API Manual] ⚠️ Erro ao aplicar partner tag da AliExpress:`, error.message);
         }
       }
 

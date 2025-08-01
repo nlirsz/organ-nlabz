@@ -605,7 +605,7 @@ export async function tryAPIFirst(url: string): Promise<APIProductResult | null>
     } catch (error) {
       console.log(`[API First] Shopee catálogo falhou:`, error);
     }
-    
+
     console.log(`[API First] 🛍️ Shopee catálogo não encontrou produto - usando scraping`);
     return null; // Fallback para scraping
   }
@@ -679,6 +679,27 @@ export async function tryAPIFirst(url: string): Promise<APIProductResult | null>
   return null;
 }
 
+// Function to check if a URL is from AliExpress
+function isAliExpressUrl(url: string): boolean {
+  return url.includes('aliexpress.com');
+}
+
+// Function to fetch product from AliExpress - Placeholder, needs implementation
+async function fetchAliExpressProduct(url: string): Promise<APIProductResult | null> {
+  // Replace with actual API call and data parsing
+  console.log(`[AliExpress API] Calling AliExpress API for ${url}`);
+  return {
+    name: 'Produto AliExpress',
+    price: 99.99,
+    imageUrl: 'https://ae01.alicdn.com/kf/H94472e274a9e4e1ca5d750971af2f313g.jpg', // Example image URL
+    store: 'AliExpress',
+    description: 'Descrição do produto AliExpress',
+    category: 'Outros',
+    brand: 'Marca AliExpress',
+    url: url
+  };
+}
+
 export async function fetchProductFromAPIs(url: string): Promise<APIProductResult[] | null> {
   console.log(`[API First] Buscando produto via APIs para: ${url}`);
 
@@ -708,8 +729,36 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
       } catch (error) {
         console.error('[API First] Erro no catálogo Shopee:', error);
       }
-      
+
       console.log(`[API First] 🛍️ Shopee catálogo não encontrou - usando scraping`);
+      return null; // Fallback para scraping
+    }
+
+    // Para ALIEXPRESS: Tenta API primeiro
+    if (isAliExpressUrl(url)) {
+      console.log(`[API First] 🛒 AliExpress detectada - tentando API`);
+      try {
+        const aliResult = await fetchAliExpressProduct(url);
+        if (aliResult && aliResult.name !== 'Produto AliExpress') {
+          console.log(`[API First] ✅ AliExpress API encontrou produto: ${aliResult.name}`);
+          results.push({
+            name: aliResult.name,
+            price: aliResult.price || 0,
+            originalPrice: aliResult.originalPrice,
+            imageUrl: aliResult.imageUrl || '',
+            store: aliResult.store,
+            description: aliResult.description,
+            category: aliResult.category,
+            brand: aliResult.brand,
+            url: aliResult.url
+          });
+          return results; // Retorna resultado da API
+        }
+      } catch (error) {
+        console.error('[API First] Erro na API AliExpress:', error);
+      }
+
+      console.log(`[API First] 🛒 AliExpress API não encontrou - usando scraping`);
       return null; // Fallback para scraping
     }
 
@@ -727,10 +776,9 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
           console.log(`[API First] ✅ Google Shopping encontrou ${validResults.length} produtos válidos`);
           results.push(...validResults.slice(0, 3));
         }
+      }      } catch (error) {
+        console.error('[API First] Erro no Google Shopping:', error);
       }
-    } catch (error) {
-      console.error('[API First] Erro no Google Shopping:', error);
-    }
 
     // PRIORIDADE 3: Mercado Livre como complemento
     const searchTerm = extractSearchTermFromUrl(url);

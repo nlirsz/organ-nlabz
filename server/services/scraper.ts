@@ -2,6 +2,7 @@ import { chromium, Browser, Page } from 'playwright';
 import * as cheerio from 'cheerio';
 import { extractProductInfo } from './gemini.js';
 import { isShopeeUrl, addShopeeAffiliateParams } from './shopee-api.js';
+import { isAliExpressUrl, addAliExpressAffiliateParams } from './aliexpress-api.js';
 import axios from 'axios';
 
 interface ScrapedProduct {
@@ -37,6 +38,13 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
     processedUrl = addShopeeAffiliateParams(url);
     console.log(`[Scraper] 🛍️ URL da Shopee convertida para afiliado: ${url} → ${processedUrl}`);
     console.log(`[Scraper] 🛍️ Shopee detectada - usando scraping normal (catálogo não implementado)`);
+  }
+  
+  // VERIFICAÇÃO ESPECÍFICA: Se for AliExpress, converte URL para afiliado
+  if (isAliExpressUrl(url)) {
+    processedUrl = addAliExpressAffiliateParams(url);
+    console.log(`[Scraper] 🛒 URL da AliExpress convertida para afiliado: ${url} → ${processedUrl}`);
+    console.log(`[Scraper] 🛒 AliExpress detectada - usando scraping normal`);
   }
 
   // ESTRATÉGIA 1: Playwright (mais robusta)
@@ -202,7 +210,11 @@ async function createFallbackProduct(url: string): Promise<ScrapedProduct> {
       'aliexpress.com': 'AliExpress',
       'shoptime.com.br': 'Shoptime',
       'shopee.com.br': 'Shopee',
-      'shopee.com': 'Shopee'
+      'shopee.com': 'Shopee',
+      'aliexpress.com': 'AliExpress',
+      'aliexpress.us': 'AliExpress',
+      'aliexpress.ru': 'AliExpress',
+      'pt.aliexpress.com': 'AliExpress'
     };
 
     // Identifica a loja
