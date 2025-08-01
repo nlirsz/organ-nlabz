@@ -583,19 +583,10 @@ function extractProductId(url: string): { platform: string; id: string } | null 
 export async function tryAPIFirst(url: string): Promise<APIProductResult | null> {
   console.log(`[API First] Tentando APIs para: ${url}`);
 
-  // NOVA REGRA: Para Shopee, SEMPRE usa catálogo/banco primeiro
+  // Para SHOPEE: Catálogo não implementado, usa scraping normal
   if (isShopeeUrl(url)) {
-    try {
-      console.log(`[API First] 🛍️ URL da Shopee detectada - priorizando catálogo...`);
-      const result = await fetchShopeeProduct(url);
-      if (result) {
-        console.log(`[API First] ✅ Shopee catálogo sucesso: ${result.name}`);
-        return result;
-      }
-    } catch (error) {
-      console.log(`[API First] ⚠️ Shopee catálogo falhou, continuará com scraping:`, error);
-      return null; // Retorna null para continuar com scraping normal
-    }
+    console.log(`[API First] 🛍️ URL da Shopee detectada - catálogo não implementado, usando scraping`);
+    return null; // Retorna null para continuar com scraping normal
   }
 
   // Para OUTRAS LOJAS: Usa scraping normal SEM tentar APIs primeiro
@@ -673,16 +664,10 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
   const results: APIProductResult[] = [];
 
   try {
-    // NOVA LÓGICA: Para Shopee, tenta catálogo primeiro
+    // Para SHOPEE: Catálogo não implementado, usa scraping normal
     if (isShopeeUrl(url)) {
-      console.log(`[API First] 🛍️ Shopee detectada - buscando no catálogo...`);
-      const shopeeResult = await tryAPIFirst(url);
-      if (shopeeResult) {
-        console.log(`[API First] ✅ Shopee catálogo bem-sucedido`);
-        return [shopeeResult];
-      }
-      console.log(`[API First] ⚠️ Catálogo Shopee falhou - voltando para scraping`);
-      return null;
+      console.log(`[API First] 🛍️ Shopee detectada - catálogo não implementado, usando scraping`);
+      return null; // Retorna null para continuar com scraping normal
     }
 
     // Para OUTRAS LOJAS: Não usa APIs, vai direto para scraping

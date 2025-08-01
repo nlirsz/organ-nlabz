@@ -106,22 +106,10 @@ export async function fetchShopeeProduct(url: string): Promise<ShopeeProductResu
   try {
     console.log(`[Shopee] Buscando produto ID: ${productId}`);
     
-    // Por enquanto, retorna informações básicas
-    // Futuramente pode integrar com o catálogo da Shopee
-    const result: ShopeeProductResult = {
-      name: 'Produto Shopee',
-      price: null,
-      originalPrice: null,
-      imageUrl: null,
-      store: 'Shopee',
-      description: 'Produto da Shopee - informações serão extraídas via scraping',
-      category: 'Outros',
-      brand: null,
-      url: addShopeeAffiliateParams(url) // URL com parâmetros de afiliado
-    };
-
-    console.log(`[Shopee] Produto básico criado com link de afiliado`);
-    return result;
+    // TODO: Implementar integração com catálogo da Shopee
+    // Por enquanto, retorna null para forçar scraping normal
+    console.log(`[Shopee] Catálogo não implementado - usando scraping normal`);
+    return null;
 
   } catch (error) {
     console.error('[Shopee] Erro ao buscar produto:', error);
