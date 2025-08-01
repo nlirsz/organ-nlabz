@@ -95,7 +95,26 @@ export function addShopeeAffiliateParams(url: string): string {
   }
 }
 
-// Função para buscar informações do produto da Shopee (usando catálogo se disponível)
+// Cache para o catálogo da Shopee
+let shopeeCatalogCache: any[] = [];
+let catalogCacheTime = 0;
+const CATALOG_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 horas
+
+// Interface para produto do catálogo
+interface ShopeeCatalogProduct {
+  item_id: string;
+  shop_id: string;
+  name: string;
+  price: number;
+  original_price?: number;
+  image_url: string;
+  product_url: string;
+  brand?: string;
+  category?: string;
+  description?: string;
+}
+
+// Função para buscar informações do produto da Shopee (usando catálogo)
 export async function fetchShopeeProduct(url: string): Promise<ShopeeProductResult | null> {
   const productId = extractShopeeProductId(url);
   if (!productId) {
@@ -104,11 +123,16 @@ export async function fetchShopeeProduct(url: string): Promise<ShopeeProductResu
   }
 
   try {
-    console.log(`[Shopee] Buscando produto ID: ${productId}`);
+    console.log(`[Shopee] Buscando produto ID: ${productId} no catálogo`);
     
-    // TODO: Implementar integração com catálogo da Shopee
-    // Por enquanto, retorna null para forçar scraping normal
-    console.log(`[Shopee] Catálogo não implementado - usando scraping normal`);
+    // Busca no catálogo primeiro
+    const catalogProduct = await searchProductInCatalog(productId, url);
+    if (catalogProduct) {
+      console.log(`[Shopee] ✅ Produto encontrado no catálogo: ${catalogProduct.name}`);
+      return catalogProduct;
+    }
+
+    console.log(`[Shopee] Produto não encontrado no catálogo - usando scraping como fallback`);
     return null;
 
   } catch (error) {
@@ -117,22 +141,268 @@ export async function fetchShopeeProduct(url: string): Promise<ShopeeProductResu
   }
 }
 
-// Função para integrar com o catálogo da Shopee (futura implementação)
-export async function fetchFromShopeeCatalog(): Promise<any[]> {
+// Função para buscar produto específico no catálogo
+async function searchProductInCatalog(productId: string, originalUrl: string): Promise<ShopeeProductResult | null> {
+  try {
+    const catalog = await fetchFromShopeeCatalog();
+    if (!catalog || catalog.length === 0) {
+      console.log('[Shopee Catalog] Catálogo vazio ou não disponível');
+      return null;
+    }
+
+    // Extrai shop_id e item_id do productId
+    const [shopId, itemId] = productId.split('.');
+    
+    console.log(`[Shopee Catalog] Procurando shop_id: ${shopId}, item_id: ${itemId}`);
+
+    // Busca exata por shop_id e item_id
+    let product = catalog.find((p: any) => 
+      p.shop_id === shopId && p.item_id === itemId
+    );
+
+    // Se não encontrou, tenta busca alternativa
+    if (!product) {
+      // Busca apenas por item_id (menos precisa)
+      product = catalog.find((p: any) => p.item_id === itemId);
+      
+      if (!product) {
+        // Busca por parte da URL ou nome similar
+        const urlKeywords = extractKeywordsFromUrl(originalUrl);
+        if (urlKeywords.length > 0) {
+          product = catalog.find((p: any) => {
+            const productName = p.name?.toLowerCase() || '';
+            return urlKeywords.some(keyword => 
+              productName.includes(keyword.toLowerCase())
+            );
+          });
+        }
+      }
+    }
+
+    if (!product) {
+      console.log(`[Shopee Catalog] Produto não encontrado no catálogo`);
+      return null;
+    }
+
+    console.log(`[Shopee Catalog] ✅ Produto encontrado: ${product.name}`);
+
+    // Converte para o formato padrão
+    const affiliateUrl = addShopeeAffiliateParams(originalUrl);
+    
+    return {
+      name: product.name || 'Produto Shopee',
+      price: parseFloat(product.price) || null,
+      originalPrice: product.original_price ? parseFloat(product.original_price) : null,
+      imageUrl: product.image_url || null,
+      store: 'Shopee',
+      description: product.description || `Produto da Shopee: ${product.name}`,
+      category: product.category || 'Outros',
+      brand: product.brand || null,
+      url: affiliateUrl
+    };
+
+  } catch (error) {
+    console.error('[Shopee Catalog] Erro ao buscar no catálogo:', error);
+    return null;
+  }
+}
+
+// Função para extrair palavras-chave da URL
+function extractKeywordsFromUrl(url: string): string[] {
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
+    
+    // Remove parâmetros comuns e extrai palavras significativas
+    const segments = pathname.split('/').filter(segment => 
+      segment.length > 3 && 
+      !segment.match(/^(i\.|shopee|br|product)$/i) &&
+      !segment.match(/^\d+$/) // Remove números puros
+    );
+
+    const keywords: string[] = [];
+    
+    for (const segment of segments) {
+      // Quebra por hífens e underscores
+      const words = segment.split(/[-_]/).filter(word => word.length > 2);
+      keywords.push(...words);
+    }
+
+    return keywords.slice(0, 5); // Limita a 5 palavras-chave
+  } catch (error) {
+    console.error('[Shopee Catalog] Erro ao extrair keywords:', error);
+    return [];
+  }
+}
+
+// Função para baixar e processar o catálogo da Shopee
+export async function fetchFromShopeeCatalog(): Promise<ShopeeCatalogProduct[]> {
   const SHOPEE_CATALOG_URL = 'https://affiliate.shopee.com.br/api/v1/datafeed/download?id=YWJjZGVmZ2hpamtsbW5vcPNcbnfdFhhQkoz1FtnUm6DtED25ejObtofpYLqHBC0h';
   
   try {
-    console.log('[Shopee Catalog] Baixando catálogo da Shopee...');
+    // Verifica cache primeiro
+    const now = Date.now();
+    if (shopeeCatalogCache.length > 0 && (now - catalogCacheTime) < CATALOG_CACHE_DURATION) {
+      console.log(`[Shopee Catalog] Usando cache (${shopeeCatalogCache.length} produtos)`);
+      return shopeeCatalogCache;
+    }
+
+    console.log('[Shopee Catalog] 📥 Baixando catálogo da Shopee...');
     
-    // TODO: Implementar download e processamento do catálogo
-    // Por enquanto retorna array vazio
-    console.log('[Shopee Catalog] Funcionalidade será implementada em breve');
+    const response = await fetch(SHOPEE_CATALOG_URL, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/csv,application/csv,text/plain,*/*',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive'
+      },
+      timeout: 30000
+    });
+
+    if (!response.ok) {
+      console.error(`[Shopee Catalog] Erro HTTP: ${response.status} - ${response.statusText}`);
+      return shopeeCatalogCache; // Retorna cache antigo se disponível
+    }
+
+    const csvData = await response.text();
+    console.log(`[Shopee Catalog] ✅ CSV baixado: ${Math.round(csvData.length / 1024)}KB`);
+
+    // Processa o CSV
+    const products = parseShopeeCsv(csvData);
     
-    return [];
+    if (products.length > 0) {
+      shopeeCatalogCache = products;
+      catalogCacheTime = now;
+      console.log(`[Shopee Catalog] ✅ Cache atualizado com ${products.length} produtos`);
+    } else {
+      console.warn('[Shopee Catalog] ⚠️ Nenhum produto válido encontrado no CSV');
+    }
+
+    return products;
+
   } catch (error) {
-    console.error('[Shopee Catalog] Erro ao acessar catálogo:', error);
+    console.error('[Shopee Catalog] ❌ Erro ao baixar catálogo:', error);
+    
+    // Se tem cache antigo, usa ele
+    if (shopeeCatalogCache.length > 0) {
+      console.log(`[Shopee Catalog] 🔄 Usando cache antigo (${shopeeCatalogCache.length} produtos)`);
+      return shopeeCatalogCache;
+    }
+    
     return [];
   }
+}
+
+// Função para converter CSV em array de produtos
+function parseShopeeCsv(csvData: string): ShopeeCatalogProduct[] {
+  try {
+    const lines = csvData.trim().split('\n');
+    if (lines.length < 2) {
+      console.error('[Shopee CSV] CSV muito pequeno ou inválido');
+      return [];
+    }
+
+    // Primeira linha = headers
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    console.log(`[Shopee CSV] Headers encontrados: ${headers.slice(0, 5).join(', ')}...`);
+
+    const products: ShopeeCatalogProduct[] = [];
+
+    // Mapeia headers para índices (flexível para diferentes formatos)
+    const headerMap = {
+      item_id: findHeaderIndex(headers, ['item_id', 'itemid', 'product_id', 'id']),
+      shop_id: findHeaderIndex(headers, ['shop_id', 'shopid', 'seller_id']),
+      name: findHeaderIndex(headers, ['name', 'title', 'product_name', 'item_name']),
+      price: findHeaderIndex(headers, ['price', 'current_price', 'sale_price']),
+      original_price: findHeaderIndex(headers, ['original_price', 'list_price', 'regular_price']),
+      image_url: findHeaderIndex(headers, ['image_url', 'image', 'picture_url', 'thumbnail']),
+      product_url: findHeaderIndex(headers, ['product_url', 'url', 'link', 'product_link']),
+      brand: findHeaderIndex(headers, ['brand', 'manufacturer']),
+      category: findHeaderIndex(headers, ['category', 'category_name', 'cat_name']),
+      description: findHeaderIndex(headers, ['description', 'desc', 'summary'])
+    };
+
+    console.log(`[Shopee CSV] Mapeamento de colunas:`, headerMap);
+
+    // Processa cada linha (pula header)
+    for (let i = 1; i < lines.length; i++) {
+      try {
+        const values = parseCsvLine(lines[i]);
+        
+        if (values.length < headers.length) {
+          continue; // Pula linhas incompletas
+        }
+
+        const product: ShopeeCatalogProduct = {
+          item_id: getValue(values, headerMap.item_id) || '',
+          shop_id: getValue(values, headerMap.shop_id) || '',
+          name: getValue(values, headerMap.name) || '',
+          price: parseFloat(getValue(values, headerMap.price) || '0') || 0,
+          original_price: parseFloat(getValue(values, headerMap.original_price) || '0') || undefined,
+          image_url: getValue(values, headerMap.image_url) || '',
+          product_url: getValue(values, headerMap.product_url) || '',
+          brand: getValue(values, headerMap.brand) || undefined,
+          category: getValue(values, headerMap.category) || undefined,
+          description: getValue(values, headerMap.description) || undefined
+        };
+
+        // Valida produto básico
+        if (product.item_id && product.name && product.price > 0) {
+          products.push(product);
+        }
+
+      } catch (error) {
+        // Ignora linhas com erro e continua
+        continue;
+      }
+    }
+
+    console.log(`[Shopee CSV] ✅ ${products.length} produtos válidos processados de ${lines.length - 1} linhas`);
+    return products;
+
+  } catch (error) {
+    console.error('[Shopee CSV] Erro ao processar CSV:', error);
+    return [];
+  }
+}
+
+// Helper para encontrar índice do header
+function findHeaderIndex(headers: string[], possibleNames: string[]): number {
+  for (const name of possibleNames) {
+    const index = headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
+    if (index !== -1) return index;
+  }
+  return -1;
+}
+
+// Helper para obter valor do array
+function getValue(values: string[], index: number): string | null {
+  if (index === -1 || index >= values.length) return null;
+  return values[index]?.trim().replace(/"/g, '') || null;
+}
+
+// Parser CSV simples que lida com aspas
+function parseCsvLine(line: string): string[] {
+  const values: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      values.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  values.push(current); // Adiciona último valor
+  return values;
 }
 
 export { ShopeeProductResult };

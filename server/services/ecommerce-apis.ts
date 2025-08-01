@@ -583,10 +583,31 @@ function extractProductId(url: string): { platform: string; id: string } | null 
 export async function tryAPIFirst(url: string): Promise<APIProductResult | null> {
   console.log(`[API First] Tentando APIs para: ${url}`);
 
-  // Para SHOPEE: Catálogo não implementado, usa scraping normal
+  // Para SHOPEE: Tenta catálogo primeiro
   if (isShopeeUrl(url)) {
-    console.log(`[API First] 🛍️ URL da Shopee detectada - catálogo não implementado, usando scraping`);
-    return null; // Retorna null para continuar com scraping normal
+    console.log(`[API First] 🛍️ URL da Shopee detectada - tentando catálogo`);
+    try {
+      const shopeeResult = await fetchShopeeProduct(url);
+      if (shopeeResult && shopeeResult.name !== 'Produto Shopee') {
+        console.log(`[API First] ✅ Shopee catálogo sucesso: ${shopeeResult.name}`);
+        return {
+          name: shopeeResult.name,
+          price: shopeeResult.price || 0,
+          originalPrice: shopeeResult.originalPrice,
+          imageUrl: shopeeResult.imageUrl || '',
+          store: shopeeResult.store,
+          description: shopeeResult.description,
+          category: shopeeResult.category,
+          brand: shopeeResult.brand,
+          url: shopeeResult.url
+        };
+      }
+    } catch (error) {
+      console.log(`[API First] Shopee catálogo falhou:`, error);
+    }
+    
+    console.log(`[API First] 🛍️ Shopee catálogo não encontrou produto - usando scraping`);
+    return null; // Fallback para scraping
   }
 
   // Para OUTRAS LOJAS: Usa scraping normal SEM tentar APIs primeiro
@@ -664,10 +685,32 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
   const results: APIProductResult[] = [];
 
   try {
-    // Para SHOPEE: Catálogo não implementado, usa scraping normal
+    // Para SHOPEE: Tenta catálogo
     if (isShopeeUrl(url)) {
-      console.log(`[API First] 🛍️ Shopee detectada - catálogo não implementado, usando scraping`);
-      return null; // Retorna null para continuar com scraping normal
+      console.log(`[API First] 🛍️ Shopee detectada - tentando catálogo`);
+      try {
+        const shopeeResult = await fetchShopeeProduct(url);
+        if (shopeeResult && shopeeResult.name !== 'Produto Shopee') {
+          console.log(`[API First] ✅ Shopee catálogo encontrou produto: ${shopeeResult.name}`);
+          results.push({
+            name: shopeeResult.name,
+            price: shopeeResult.price || 0,
+            originalPrice: shopeeResult.originalPrice,
+            imageUrl: shopeeResult.imageUrl || '',
+            store: shopeeResult.store,
+            description: shopeeResult.description,
+            category: shopeeResult.category,
+            brand: shopeeResult.brand,
+            url: shopeeResult.url
+          });
+          return results; // Retorna resultado do catálogo
+        }
+      } catch (error) {
+        console.error('[API First] Erro no catálogo Shopee:', error);
+      }
+      
+      console.log(`[API First] 🛍️ Shopee catálogo não encontrou - usando scraping`);
+      return null; // Fallback para scraping
     }
 
     // Para OUTRAS LOJAS: Não usa APIs, vai direto para scraping
