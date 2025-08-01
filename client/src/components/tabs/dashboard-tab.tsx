@@ -18,7 +18,7 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
   const authToken = localStorage.getItem("authToken");
   const userId = localStorage.getItem("userId");
 
-  const { data: products = [], error: productsError } = useQuery<Product[]>({
+  const { data: products = [], error: productsError, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products", refreshKey],
     queryFn: async () => {
       const response = await fetch("/api/products", {
@@ -32,6 +32,7 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
       }
       
       const data = await response.json();
+      console.log("Products data loaded:", data);
       return Array.isArray(data) ? data : [];
     },
     enabled: isOnline && !!authToken,
@@ -68,6 +69,22 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
     );
   }
 
+  // Show loading state
+  if (productsLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center fade-in">
+          <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+            Dashboard Principal
+          </h2>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            Carregando dados dos produtos...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Show error state if there's an error loading products
   if (productsError) {
     return (
@@ -90,10 +107,12 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
     );
   }
 
-  const purchasedProducts = safeProducts.filter(p => p.isPurchased);
-  const pendingProducts = safeProducts.filter(p => !p.isPurchased);
+  // Always ensure we have a valid array before filtering
+  const validProducts = Array.isArray(safeProducts) ? safeProducts : [];
+  const purchasedProducts = validProducts.filter(p => p.isPurchased);
+  const pendingProducts = validProducts.filter(p => !p.isPurchased);
 
-  const categoryBreakdown = safeProducts.reduce((acc: Record<string, { count: number, value: number }>, product) => {
+  const categoryBreakdown = validProducts.reduce((acc: Record<string, { count: number, value: number }>, product) => {
     const category = product.category || 'Outros';
     if (!acc[category]) {
       acc[category] = { count: 0, value: 0 };
@@ -107,7 +126,7 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
     .sort(([,a], [,b]) => b.value - a.value)
     .slice(0, 5);
 
-  const storeBreakdown = safeProducts.reduce((acc: Record<string, { count: number, value: number }>, product) => {
+  const storeBreakdown = validProducts.reduce((acc: Record<string, { count: number, value: number }>, product) => {
     const store = product.store || 'Outros';
     if (!acc[store]) {
       acc[store] = { count: 0, value: 0 };

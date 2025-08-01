@@ -93,25 +93,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      // Call logout endpoint
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: {
-          "x-auth-token": localStorage.getItem("authToken") || ""
-        }
-      });
-    } catch (error) {
-      console.log("Erro no logout:", error);
-    } finally {
-      // Always clear local storage and redirect
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("userId");
-      localStorage.removeItem("username");
-      window.location.href = "/auth";
-    }
-  };
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--c-primary)' }}>

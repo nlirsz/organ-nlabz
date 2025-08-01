@@ -112,15 +112,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.user.userId);
       console.log(`🔍 Buscando produtos para o usuário: ${userId}`);
 
-      const products = await storage.getProducts(userId);
-      console.log(`✅ Produtos encontrados: ${products.length}`);
+      if (isNaN(userId)) {
+        console.error('❌ ID do usuário inválido:', req.user.userId);
+        return res.status(400).json([]);
+      }
 
-      // Ensure we always return an array
+      const products = await storage.getProducts(userId);
+      console.log(`✅ Produtos encontrados: ${products?.length || 0}`);
+
+      // Ensure we always return a valid array
       const safeProducts = Array.isArray(products) ? products : [];
+      
+      // Log the response structure for debugging
+      console.log(`📤 Retornando ${safeProducts.length} produtos para o cliente`);
+      
       res.json(safeProducts);
     } catch (error) {
       console.error('❌ Erro ao buscar produtos:', error);
-      res.status(500).json({ error: 'Erro interno do servidor', products: [] });
+      // Always return an empty array on error to prevent frontend crashes
+      res.status(500).json([]);
     }
   });
 
