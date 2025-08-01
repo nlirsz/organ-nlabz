@@ -99,15 +99,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all products for authenticated user
-  app.get("/api/products", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/products', authenticateToken, async (req, res) => {
     try {
-      const userId = parseInt(req.user.userId);
-      const products = await storage.getProducts(userId);
+      const userId = (req as any).user.id;
+      console.log(`🔍 Buscando produtos para o usuário: ${userId}`);
 
-      res.json(products);
+      const products = await storage.getProductsByUserId(userId);
+      console.log(`✅ Produtos encontrados: ${products.length}`);
+
+      // Ensure we always return an array
+      const safeProducts = Array.isArray(products) ? products : [];
+      res.json(safeProducts);
     } catch (error) {
-      console.error("Error fetching products:", error);
-      res.status(500).json({ error: "Failed to fetch products" });
+      console.error('❌ Erro ao buscar produtos:', error);
+      res.status(500).json({ error: 'Erro interno do servidor', products: [] });
     }
   });
 
@@ -511,7 +516,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bank,
         installments: installments || 1,
         installmentValue: installmentValue || totalValue,
-        totalValue: totalValue || installmentValue,
         purchaseDate,
         firstDueDate
       });

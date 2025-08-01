@@ -28,6 +28,9 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
     enabled: isOnline && !!authToken,
   });
 
+  // Ensure products is always an array
+  const safeProducts = Array.isArray(products) ? products : [];
+
   const { data: stats } = useQuery({
     queryKey: ["/api/products/stats", refreshKey],
     queryFn: () => fetch(`/api/products/stats/${userId}`, {
@@ -54,10 +57,10 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
     );
   }
 
-  const purchasedProducts = products.filter(p => p.isPurchased);
-  const pendingProducts = products.filter(p => !p.isPurchased);
+  const purchasedProducts = safeProducts.filter(p => p.isPurchased);
+  const pendingProducts = safeProducts.filter(p => !p.isPurchased);
 
-  const categoryBreakdown = products.reduce((acc: Record<string, { count: number, value: number }>, product) => {
+  const categoryBreakdown = safeProducts.reduce((acc: Record<string, { count: number, value: number }>, product) => {
     const category = product.category || 'Outros';
     if (!acc[category]) {
       acc[category] = { count: 0, value: 0 };
@@ -71,7 +74,7 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
     .sort(([,a], [,b]) => b.value - a.value)
     .slice(0, 5);
 
-  const storeBreakdown = products.reduce((acc: Record<string, { count: number, value: number }>, product) => {
+  const storeBreakdown = safeProducts.reduce((acc: Record<string, { count: number, value: number }>, product) => {
     const store = product.store || 'Outros';
     if (!acc[store]) {
       acc[store] = { count: 0, value: 0 };
