@@ -109,19 +109,26 @@ ESPECIALISTA EM E-COMMERCE: Extraia informações de produto desta página ${sto
 
 URL: ${url}
 
-INSTRUÇÕES ESPECÍFICAS:
-1. PREÇO: Identifique o preço de venda atual (não frete, parcelamento ou desconto)
-2. NOME: Título principal do produto (sem informações promocionais)
-3. IMAGEM: URL da imagem principal do produto
-4. MARCA: Identifique a marca/fabricante
-5. DESCRIÇÃO: Resumo das características principais
-6. CATEGORIA: Classifique o produto (Eletrônicos, Moda, Casa, etc.)
+INSTRUÇÕES CRÍTICAS PARA PREÇOS:
+1. PREÇO PRINCIPAL: Procure o preço mais VISÍVEL e DESTACADO na página
+2. FORMATOS ACEITOS: "R$ 8.399,00", "8399.00", "8.399", etc.
+3. IGNORE: preços de frete, parcelamento, promoções antigas, preços "de" ou "por"
+4. PRIORIZE: preço atual de venda, preço final, preço à vista
+5. Se houver múltiplos preços, escolha o MAIOR (geralmente o preço principal)
+
+OUTRAS INFORMAÇÕES:
+- NOME: Título principal do produto (sem informações promocionais)
+- IMAGEM: URL da imagem principal do produto
+- MARCA: Identifique a marca/fabricante
+- DESCRIÇÃO: Resumo das características principais
+- CATEGORIA: Classifique o produto (Eletrônicos, Moda, Casa, etc.)
 
 REGRAS CRÍTICAS:
-- Preços devem ser números decimais (ex: 299.99)
+- Preços devem ser números decimais precisos (ex: 8399.00)
 - URLs de imagem devem começar com http/https
 - Responda APENAS JSON válido, sem markdown
 - Se não encontrar informação, use null
+- DUPLIQUE A VERIFICAÇÃO do preço antes de retornar
 
 FORMATO OBRIGATÓRIO:
 {
@@ -171,12 +178,35 @@ ${cleanHtml}
       throw new Error("Nome do produto não encontrado ou inválido");
     }
 
-    // Normaliza preços com validação
+    // Normaliza preços com validação rigorosa
     let price: number | null = null;
     if (productData.price !== null && productData.price !== undefined) {
-      const priceNum = parseFloat(String(productData.price).replace(',', '.'));
-      if (!isNaN(priceNum) && priceNum > 0 && priceNum < 1000000) {
+      let priceStr = String(productData.price);
+      
+      // Remove caracteres não numéricos exceto ponto e vírgula
+      priceStr = priceStr.replace(/[^\d.,]/g, '');
+      
+      // Converte formato brasileiro (8.399,00 -> 8399.00)
+      if (priceStr.includes(',') && priceStr.includes('.')) {
+        // Formato: 8.399,00
+        priceStr = priceStr.replace(/\./g, '').replace(',', '.');
+      } else if (priceStr.includes(',') && !priceStr.includes('.')) {
+        // Formato: 8399,00
+        priceStr = priceStr.replace(',', '.');
+      }
+      
+      const priceNum = parseFloat(priceStr);
+      
+      // Validação: preço deve ser realista para produtos de e-commerce
+      if (!isNaN(priceNum) && priceNum >= 1 && priceNum < 1000000) {
         price = priceNum;
+        
+        // LOG para debug de preços suspeitos
+        if (priceNum < 50) {
+          console.warn(`[Gemini] ⚠️ Preço muito baixo detectado: R$ ${priceNum} - verifique se está correto`);
+        }
+      } else {
+        console.warn(`[Gemini] ⚠️ Preço inválido ignorado: "${productData.price}" -> ${priceNum}`);
       }
     }
 
@@ -218,8 +248,10 @@ ${cleanHtml}
     console.log(`[Gemini] ✅ Produto extraído:`, {
       name: result_product.name,
       price: result_product.price,
+      originalRawPrice: productData.price,
       hasImage: !!result_product.imageUrl,
-      brand: result_product.brand
+      brand: result_product.brand,
+      store: store
     });
 
     return result_product;
@@ -261,8 +293,14 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
     }
   }
 
-  // Extrai preço com seletores hierárquicos
+  // Extrai preço com seletores hierárquicos (Amazon específicos incluídos)
   const priceSelectors = [
+    // Amazon específicos
+    '.a-price-whole, .a-price .a-offscreen',
+    '#apex_desktop .a-price .a-offscreen',
+    '.a-price-current .a-price-fraction',
+    
+    // Genéricos
     '[class*="price"]:not([class*="original"]):not([class*="old"])',
     '[data-testid*="price"]',
     '[class*="valor"]',
@@ -358,14 +396,19 @@ function cleanHtmlForGeminiAnalysis(html: string): string {
     // Remove elementos desnecessários
     $('script, style, noscript, iframe, svg, nav, footer, header').remove();
 
-    // Foca em elementos relevantes para produtos
+    // Foca em elementos relevantes para produtos, priorizando preços
     const relevantSelectors = [
+      // PREÇOS (PRIORIDADE MÁXIMA)
+      '[class*="price"]:not([class*="old"]):not([class*="original"])',
+      '[class*="valor"]:not([class*="antigo"])',
+      '[class*="cost"], [class*="preco"]',
+      '[data-testid*="price"], [data-price]',
+      '.price, .valor, .preco, .cost',
+      '[id*="price"], [id*="valor"]',
+      
       // Títulos e nomes
       'h1, h2, h3',
       '[class*="title"], [class*="name"], [class*="titulo"]',
-      
-      // Preços
-      '[class*="price"], [class*="valor"], [class*="cost"], [class*="preco"]',
       
       // Produto geral
       '[class*="product"], [class*="item"]',
