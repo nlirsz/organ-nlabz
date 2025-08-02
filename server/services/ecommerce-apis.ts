@@ -686,7 +686,7 @@ import { fetchAliExpressProduct as fetchAliExpressProductAPI, isAliExpressUrl } 
 async function fetchAliExpressProduct(url: string): Promise<APIProductResult | null> {
   try {
     console.log(`[AliExpress API] Chamando API corrigida para ${url}`);
-    
+
     const result = await fetchAliExpressProductAPI(url);
     if (!result) {
       return null;
@@ -748,8 +748,14 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
       console.log(`[API First] 🛒 AliExpress detectada - tentando API`);
       try {
         const aliResult = await fetchAliExpressProduct(url);
-        if (aliResult && aliResult.name !== 'Produto AliExpress') {
-          console.log(`[API First] ✅ AliExpress API encontrou produto: ${aliResult.name}`);
+        if (aliResult && 
+            aliResult.name && 
+            aliResult.name !== 'Produto AliExpress' && 
+            aliResult.name.length > 3 &&
+            aliResult.price && 
+            aliResult.price > 0) {
+
+          console.log(`[API First] ✅ AliExpress API encontrou produto VÁLIDO: ${aliResult.name} - $${aliResult.price}`);
           results.push({
             name: aliResult.name,
             price: aliResult.price || 0,
@@ -762,19 +768,25 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
             url: aliResult.url
           });
           return results; // Retorna resultado da API
+        } else {
+          console.log(`[API First] ❌ AliExpress API retornou produto inválido:`, {
+            hasName: !!aliResult?.name,
+            nameLength: aliResult?.name?.length || 0,
+            hasPrice: !!aliResult?.price,
+            priceValue: aliResult?.price
+          });
         }
       } catch (error) {
         console.error('[API First] Erro na API AliExpress:', error);
       }
 
-      console.log(`[API First] 🛒 AliExpress API não encontrou - usando scraping`);
+      console.log(`[API First] 🛒 AliExpress API não encontrou produto válido - usando scraping`);
       return null; // Fallback para scraping
     }
 
     // Para OUTRAS LOJAS: Não usa APIs, vai direto para scraping
     console.log(`[API First] 🌐 Não é Shopee - pulando APIs, usando scraping`);
     return null;
-
     // PRIORIDADE 2: Google Shopping como principal (mais confiável)
     try {
       console.log(`[API First] Tentando Google Shopping como prioridade...`);

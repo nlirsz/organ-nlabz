@@ -200,8 +200,15 @@ async function getAliExpressToken(): Promise<string | null> {
 
 // Função para buscar produto por ID via API da AliExpress (usando documentação oficial)
 export async function fetchAliExpressProduct(url: string): Promise<AliExpressProductResult | null> {
+  console.log('[AliExpress API] 🔑 Verificando credenciais...');
+  console.log('[AliExpress API] ALI_APP_KEY disponível:', !!ALI_APP_KEY);
+  console.log('[AliExpress API] ALI_APP_SECRET disponível:', !!ALI_APP_SECRET);
+  console.log('[AliExpress API] ALI_APP_KEY length:', ALI_APP_KEY?.length || 0);
+  console.log('[AliExpress API] ALI_APP_SECRET length:', ALI_APP_SECRET?.length || 0);
+  
   if (!ALI_APP_KEY || !ALI_APP_SECRET) {
-    console.log('[AliExpress API] ❌ Credenciais não configuradas. Verifique ALI_APP_KEY e ALI_APP_SECRET.');
+    console.log('[AliExpress API] ❌ Credenciais não configuradas. Verifique ALI_APP_KEY e ALI_APP_SECRET nos Secrets.');
+    console.log('[AliExpress API] process.env keys:', Object.keys(process.env).filter(k => k.includes('ALI')));
     return null;
   }
 
@@ -285,16 +292,33 @@ async function fetchProductDetails(productId: string): Promise<AliExpressProduct
       return null;
     }
 
+    console.log('[AliExpress API] 🔍 Estrutura da resposta:', JSON.stringify(response.data, null, 2));
+
     // Processa resposta do método productdetail.get
     const detailResponse = response.data.aliexpress_affiliate_productdetail_get_response;
-    if (!detailResponse || !detailResponse.resp_result) {
-      console.log('[AliExpress API] ❌ Estrutura de resposta inválida');
+    if (!detailResponse) {
+      console.log('[AliExpress API] ❌ Resposta não contém aliexpress_affiliate_productdetail_get_response');
+      console.log('[AliExpress API] 🔍 Chaves disponíveis:', Object.keys(response.data));
       return null;
     }
 
-    const products = detailResponse.resp_result.result?.products;
-    if (!products || products.length === 0) {
-      console.log('[AliExpress API] ❌ Produto não encontrado');
+    if (!detailResponse.resp_result) {
+      console.log('[AliExpress API] ❌ Resposta não contém resp_result');
+      console.log('[AliExpress API] 🔍 Estrutura detailResponse:', JSON.stringify(detailResponse, null, 2));
+      return null;
+    }
+
+    const result = detailResponse.resp_result.result;
+    if (!result) {
+      console.log('[AliExpress API] ❌ Resposta não contém result');
+      console.log('[AliExpress API] 🔍 resp_result:', JSON.stringify(detailResponse.resp_result, null, 2));
+      return null;
+    }
+
+    const products = result.products;
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      console.log('[AliExpress API] ❌ Produto não encontrado ou array vazio');
+      console.log('[AliExpress API] 🔍 products:', products);
       return null;
     }
 
@@ -438,16 +462,33 @@ export async function searchAliExpressProducts(searchTerm: string, maxResults: n
       return [];
     }
 
+    console.log('[AliExpress Search] 🔍 Estrutura da resposta:', JSON.stringify(response.data, null, 2));
+
     const queryResponse = response.data.aliexpress_affiliate_product_query_response;
-    if (!queryResponse || !queryResponse.resp_result) {
-      console.log('[AliExpress Search] ❌ Estrutura de resposta inválida');
+    if (!queryResponse) {
+      console.log('[AliExpress Search] ❌ Resposta não contém aliexpress_affiliate_product_query_response');
+      console.log('[AliExpress Search] 🔍 Chaves disponíveis:', Object.keys(response.data));
       return [];
     }
 
-    const products = queryResponse.resp_result.result?.products || [];
+    if (!queryResponse.resp_result) {
+      console.log('[AliExpress Search] ❌ Resposta não contém resp_result');
+      console.log('[AliExpress Search] 🔍 Estrutura queryResponse:', JSON.stringify(queryResponse, null, 2));
+      return [];
+    }
+
+    const result = queryResponse.resp_result.result;
+    if (!result) {
+      console.log('[AliExpress Search] ❌ Resposta não contém result');
+      console.log('[AliExpress Search] 🔍 resp_result:', JSON.stringify(queryResponse.resp_result, null, 2));
+      return [];
+    }
+
+    const products = result.products || [];
     
-    if (products.length === 0) {
-      console.log('[AliExpress Search] ❌ Nenhum produto encontrado');
+    if (!Array.isArray(products) || products.length === 0) {
+      console.log('[AliExpress Search] ❌ Nenhum produto encontrado ou não é array');
+      console.log('[AliExpress Search] 🔍 products:', products);
       return [];
     }
 
