@@ -155,7 +155,8 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
   try {
     console.log(`[HTTP] 🌐 Fazendo requisição HTTP para: ${url}`);
 
-    const response = await axios.get(url, {
+    // Configurações especiais para AliExpress
+    let axiosConfig = {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -164,9 +165,22 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
       },
-      timeout: 15000,
-      maxRedirects: 5
-    });
+      timeout: 20000,
+      maxRedirects: 10
+    };
+
+    // Para AliExpress, adiciona headers específicos
+    if (isAliExpressUrl(url)) {
+      console.log(`[HTTP] 🛒 Configurando para AliExpress...`);
+      axiosConfig.headers['Referer'] = 'https://www.aliexpress.com/';
+      axiosConfig.headers['sec-ch-ua'] = '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"';
+      axiosConfig.headers['sec-ch-ua-mobile'] = '?0';
+      axiosConfig.headers['sec-ch-ua-platform'] = '"Windows"';
+      axiosConfig.timeout = 30000; // Timeout maior para AliExpress
+      axiosConfig.maxRedirects = 15; // Mais redirecionamentos
+    }
+
+    const response = await axios.get(url, axiosConfig);
 
     const html = response.data;
     console.log(`[HTTP] ✅ HTML recebido: ${Math.round(html.length / 1000)}KB`);
@@ -175,6 +189,13 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
 
   } catch (error) {
     console.error(`[HTTP] ❌ Erro na requisição:`, error.message);
+    if (error.code === 'ECONNABORTED') {
+      console.error(`[HTTP] ⏰ Timeout na requisição`);
+    } else if (error.response?.status) {
+      console.error(`[HTTP] 📡 Status HTTP: ${error.response.status}`);
+    } else if (error.message.includes('redirects')) {
+      console.error(`[HTTP] 🔄 Muitos redirecionamentos`);
+    }
     throw error;
   }
 }

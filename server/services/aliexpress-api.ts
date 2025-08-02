@@ -64,32 +64,52 @@ export function isAliExpressUrl(url: string): boolean {
 // Função para extrair Product ID da URL da AliExpress
 export function extractAliExpressProductId(url: string): string | null {
   try {
-    // Padrões comuns de URLs da AliExpress
+    console.log(`[AliExpress] Extraindo Product ID de: ${url}`);
+    
+    // Padrões mais específicos para AliExpress
     const patterns = [
       /\/item\/(\d+)\.html/i,
       /\/(\d+)\.html/i,
+      /item\/(\d+)/i,
       /product\/(\d+)/i,
-      /item\/([0-9]+)/i,
-      /\/dp\/([A-Z0-9]+)/i
+      /productId[=:](\d+)/i,
+      /item_id[=:](\d+)/i,
     ];
 
     for (const pattern of patterns) {
       const match = url.match(pattern);
       if (match && match[1]) {
+        console.log(`[AliExpress] Product ID encontrado: ${match[1]} usando padrão: ${pattern}`);
         return match[1];
       }
     }
 
-    // Tenta extrair da query string
-    const urlObj = new URL(url);
-    const productId = urlObj.searchParams.get('productId') || 
-                     urlObj.searchParams.get('item_id') ||
-                     urlObj.searchParams.get('id');
-    
-    if (productId) {
-      return productId;
+    // Tenta extrair da query string e pathname
+    try {
+      const urlObj = new URL(url);
+      
+      // Verifica query parameters
+      const productId = urlObj.searchParams.get('productId') || 
+                       urlObj.searchParams.get('item_id') ||
+                       urlObj.searchParams.get('id');
+      
+      if (productId) {
+        console.log(`[AliExpress] Product ID encontrado nos params: ${productId}`);
+        return productId;
+      }
+
+      // Extrai do pathname se for formato /item/123456789.html
+      const pathMatch = urlObj.pathname.match(/\/item\/(\d+)/i);
+      if (pathMatch && pathMatch[1]) {
+        console.log(`[AliExpress] Product ID encontrado no path: ${pathMatch[1]}`);
+        return pathMatch[1];
+      }
+
+    } catch (urlError) {
+      console.warn(`[AliExpress] Erro ao parsear URL: ${urlError.message}`);
     }
 
+    console.warn(`[AliExpress] ❌ Product ID não encontrado na URL: ${url}`);
     return null;
   } catch (error) {
     console.error('[AliExpress] Erro ao extrair Product ID:', error);
@@ -126,66 +146,110 @@ export function addAliExpressAffiliateParams(url: string): string {
 // Função para buscar produto por ID via API da AliExpress
 export async function fetchAliExpressProduct(url: string): Promise<AliExpressProductResult | null> {
   if (!ALI_APP_KEY || !ALI_APP_SECRET) {
-    console.log('[AliExpress API] Credenciais não configuradas');
+    console.log('[AliExpress API] ❌ Credenciais não configuradas. Verifique ALI_APP_KEY e ALI_APP_SECRET.');
     return null;
   }
 
   try {
-    console.log(`[AliExpress API] Buscando produto: ${url}`);
+    console.log(`[AliExpress API] 🛒 Buscando produto: ${url}`);
     
     const productId = extractAliExpressProductId(url);
     if (!productId) {
-      console.log('[AliExpress API] Product ID não encontrado na URL');
+      console.log('[AliExpress API] ❌ Product ID não encontrado na URL');
       return null;
     }
 
+    console.log(`[AliExpress API] 📦 Product ID extraído: ${productId}`);
+
     const timestamp = Date.now().toString();
     
-    // Parâmetros da requisição
+    // Parâmetros da requisição com configurações mais básicas primeiro
     const params = {
       app_key: ALI_APP_KEY,
-      method: 'aliexpress.affiliate.productdetail.get',
+      method: 'aliexpress.affiliate.product.query', // Método mais simples primeiro
       format: 'json',
       v: '2.0',
       sign_method: 'md5',
       timestamp: timestamp,
-      product_ids: productId,
-      fields: 'product_id,product_title,product_url,current_price,original_price,product_main_image_url,product_small_image_urls,evaluate_score,commission_rate,sale_price,discount,shop_url,shop_id,platform_product_type,lastest_volume,original_price_range,sale_price_range',
+      keywords: productId, // Busca por ID como keyword
+      fields: 'product_id,product_title,product_url,current_price,original_price,product_main_image_url,evaluate_score,sale_price',
       target_currency: 'BRL',
       target_language: 'PT',
-      tracking_id: ALI_TRACK_ID
+      tracking_id: ALI_TRACK_ID,
+      page_size: '1',
+      page_no: '1'
     };
 
     // Gera assinatura
     const signature = generateAliExpressSignature(params, ALI_APP_SECRET);
     params['sign'] = signature;
 
-    console.log(`[AliExpress API] Fazendo requisição para produto ID: ${productId}`);
+    console.log(`[AliExpress API] 🌐 Fazendo requisição para produto ID: ${productId}`);
+    console.log(`[AliExpress API] 🔑 App Key: ${ALI_APP_KEY?.substring(0, 10)}...`);
+    console.log(`[AliExpress API] 📊 Params:`, {
+      method: params.method,
+      keywords: params.keywords,
+      timestamp: params.timestamp
+    });
     
     const response = await axios.get(ALI_API_GATEWAY, {
       params,
-      timeout: 15000,
+      timeout: 20000,
       headers: {
-        'User-Agent': 'OrganApp/1.0 (affiliate-integration)'
+        'User-Agent': 'OrganApp/1.0 (affiliate-integration)',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
       }
     });
 
-    if (!response.data || response.data.error_response) {
-      console.error('[AliExpress API] Erro na resposta:', response.data?.error_response);
+    console.log(`[AliExpress API] 📡 Response status: ${response.status}`);
+    console.log(`[AliExpress API] 📄 Response data keys:`, Object.keys(response.data || {}));
+
+    if (!response.data) {
+      console.error('[AliExpress API] ❌ Resposta vazia');
       return null;
     }
 
-    const productData = response.data.aliexpress_affiliate_productdetail_get_response?.resp_result?.result?.products?.[0];
+    if (response.data.error_response) {
+      console.error('[AliExpress API] ❌ Erro na API:', response.data.error_response);
+      return null;
+    }
+
+    // Tenta diferentes formatos de resposta
+    let productData = null;
+    let products = [];
+
+    // Formato para product.query
+    if (response.data.aliexpress_affiliate_product_query_response) {
+      products = response.data.aliexpress_affiliate_product_query_response?.resp_result?.result?.products || [];
+      productData = products[0];
+      console.log(`[AliExpress API] 📦 Produtos encontrados via query: ${products.length}`);
+    }
+    
+    // Formato para productdetail.get  
+    else if (response.data.aliexpress_affiliate_productdetail_get_response) {
+      products = response.data.aliexpress_affiliate_productdetail_get_response?.resp_result?.result?.products || [];
+      productData = products[0];
+      console.log(`[AliExpress API] 📦 Produtos encontrados via detail: ${products.length}`);
+    }
     
     if (!productData) {
-      console.log('[AliExpress API] Produto não encontrado');
-      return null;
+      console.log('[AliExpress API] ❌ Produto não encontrado na resposta');
+      console.log('[AliExpress API] 🔍 Tentando método alternativo...');
+      
+      // Tenta método alternativo - productdetail.get
+      return await fetchAliExpressProductDetail(productId, url);
     }
 
     // Extrai dados do produto
     const name = productData.product_title || 'Produto AliExpress';
-    const price = productData.sale_price?.min_price || productData.current_price || null;
-    const originalPrice = productData.original_price?.min_price || null;
+    const price = productData.sale_price?.min_price || 
+                  productData.sale_price || 
+                  productData.current_price || 
+                  null;
+    const originalPrice = productData.original_price?.min_price || 
+                         productData.original_price || 
+                         null;
     const imageUrl = productData.product_main_image_url || 
                     (productData.product_small_image_urls && productData.product_small_image_urls.split(',')[0]) || 
                     null;
@@ -210,6 +274,76 @@ export async function fetchAliExpressProduct(url: string): Promise<AliExpressPro
 
   } catch (error) {
     console.error('[AliExpress API] Erro ao buscar produto:', error.message);
+    if (error.response) {
+      console.error('[AliExpress API] Status:', error.response.status);
+      console.error('[AliExpress API] Data:', error.response.data);
+    }
+    return null;
+  }
+}
+
+// Método alternativo para buscar detalhes do produto
+async function fetchAliExpressProductDetail(productId: string, originalUrl: string): Promise<AliExpressProductResult | null> {
+  try {
+    console.log(`[AliExpress API] 🔄 Tentando método productdetail.get para ID: ${productId}`);
+    
+    const timestamp = Date.now().toString();
+    
+    const params = {
+      app_key: ALI_APP_KEY,
+      method: 'aliexpress.affiliate.productdetail.get',
+      format: 'json',
+      v: '2.0',
+      sign_method: 'md5',
+      timestamp: timestamp,
+      product_ids: productId,
+      fields: 'product_id,product_title,product_url,current_price,original_price,product_main_image_url,evaluate_score,sale_price',
+      target_currency: 'BRL',
+      target_language: 'PT',
+      tracking_id: ALI_TRACK_ID
+    };
+
+    const signature = generateAliExpressSignature(params, ALI_APP_SECRET);
+    params['sign'] = signature;
+
+    const response = await axios.get(ALI_API_GATEWAY, {
+      params,
+      timeout: 20000,
+      headers: {
+        'User-Agent': 'OrganApp/1.0 (affiliate-integration)',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.data || response.data.error_response) {
+      console.error('[AliExpress API Detail] ❌ Erro:', response.data?.error_response);
+      return null;
+    }
+
+    const productData = response.data.aliexpress_affiliate_productdetail_get_response?.resp_result?.result?.products?.[0];
+    
+    if (!productData) {
+      console.log('[AliExpress API Detail] ❌ Produto não encontrado no método detail');
+      return null;
+    }
+
+    const result: AliExpressProductResult = {
+      name: productData.product_title || 'Produto AliExpress',
+      price: productData.sale_price?.min_price || productData.current_price ? parseFloat((productData.sale_price?.min_price || productData.current_price).toString()) : null,
+      originalPrice: productData.original_price?.min_price ? parseFloat(productData.original_price.min_price.toString()) : null,
+      imageUrl: productData.product_main_image_url || null,
+      store: 'AliExpress',
+      description: `Produto AliExpress com ${productData.evaluate_score || 0} de avaliação`,
+      category: 'Outros',
+      brand: null,
+      url: addAliExpressAffiliateParams(productData.product_url || originalUrl)
+    };
+
+    console.log(`[AliExpress API Detail] ✅ Produto encontrado via detail: ${result.name}`);
+    return result;
+
+  } catch (error) {
+    console.error('[AliExpress API Detail] Erro:', error.message);
     return null;
   }
 }
