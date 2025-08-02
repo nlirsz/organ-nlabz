@@ -112,7 +112,7 @@ export function extractAliExpressProductId(url: string): string | null {
       }
 
     } catch (urlError) {
-      console.warn(`[AliExpress] Erro ao parsear URL: ${urlError.message}`);
+      console.warn(`[AliExpress] Erro ao parsear URL:`, urlError);
     }
 
     console.warn(`[AliExpress] ❌ Product ID não encontrado na URL: ${url}`);
@@ -169,7 +169,7 @@ async function getAliExpressToken(): Promise<string | null> {
     };
 
     const signature = generateAliExpressSignature(params, ALI_APP_SECRET);
-    params['sign'] = signature;
+    (params as any)['sign'] = signature;
 
     console.log('[AliExpress Auth] Obtendo token de autenticação...');
     
@@ -193,7 +193,7 @@ async function getAliExpressToken(): Promise<string | null> {
     return null;
 
   } catch (error) {
-    console.error('[AliExpress Auth] Erro na requisição de token:', error.message);
+    console.error('[AliExpress Auth] Erro na requisição de token:', error);
     return null;
   }
 }
@@ -240,7 +240,7 @@ export async function fetchAliExpressProduct(url: string): Promise<AliExpressPro
     return await searchProductByUrlTerms(url);
 
   } catch (error) {
-    console.error('[AliExpress API] Erro ao buscar produto:', error.message);
+    console.error('[AliExpress API] Erro ao buscar produto:', error);
     return null;
   }
 }
@@ -265,8 +265,12 @@ async function fetchProductDetails(productId: string): Promise<AliExpressProduct
       tracking_id: ALI_TRACK_ID
     };
 
+    if (!ALI_APP_SECRET) {
+      console.error('[AliExpress API] ALI_APP_SECRET não configurado');
+      return null;
+    }
     const signature = generateAliExpressSignature(params, ALI_APP_SECRET);
-    params['sign'] = signature;
+    (params as any)['sign'] = signature;
 
     console.log(`[AliExpress API] 🌐 Buscando detalhes do produto ID: ${productId}`);
     
@@ -352,7 +356,7 @@ async function fetchProductDetails(productId: string): Promise<AliExpressProduct
       }
     }
 
-    const result: AliExpressProductResult = {
+    const productResult: AliExpressProductResult = {
       name: productData.product_title || 'Produto AliExpress',
       price: finalPrice,
       originalPrice: finalOriginalPrice,
@@ -364,11 +368,11 @@ async function fetchProductDetails(productId: string): Promise<AliExpressProduct
       url: productData.product_url || ''
     };
 
-    console.log(`[AliExpress API] ✅ Produto processado: ${result.name} - R$${result.price}`);
-    return result;
+    console.log(`[AliExpress API] ✅ Produto processado: ${productResult.name} - R$${productResult.price}`);
+    return productResult;
 
-  } catch (error) {
-    console.error('[AliExpress API] Erro ao buscar detalhes:', error.message);
+  } catch (error: any) {
+    console.error('[AliExpress API] Erro ao buscar detalhes:', error);
     if (error.response) {
       console.error('[AliExpress API] Status:', error.response.status);
       console.error('[AliExpress API] Data:', error.response.data);
@@ -404,7 +408,7 @@ async function searchProductByUrlTerms(url: string): Promise<AliExpressProductRe
 
     return null;
   } catch (error) {
-    console.error('[AliExpress API] Erro na busca por termos:', error.message);
+    console.error('[AliExpress API] Erro na busca por termos:', error);
     return null;
   }
 }
@@ -440,7 +444,7 @@ export async function searchAliExpressProducts(searchTerm: string, maxResults: n
     };
 
     const signature = generateAliExpressSignature(params, ALI_APP_SECRET);
-    params['sign'] = signature;
+    (params as any)['sign'] = signature;
 
     const response = await axios.get(ALI_API_GATEWAY, {
       params,
@@ -541,7 +545,7 @@ export async function searchAliExpressProducts(searchTerm: string, maxResults: n
           });
         }
       } catch (productError) {
-        console.warn('[AliExpress Search] Erro ao processar produto:', productError.message);
+        console.warn('[AliExpress Search] Erro ao processar produto:', productError);
         continue;
       }
     }
@@ -549,8 +553,8 @@ export async function searchAliExpressProducts(searchTerm: string, maxResults: n
     console.log(`[AliExpress Search] ✅ ${results.length} produtos processados com sucesso`);
     return results;
 
-  } catch (error) {
-    console.error('[AliExpress Search] Erro na busca:', error.message);
+  } catch (error: any) {
+    console.error('[AliExpress Search] Erro na busca:', error);
     if (error.response) {
       console.error('[AliExpress Search] Status:', error.response.status);
       console.error('[AliExpress Search] Data:', error.response.data);
