@@ -356,12 +356,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             console.log(`[API] 🔄 API AliExpress falhou - usando scraping como fallback`);            
-          } catch (apiError) {
-            console.error(`[API] Erro na API AliExpress:`, apiError.message);
           }
-        } else {
-          console.log(`[API] ❌ URL não é da AliExpress - usando scraping normal`);
+        } catch (apiError) {
+          console.error(`[API] Erro na API AliExpress:`, apiError.message);
         }
+      } else {
+          console.log(`[API] ❌ URL não é da AliExpress - usando scraping normal`);
       }
 
       // OUTRAS LOJAS: Fallback para scraping
