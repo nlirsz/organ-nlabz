@@ -679,25 +679,34 @@ export async function tryAPIFirst(url: string): Promise<APIProductResult | null>
   return null;
 }
 
-// Function to check if a URL is from AliExpress
-function isAliExpressUrl(url: string): boolean {
-  return url.includes('aliexpress.com');
-}
+// Importa função correta da API AliExpress
+import { fetchAliExpressProduct as fetchAliExpressProductAPI, isAliExpressUrl } from './aliexpress-api';
 
-// Function to fetch product from AliExpress - Placeholder, needs implementation
+// Function to fetch product from AliExpress using corrected API
 async function fetchAliExpressProduct(url: string): Promise<APIProductResult | null> {
-  // Replace with actual API call and data parsing
-  console.log(`[AliExpress API] Calling AliExpress API for ${url}`);
-  return {
-    name: 'Produto AliExpress',
-    price: 99.99,
-    imageUrl: 'https://ae01.alicdn.com/kf/H94472e274a9e4e1ca5d750971af2f313g.jpg', // Example image URL
-    store: 'AliExpress',
-    description: 'Descrição do produto AliExpress',
-    category: 'Outros',
-    brand: 'Marca AliExpress',
-    url: url
-  };
+  try {
+    console.log(`[AliExpress API] Chamando API corrigida para ${url}`);
+    
+    const result = await fetchAliExpressProductAPI(url);
+    if (!result) {
+      return null;
+    }
+
+    return {
+      name: result.name,
+      price: result.price || 0,
+      originalPrice: result.originalPrice,
+      imageUrl: result.imageUrl || '',
+      store: result.store,
+      description: result.description,
+      category: result.category,
+      brand: result.brand,
+      url: result.url
+    };
+  } catch (error) {
+    console.error('[AliExpress API] Erro na busca:', error.message);
+    return null;
+  }
 }
 
 export async function fetchProductFromAPIs(url: string): Promise<APIProductResult[] | null> {
