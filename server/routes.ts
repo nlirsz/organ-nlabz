@@ -131,10 +131,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Ensure we always return a valid array
       const safeProducts = Array.isArray(products) ? products : [];
-      
+
       // Log the response structure for debugging
       console.log(`📤 [PRODUCTS] Retornando ${safeProducts.length} produtos para o cliente`);
-      
+
       res.status(200).json(safeProducts);
     } catch (error) {
       console.error('❌ [PRODUCTS] Erro ao buscar produtos:', error);
@@ -250,20 +250,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (isShopeeUrl(url)) {
             finalUrl = addShopeeAffiliateParams(url);
             console.log(`[API] ✅ Partner tag da Shopee aplicado: ${url} → ${finalUrl}`);
-            
+
             // Tenta catálogo primeiro
             console.log(`[API] 🛍️ Shopee detectada - tentando catálogo primeiro`);
             const catalogProduct = await fetchShopeeProduct(finalUrl);
-            
+
             if (catalogProduct && 
                 catalogProduct.name !== 'Produto Shopee' && 
                 catalogProduct.name && 
                 catalogProduct.name.length > 3 &&
                 !catalogProduct.name.includes('|') &&
                 catalogProduct.price && catalogProduct.price > 0) {
-              
+
               console.log(`[API] ✅ Produto VÁLIDO encontrado no catálogo: ${catalogProduct.name} - R$ ${catalogProduct.price}`);
-              
+
               const productData = {
                 userId: parseInt(req.user.userId),
                 url: finalUrl,
@@ -310,20 +310,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (isAliExpressUrl(url)) {
             finalUrl = addAliExpressAffiliateParams(url);
             console.log(`[API] ✅ Partner tag da AliExpress aplicado: ${url} → ${finalUrl}`);
-            
+
             // Tenta API primeiro
             console.log(`[API] 🛒 AliExpress detectada - tentando API primeiro`);
             const apiProduct = await fetchAliExpressProduct(finalUrl);
-            
+
             if (apiProduct && 
                 apiProduct.name !== 'Produto AliExpress' && 
                 apiProduct.name && 
                 apiProduct.name.length > 3 &&
                 apiProduct.price && apiProduct.price > 0 &&
                 apiProduct.imageUrl && apiProduct.imageUrl.startsWith('http')) {
-              
+
               console.log(`[API] ✅ Produto VÁLIDO encontrado na API: ${apiProduct.name} - $${apiProduct.price}`);
-              
+
               const productData = {
                 userId: parseInt(req.user.userId),
                 url: finalUrl,
@@ -340,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               const savedProduct = await storage.createProduct(productData);
               console.log(`[API] Produto da AliExpress salvo com sucesso: ${savedProduct.name}`);
-              
+
               return res.status(201).json({
                 message: 'Produto adicionado com sucesso via API AliExpress!',
                 product: savedProduct
@@ -354,7 +354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 hasValidImage: !!(apiProduct?.imageUrl && apiProduct.imageUrl.startsWith('http'))
               });
             }
-            
+
             console.log(`[API] 🔄 API AliExpress falhou - usando scraping como fallback`);            
           } catch (apiError) {
             console.error(`[API] Erro na API AliExpress:`, apiError.message);
@@ -366,55 +366,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // OUTRAS LOJAS: Fallback para scraping
       console.log(`[API] 🌐 Usando scraping tradicional para: ${finalUrl}`);
-      const scrapedProduct = await scrapeProduct(finalUrl);
-      
+      const scrapedProduct = await scrapeProductFromUrl(finalUrl);
+
       if (!scrapedProduct || !scrapedProduct.name || scrapedProduct.name.length < 3) {
         return res.status(400).json({
           error: 'Não foi possível extrair informações do produto. Verifique se a URL está correta.'
         });
       }
-
-      const productData = {
-        userId: parseInt(req.user.userId),
-        url: finalUrl,
-        name: scrapedProduct.name,
-        price: scrapedProduct.price?.toString() || null,
-        originalPrice: scrapedProduct.originalPrice?.toString() || null,
-        imageUrl: scrapedProduct.imageUrl,
-        store: scrapedProduct.store,
-        description: apiProduct.description,
-                category: apiProduct.category || "Outros",
-                brand: apiProduct.brand,
-                isPurchased: false
-              };
-
-              const product = await storage.createProduct(productData);
-              console.log(`[API] Produto criado com sucesso via API da AliExpress: ${product.name}`);
-
-              return res.status(200).json({
-                success: true,
-                message: 'Produto adicionado com sucesso via API da AliExpress!',
-                product: product,
-                source: 'aliexpress_api'
-              });
-            } else {
-              console.log(`[API] 🛒 Produto da API inválido ou não encontrado - usando scraping`);
-              if (apiProduct) {
-                console.log(`[API] 🛒 Produto API rejeitado:`, {
-                  name: apiProduct.name?.substring(0, 50),
-                  price: apiProduct.price
-                });
-              }
-            }
-          }
-        } catch (error) {
-          console.warn(`[API] ⚠️ Erro ao processar API AliExpress:`, error.message);
-        }
-      }
-
-      // Para OUTRAS LOJAS ou se Shopee catálogo falhou: Usa scraping normal
-      console.log(`[API] 🌐 Usando scraping tradicional para: ${finalUrl}`);
-      const scrapedProduct = await scrapeProductFromUrl(finalUrl);
 
       const productData = {
         userId: parseInt(req.user.userId),
