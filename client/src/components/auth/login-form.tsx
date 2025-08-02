@@ -19,36 +19,47 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!loginData.username || !loginData.password) {
+      setError("Por favor, preencha todos os campos.");
+      return;
+    }
+
     setIsLoading(true);
     setError("");
 
     try {
+      console.log("Login: Tentando fazer login com:", loginData.username);
+
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(loginData),
+        body: JSON.stringify({
+          username: loginData.username,
+          password: loginData.password,
+        }),
       });
 
+      console.log("Login: Response status:", response.status);
       const data = await response.json();
+      console.log("Login: Response data:", data);
 
-      if (data.token && data.userId && data.username) {
-        console.log('Login: Salvando dados de autenticação:', {
-          token: data.token.substring(0, 20) + '...',
+      if (response.ok) {
+        console.log("Login: Salvando dados de autenticação:", {
+          token: data.token?.substring(0, 20) + "...",
           userId: data.userId,
           username: data.username
         });
-        localStorage.setItem("authToken", data.token);
-        localStorage.setItem("userId", data.userId);
-        localStorage.setItem("username", data.username);
+        setSuccess("Login realizado com sucesso!");
         onAuthSuccess(data.token, data.userId, data.username);
       } else {
-        console.error('Login: Resposta inválida:', data);
-        setError("Resposta de login inválida");
+        console.error("Login: Erro no login:", data.message);
+        setError(data.message || "Erro no login");
       }
     } catch (error) {
-      setError("Erro de conexão com o servidor");
+      console.error("Login: Erro de conexão:", error);
+      setError("Erro de conexão. Verifique sua internet.");
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +104,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
     }
   };
 
-  
+
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--c-primary)' }}>

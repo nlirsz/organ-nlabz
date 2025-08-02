@@ -54,35 +54,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
+      console.log("[LOGIN] Tentativa de login para:", req.body.username);
       const { username, password } = req.body;
 
       if (!username || !password) {
+        console.log("[LOGIN] Dados faltando - username:", !!username, "password:", !!password);
         return res.status(400).json({ message: 'Nome de usuário e senha são obrigatórios.' });
       }
 
       // Find user
+      console.log("[LOGIN] Buscando usuário:", username);
       const user = await storage.getUserByUsername(username);
       if (!user) {
+        console.log("[LOGIN] Usuário não encontrado:", username);
         return res.status(401).json({ message: 'Credenciais inválidas (usuário não encontrado).' });
       }
 
       // Check password
+      console.log("[LOGIN] Verificando senha para usuário:", user.id);
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
+        console.log("[LOGIN] Senha incorreta para usuário:", user.id);
         return res.status(401).json({ message: 'Credenciais inválidas (senha incorreta).' });
       }
 
       // Generate token
+      console.log("[LOGIN] Gerando token para usuário:", user.id);
       const token = generateToken(user.id.toString());
 
-      res.json({
+      console.log("[LOGIN] Login bem-sucedido para usuário:", user.username);
+      res.status(200).json({
         message: 'Login bem-sucedido.',
         token,
         userId: user.id.toString(),
         username: user.username
       });
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("[LOGIN] Erro detalhado no login:", error);
       res.status(500).json({ message: 'Erro interno do servidor ao fazer login.' });
     }
   });
@@ -110,25 +118,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/products', authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = parseInt(req.user.userId);
-      console.log(`🔍 Buscando produtos para o usuário: ${userId}`);
+      console.log(`🔍 [PRODUCTS] Buscando produtos para o usuário: ${userId}`);
+      console.log(`🔍 [PRODUCTS] Token do usuário válido:`, !!req.user);
 
       if (isNaN(userId)) {
-        console.error('❌ ID do usuário inválido:', req.user.userId);
+        console.error('❌ [PRODUCTS] ID do usuário inválido:', req.user.userId);
         return res.status(400).json([]);
       }
 
       const products = await storage.getProducts(userId);
-      console.log(`✅ Produtos encontrados: ${products?.length || 0}`);
+      console.log(`✅ [PRODUCTS] Produtos encontrados: ${products?.length || 0}`);
 
       // Ensure we always return a valid array
       const safeProducts = Array.isArray(products) ? products : [];
       
       // Log the response structure for debugging
-      console.log(`📤 Retornando ${safeProducts.length} produtos para o cliente`);
+      console.log(`📤 [PRODUCTS] Retornando ${safeProducts.length} produtos para o cliente`);
       
-      res.json(safeProducts);
+      res.status(200).json(safeProducts);
     } catch (error) {
-      console.error('❌ Erro ao buscar produtos:', error);
+      console.error('❌ [PRODUCTS] Erro ao buscar produtos:', error);
       // Always return an empty array on error to prevent frontend crashes
       res.status(500).json([]);
     }

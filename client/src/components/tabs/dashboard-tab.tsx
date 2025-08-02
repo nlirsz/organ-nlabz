@@ -18,26 +18,47 @@ export function DashboardTab({ refreshKey }: DashboardTabProps) {
   const authToken = localStorage.getItem("authToken");
   const userId = localStorage.getItem("userId");
 
-  const { data: products = [], error: productsError, isLoading: productsLoading } = useQuery<Product[]>({
-    queryKey: ["/api/products", refreshKey],
-    queryFn: async () => {
-      const response = await fetch("/api/products", {
-        headers: {
-          "x-auth-token": authToken || ""
+  const { data: products = [], isLoading: productsLoading, error: productsError, refetch } = useQuery({
+      queryKey: ["products", authToken],
+      queryFn: async () => {
+        console.log("🔄 [DASHBOARD] Fazendo requisição para /api/products");
+        console.log("🔄 [DASHBOARD] Token disponível:", !!authToken);
+
+        if (!authToken) {
+          console.error("❌ [DASHBOARD] Token não disponível");
+          throw new Error("Token de autenticação não disponível");
         }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log("Products data loaded:", data);
-      return Array.isArray(data) ? data : [];
-    },
-    enabled: isOnline && !!authToken,
-    retry: 3,
-    retryDelay: 1000,
+
+        const response = await fetch("/api/products", {
+          headers: {
+            "Content-Type": "application/json",
+            "x-auth-token": authToken || ""
+          }
+        });
+
+        console.log("🔄 [DASHBOARD] Response status:", response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("❌ [DASHBOARD] HTTP error:", response.status, errorText);
+          throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("✅ [DASHBOARD] Products data loaded:", data);
+
+        // Force data to be an array
+        if (Array.isArray(data)) {
+          return data;
+        } else if (data && typeof data === 'object' && data.products) {
+          return Array.isArray(data.products) ? data.products : [];
+        } else {
+          console.warn("⚠️ [DASHBOARD] Products data is not an array:", data);
+          return [];
+        }
+      },
+      enabled: isOnline && !!authToken,
+      retry: 3,
   });
 
   // Ensure products is always an array
