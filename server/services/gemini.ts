@@ -1,4 +1,3 @@
-
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as cheerio from 'cheerio';
 import { extractJSONLD } from './scraper.js';
@@ -145,6 +144,56 @@ CONTEÚDO DA PÁGINA:
 ${cleanHtml}
 `;
 
+    // Para AliExpress, usa prompt mais específico
+    let systemPrompt = `Você é um especialista em extração de dados de produtos.
+
+    INSTRUÇÕES GERAIS:
+    1. Analise o HTML e identifique o nome do produto, preço, imagem e outros detalhes.
+    2. Seja preciso ao extrair o preço (formato: 199.90)
+    3. Retorne apenas JSON, sem texto adicional.
+    4. Se não encontrar algo, retorne null.
+
+    Formato esperado:
+    {
+      "name": "Nome do produto",
+      "price": 199.90,
+      "imageUrl": "URL da imagem",
+      "description": "Descrição do produto",
+      "category": "Categoria do produto",
+      "brand": "Marca do produto"
+    }
+    `;
+
+    // Para AliExpress, usa prompt mais específico
+    if (url.includes('aliexpress.com')) {
+      systemPrompt = `Você é um especialista em extração de dados de produtos da AliExpress.
+
+    INSTRUÇÕES ESPECÍFICAS PARA ALIEXPRESS:
+    1. Procure dados de produto em estruturas JSON, especialmente em scripts com window.runParams ou similar
+    2. O nome do produto geralmente está em elementos com "product-title", data-pl="product-title" ou similar
+    3. Preços estão em elementos com classes como "product-price", "notranslate", ou data-spm contendo price
+    4. Imagens estão em elementos img com src contendo "alicdn.com"
+    5. CRÍTICO: Analise cuidadosamente o HTML para extrair dados do produto ESPECÍFICO da URL fornecida
+    6. Se a página contém redirecionamentos ou dados de múltiplos produtos, foque no produto principal
+    7. IMPORTANTE: Se não conseguir extrair dados precisos do produto correto, retorne null
+
+    URL do produto: ${url}
+
+    Analise este HTML da AliExpress e extraia APENAS dados do produto específico desta página.
+    Verifique se o produto extraído corresponde ao ID ${url.match(/\/(\d+)\.html/)?.[1] || 'não encontrado'} da URL.
+
+    Retorne um JSON válido com:
+    - name: nome exato do produto (obrigatório)
+    - price: preço em número (obrigatório) 
+    - originalPrice: preço original se houver desconto
+    - imageUrl: URL da imagem principal (deve ser do produto correto)
+    - description: descrição do produto
+    - category: categoria inferida
+    - brand: marca se identificada
+
+    Se não conseguir extrair dados confiáveis do produto correto, retorne: {"error": "Dados não encontrados"}`;
+    }
+
     console.log(`[Gemini] 🤖 Enviando análise especializada para ${store}...`);
     const result = await model.generateContent(optimizedPrompt);
     const response = result.response;
@@ -162,7 +211,7 @@ ${cleanHtml}
       } else if (cleanText.startsWith('```')) {
         cleanText = cleanText.replace(/```\n/, '').replace(/\n```$/, '');
       }
-      
+
       productData = JSON.parse(cleanText);
     } catch (jsonError) {
       // Último recurso: busca por JSON no texto
@@ -182,10 +231,10 @@ ${cleanHtml}
     let price: number | null = null;
     if (productData.price !== null && productData.price !== undefined) {
       let priceStr = String(productData.price);
-      
+
       // Remove caracteres não numéricos exceto ponto e vírgula
       priceStr = priceStr.replace(/[^\d.,]/g, '');
-      
+
       // Converte formato brasileiro (8.399,00 -> 8399.00)
       if (priceStr.includes(',') && priceStr.includes('.')) {
         // Formato: 8.399,00
@@ -194,13 +243,13 @@ ${cleanHtml}
         // Formato: 8399,00
         priceStr = priceStr.replace(',', '.');
       }
-      
+
       const priceNum = parseFloat(priceStr);
-      
+
       // Validação: preço deve ser realista para produtos de e-commerce
       if (!isNaN(priceNum) && priceNum >= 1 && priceNum < 1000000) {
         price = priceNum;
-        
+
         // LOG para debug de preços suspeitos
         if (priceNum < 50) {
           console.warn(`[Gemini] ⚠️ Preço muito baixo detectado: R$ ${priceNum} - verifique se está correto`);
@@ -299,7 +348,7 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
     '.a-price-whole, .a-price .a-offscreen',
     '#apex_desktop .a-price .a-offscreen',
     '.a-price-current .a-price-fraction',
-    
+
     // Genéricos
     '[class*="price"]:not([class*="original"]):not([class*="old"])',
     '[data-testid*="price"]',
@@ -322,7 +371,7 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
         } else if (priceStr.includes(',') && !priceStr.includes('.')) {
           priceStr = priceStr.replace(',', '.');
         }
-        
+
         const priceValue = parseFloat(priceStr);
         if (!isNaN(priceValue) && priceValue > 0 && priceValue < 1000000) {
           price = priceValue;
@@ -343,7 +392,7 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
     'meta[name="description"]',
     '[class*="detail"], [class*="info"]'
   ];
-  
+
   for (const selector of descSelectors) {
     const descText = $(selector).first().text().trim() || $(selector).attr('content');
     if (descText && descText.length > 10) {
@@ -357,7 +406,7 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
     '[class*="brand"], [class*="marca"]',
     'meta[property="product:brand"]'
   ];
-  
+
   for (const selector of brandSelectors) {
     const brandText = $(selector).first().text().trim() || $(selector).attr('content');
     if (brandText && brandText.length > 1 && brandText.length < 50) {
@@ -405,23 +454,23 @@ function cleanHtmlForGeminiAnalysis(html: string): string {
       '[data-testid*="price"], [data-price]',
       '.price, .valor, .preco, .cost',
       '[id*="price"], [id*="valor"]',
-      
+
       // Títulos e nomes
       'h1, h2, h3',
       '[class*="title"], [class*="name"], [class*="titulo"]',
-      
+
       // Produto geral
       '[class*="product"], [class*="item"]',
-      
+
       // Descrições
       '[class*="description"], [class*="desc"], [class*="detail"]',
-      
+
       // Marcas
       '[class*="brand"], [class*="marca"]',
-      
+
       // Imagens
       'img[src*="product"], img[alt*="product"]',
-      
+
       // Meta tags importantes
       'meta[property*="og:"], meta[name="description"]'
     ].join(', ');

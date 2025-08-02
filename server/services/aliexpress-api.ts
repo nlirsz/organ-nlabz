@@ -192,7 +192,8 @@ export async function fetchAliExpressProduct(url: string): Promise<AliExpressPro
       timestamp: params.timestamp
     });
     
-    const response = await axios.get(ALI_API_GATEWAY, {
+    // Primeira tentativa com busca por ID
+    let response = await axios.get(ALI_API_GATEWAY, {
       params,
       timeout: 20000,
       headers: {
@@ -201,6 +202,57 @@ export async function fetchAliExpressProduct(url: string): Promise<AliExpressPro
         'Content-Type': 'application/json'
       }
     });
+
+    console.log(`[AliExpress API] 📡 Response status: ${response.status}`);
+    console.log(`[AliExpress API] 📄 Response data keys:`, Object.keys(response.data || {}));
+
+    // Se não encontrou por ID, tenta busca alternativa por URL
+    if (!response.data || response.data.error_response || 
+        !response.data.aliexpress_affiliate_product_query_response?.resp_result?.result?.products?.length) {
+      
+      console.log(`[AliExpress API] 🔄 Primeira busca não retornou resultados, tentando busca alternativa...`);
+      
+      // Extrai termos da URL para busca alternativa
+      const urlPath = new URL(url).pathname;
+      const urlSegments = urlPath.split('/').filter(s => s.length > 3);
+      const searchTerms = urlSegments
+        .filter(s => !s.match(/^\d+$/)) // Remove números puros
+        .join(' ')
+        .replace(/[-_]/g, ' ')
+        .trim();
+
+      if (searchTerms.length > 5) {
+        console.log(`[AliExpress API] 🔍 Tentando busca por termos extraídos da URL: "${searchTerms}"`);
+        
+        const altParams = {
+          ...params,
+          keywords: searchTerms.substring(0, 50), // Limita tamanho
+          page_size: '5' // Menos resultados para ser mais específico
+        };
+
+        // Regenera assinatura para novos parâmetros
+        delete altParams['sign'];
+        const altSignature = generateAliExpressSignature(altParams, ALI_APP_SECRET);
+        altParams['sign'] = altSignature;
+
+        try {
+          response = await axios.get(ALI_API_GATEWAY, {
+            params: altParams,
+            timeout: 20000,
+            headers: {
+              'User-Agent': 'OrganApp/1.0 (affiliate-integration)',
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log(`[AliExpress API] 🔍 Busca alternativa - Status: ${response.status}`);
+        } catch (altError) {
+          console.warn(`[AliExpress API] ⚠️ Busca alternativa falhou:`, altError.message);
+          // Continua com a resposta original
+        }
+      }
+    }
 
     console.log(`[AliExpress API] 📡 Response status: ${response.status}`);
     console.log(`[AliExpress API] 📄 Response data keys:`, Object.keys(response.data || {}));

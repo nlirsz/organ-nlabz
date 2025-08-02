@@ -169,15 +169,58 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
       maxRedirects: 10
     };
 
-    // Para AliExpress, adiciona headers específicos
+    // Para AliExpress, adiciona headers específicos e múltiplas tentativas
     if (isAliExpressUrl(url)) {
       console.log(`[HTTP] 🛒 Configurando para AliExpress...`);
       axiosConfig.headers['Referer'] = 'https://www.aliexpress.com/';
       axiosConfig.headers['sec-ch-ua'] = '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"';
       axiosConfig.headers['sec-ch-ua-mobile'] = '?0';
       axiosConfig.headers['sec-ch-ua-platform'] = '"Windows"';
+      axiosConfig.headers['Cache-Control'] = 'no-cache';
+      axiosConfig.headers['Pragma'] = 'no-cache';
       axiosConfig.timeout = 30000; // Timeout maior para AliExpress
       axiosConfig.maxRedirects = 15; // Mais redirecionamentos
+
+      // Múltiplas tentativas para AliExpress
+      let lastError;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          console.log(`[HTTP] 🛒 Tentativa ${attempt}/3 para AliExpress`);
+          
+          // Varia User-Agent nas tentativas
+          const userAgents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          ];
+          
+          axiosConfig.headers['User-Agent'] = userAgents[attempt - 1];
+          
+          const response = await axios.get(url, axiosConfig);
+          const html = response.data;
+          
+          console.log(`[HTTP] ✅ HTML recebido na tentativa ${attempt}: ${Math.round(html.length / 1000)}KB`);
+          
+          // Verifica se o HTML contém dados de produto real
+          if (html.length > 5000 && (html.includes('product') || html.includes('item') || html.includes('runParams'))) {
+            console.log(`[HTTP] 🛒 HTML válido detectado na tentativa ${attempt}`);
+            return await extractProductInfo(url, html);
+          } else {
+            console.log(`[HTTP] 🛒 HTML insuficiente na tentativa ${attempt}, tentando novamente...`);
+            await new Promise(resolve => setTimeout(resolve, 2000 * attempt)); // Delay progressivo
+            continue;
+          }
+          
+        } catch (error) {
+          lastError = error;
+          console.warn(`[HTTP] 🛒 Tentativa ${attempt} falhou:`, error.message);
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 3000 * attempt)); // Delay progressivo
+          }
+        }
+      }
+      
+      if (lastError) throw lastError;
     }
 
     const response = await axios.get(url, axiosConfig);
