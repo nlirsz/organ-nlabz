@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import { extractProductInfo } from './gemini.js';
 import { isShopeeUrl, addShopeeAffiliateParams } from './shopee-api.js';
 import { isAliExpressUrl, addAliExpressAffiliateParams } from './aliexpress-api.js';
+import { anyCrawlService } from './anycrawl.js';
 import axios from 'axios';
 
 interface ScrapedProduct {
@@ -47,6 +48,33 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
     console.log(`[Scraper] 🛒 AliExpress detectada - usando scraping normal`);
   }
 
+// Determina quando usar AnyCrawl (apenas para sites conhecidamente difíceis)
+function shouldUseAnyCrawl(url: string): boolean {
+  if (!anyCrawlService.isAvailable()) {
+    return false;
+  }
+
+  const hostname = new URL(url).hostname.toLowerCase();
+  
+  // Sites que frequentemente falham com scraping tradicional
+  const difficultSites = [
+    'mercadolivre.com.br',  // JavaScript pesado
+    'amazon.com.br',        // Anti-bot robusto
+    'magazineluiza.com.br', // Conteúdo dinâmico
+    'americanas.com.br',    // SPA complexo
+    'submarino.com.br',     // SPA complexo
+    'casasbahia.com.br',    // JavaScript pesado
+    'extra.com.br',         // Via Varejo (anti-bot)
+    'ponto.com.br',         // Via Varejo (anti-bot)
+    'zara.com',             // SPA internacional
+    'hm.com',               // SPA internacional
+    'nike.com.br'           // SPA com autenticação
+  ];
+
+  return difficultSites.some(site => hostname.includes(site));
+}
+
+
   // ESTRATÉGIA 1: Playwright (mais robusta)
   try {
     console.log(`[Scraper] 📱 TENTATIVA 1: Playwright com navegador real`);
@@ -71,7 +99,21 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
     console.warn(`[Scraper] ⚠️ HTTP falhou:`, error.message);
   }
 
-  // ESTRATÉGIA 3: Fallback com informações básicas
+  // ESTRATÉGIA 3: AnyCrawl Premium (apenas para sites difíceis)
+  if (shouldUseAnyCrawl(processedUrl)) {
+    try {
+      console.log(`[Scraper] 💎 TENTATIVA 3: AnyCrawl Premium`);
+      const anyCrawlResult = await anyCrawlService.scrapeProduct(processedUrl);
+      if (anyCrawlResult && anyCrawlResult.name !== `Produto de ${anyCrawlResult.store}`) {
+        console.log(`[Scraper] ✅ ANYCRAWL SUCESSO: "${anyCrawlResult.name}"`);
+        return anyCrawlResult;
+      }
+    } catch (error) {
+      console.warn(`[Scraper] ⚠️ AnyCrawl falhou:`, error.message);
+    }
+  }
+
+  // ESTRATÉGIA 4: Fallback com informações básicas
   console.log(`[Scraper] 🔄 TODAS TENTATIVAS FALHARAM - Usando fallback`);
   const fallback = await createFallbackProduct(processedUrl);
   

@@ -197,6 +197,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.userId);
       const products = await storage.getProducts(userId);
       res.json(products);
+
+// Endpoint para verificar créditos do AnyCrawl
+app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
+  try {
+    const credits = await anyCrawlService.checkCredits();
+    
+    if (credits === null) {
+      return res.status(503).json({ 
+        error: 'AnyCrawl não disponível',
+        available: false 
+      });
+    }
+
+    res.json({ 
+      remaining_credits: credits,
+      available: anyCrawlService.isAvailable()
+    });
+    
+  } catch (error) {
+    console.error('[API] Erro ao verificar créditos AnyCrawl:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
     } catch (error) {
       console.error("Error fetching products:", error);
       res.status(500).json({ error: "Failed to fetch products" });

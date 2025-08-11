@@ -25,6 +25,7 @@ import {
   Store
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AnyCrawlStatus } from "../anycrawl-status";
 
 interface AddProdutosTabProps {
   onProductAdded: () => void;
@@ -132,7 +133,7 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
           description: `Produto "${productData.name}" adicionado à lista!`,
         });
       }
-      
+
       setUrl("");
     },
     onError: (error: Error) => {
