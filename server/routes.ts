@@ -316,7 +316,7 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.log(`[API] Iniciando scraping para: ${url}`);
       let finalUrl = url;
 
-      // NOVA LÓGICA: Para Shopee, tenta catálogo primeiro
+      // ESTRATÉGIA 1: SHOPEE API - Tenta catálogo primeiro
       if (url.includes('shopee.com.br')) {
         try {
           const { isShopeeUrl, addShopeeAffiliateParams, fetchShopeeProduct } = await import('./services/shopee-api.js');
@@ -325,7 +325,7 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
             console.log(`[API] ✅ Partner tag da Shopee aplicado: ${url} → ${finalUrl}`);
 
             // Tenta catálogo primeiro
-            console.log(`[API] 🛍️ Shopee detectada - tentando catálogo primeiro`);
+            console.log(`[API] 🛍️ Shopee detectada - tentando API catálogo primeiro`);
             const catalogProduct = await fetchShopeeProduct(finalUrl);
 
             if (catalogProduct && 
@@ -335,7 +335,171 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
                 !catalogProduct.name.includes('|') &&
                 catalogProduct.price && catalogProduct.price > 0) {
 
-              console.log(`[API] ✅ Produto VÁLIDO encontrado no catálogo: ${catalogProduct.name} - R$ ${catalogProduct.price}`);
+              console.log(`[API] ✅ Produto VÁLIDO encontrado via API Shopee: ${catalogProduct.name}`);
+
+              const productData = {
+                userId: parseInt(req.user.userId),
+                url: finalUrl,
+                name: catalogProduct.name,
+                price: catalogProduct.price?.toString() || null,
+                originalPrice: catalogProduct.originalPrice?.toString() || null,
+                imageUrl: catalogProduct.imageUrl,
+                store: catalogProduct.store,
+                description: catalogProduct.description,
+                category: catalogProduct.category,
+                brand: catalogProduct.brand,
+                tags: null,
+                isPurchased: false,
+              };
+
+              const savedProduct = await storage.createProduct(productData);
+              console.log(`[API] Produto da Shopee API salvo com sucesso: ${savedProduct.name}`);
+
+              return res.status(201).json({
+                message: 'Produto adicionado com sucesso via API Shopee!',
+                product: savedProduct,
+                scrapingSuccess: true,
+                needsManualInput: false,
+                extractionMethod: 'shopee-api',
+                quality: {
+                  hasName: true,
+                  hasPrice: true,
+                  hasImage: !!catalogProduct.imageUrl,
+                  hasDescription: !!catalogProduct.description,
+                  hasBrand: !!catalogProduct.brand
+                }
+              });
+            }
+
+            console.log(`[API] 🔄 API Shopee não encontrou produto - usando scraping`);
+          }
+        } catch (apiError) {
+          console.error(`[API] Erro na API Shopee:`, apiError.message);
+        }
+      }
+
+      // ESTRATÉGIA 2: ALIEXPRESS API - Tenta API primeiro  
+      if (url.includes('aliexpress.com')) {
+        try {
+          const { isAliExpressUrl, fetchAliExpressProduct } = await import('./services/aliexpress-api.js');
+          if (isAliExpressUrl(url)) {
+            console.log(`[API] 🛒 AliExpress detectada - tentando API primeiro`);
+            const apiProduct = await fetchAliExpressProduct(url);
+
+            if (apiProduct && 
+                apiProduct.name && 
+                apiProduct.name !== 'Produto AliExpress' && 
+                apiProduct.name.length > 3 &&
+                apiProduct.price && 
+                apiProduct.price > 0) {
+
+              console.log(`[API] ✅ Produto VÁLIDO encontrado via API AliExpress: ${apiProduct.name}`);
+
+              const productData = {
+                userId: parseInt(req.user.userId),
+                url: apiProduct.url || url,
+                name: apiProduct.name,
+                price: apiProduct.price?.toString() || null,
+                originalPrice: apiProduct.originalPrice?.toString() || null,
+                imageUrl: apiProduct.imageUrl,
+                store: apiProduct.store,
+                description: apiProduct.description,
+                category: apiProduct.category,
+                brand: apiProduct.brand,
+                tags: null,
+                isPurchased: false,
+              };
+
+              const savedProduct = await storage.createProduct(productData);
+              console.log(`[API] Produto da AliExpress API salvo com sucesso: ${savedProduct.name}`);
+
+              return res.status(201).json({
+                message: 'Produto adicionado com sucesso via API AliExpress!',
+                product: savedProduct,
+                scrapingSuccess: true,
+                needsManualInput: false,
+                extractionMethod: 'aliexpress-api',
+                quality: {
+                  hasName: true,
+                  hasPrice: true,
+                  hasImage: !!apiProduct.imageUrl,
+                  hasDescription: !!apiProduct.description,
+                  hasBrand: !!apiProduct.brand
+                }
+              });
+            } else {
+              console.log(`[API] ❌ API AliExpress retornou produto inválido:`, {
+                hasName: !!apiProduct?.name,
+                nameLength: apiProduct?.name?.length || 0,
+                hasPrice: !!apiProduct?.price,
+                priceValue: apiProduct?.price
+              });
+            }
+
+            console.log(`[API] 🔄 API AliExpress falhou - usando scraping como fallback`);            
+          }
+        } catch (apiError) {
+          console.error(`[API] Erro na API AliExpress:`, apiError.message);
+        }
+      }
+
+      // ESTRATÉGIA 3: OUTRAS LOJAS - Tenta outras APIs disponíveis
+      try {
+        console.log(`[API] 🔍 Tentando outras APIs disponíveis...`);
+        const { fetchProductFromAPIs } = await import('./services/ecommerce-apis.js');
+        const apiResults = await fetchProductFromAPIs(finalUrl);
+        
+        if (apiResults && apiResults.length > 0) {
+          const bestProduct = apiResults[0]; // Usa o primeiro resultado (melhor qualidade)
+          
+          if (bestProduct.name && 
+              bestProduct.name.length > 3 && 
+              bestProduct.price && 
+              bestProduct.price > 0) {
+
+            console.log(`[API] ✅ Produto encontrado via outras APIs: ${bestProduct.name}`);
+
+            const productData = {
+              userId: parseInt(req.user.userId),
+              url: bestProduct.url || finalUrl,
+              name: bestProduct.name,
+              price: bestProduct.price?.toString() || null,
+              originalPrice: bestProduct.originalPrice?.toString() || null,
+              imageUrl: bestProduct.imageUrl,
+              store: bestProduct.store,
+              description: bestProduct.description,
+              category: bestProduct.category,
+              brand: bestProduct.brand,
+              tags: null,
+              isPurchased: false,
+            };
+
+            const savedProduct = await storage.createProduct(productData);
+            console.log(`[API] Produto de API externa salvo: ${savedProduct.name}`);
+
+            return res.status(201).json({
+              message: 'Produto adicionado com sucesso via API externa!',
+              product: savedProduct,
+              scrapingSuccess: true,
+              needsManualInput: false,
+              extractionMethod: 'external-api',
+              quality: {
+                hasName: true,
+                hasPrice: true,
+                hasImage: !!bestProduct.imageUrl,
+                hasDescription: !!bestProduct.description,
+                hasBrand: !!bestProduct.brand
+              }
+            });
+          }
+        }
+      } catch (apiError) {
+        console.error(`[API] Erro em APIs externas:`, apiError.message);
+      }
+
+      // ESTRATÉGIA 4: SCRAPING TRADICIONAL (com AnyCrawl como fallback embutido)
+      console.log(`[API] 🌐 Todas APIs falharam - usando scraping tradicional (+ AnyCrawl se necessário)`);
+      const scrapedProduct = await scrapeProductFromUrl(finalUrl); no catálogo: ${catalogProduct.name} - R$ ${catalogProduct.price}`);
 
               const productData = {
                 userId: parseInt(req.user.userId),

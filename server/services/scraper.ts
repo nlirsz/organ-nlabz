@@ -38,42 +38,13 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
   if (isShopeeUrl(url)) {
     processedUrl = addShopeeAffiliateParams(url);
     console.log(`[Scraper] 🛍️ URL da Shopee convertida para afiliado: ${url} → ${processedUrl}`);
-    console.log(`[Scraper] 🛍️ Shopee detectada - usando scraping normal (catálogo não implementado)`);
   }
   
   // VERIFICAÇÃO ESPECÍFICA: Se for AliExpress, converte URL para afiliado
   if (isAliExpressUrl(url)) {
     processedUrl = addAliExpressAffiliateParams(url);
     console.log(`[Scraper] 🛒 URL da AliExpress convertida para afiliado: ${url} → ${processedUrl}`);
-    console.log(`[Scraper] 🛒 AliExpress detectada - usando scraping normal`);
   }
-
-// Determina quando usar AnyCrawl (apenas para sites conhecidamente difíceis)
-function shouldUseAnyCrawl(url: string): boolean {
-  if (!anyCrawlService.isAvailable()) {
-    return false;
-  }
-
-  const hostname = new URL(url).hostname.toLowerCase();
-  
-  // Sites que frequentemente falham com scraping tradicional
-  const difficultSites = [
-    'mercadolivre.com.br',  // JavaScript pesado
-    'amazon.com.br',        // Anti-bot robusto
-    'magazineluiza.com.br', // Conteúdo dinâmico
-    'americanas.com.br',    // SPA complexo
-    'submarino.com.br',     // SPA complexo
-    'casasbahia.com.br',    // JavaScript pesado
-    'extra.com.br',         // Via Varejo (anti-bot)
-    'ponto.com.br',         // Via Varejo (anti-bot)
-    'zara.com',             // SPA internacional
-    'hm.com',               // SPA internacional
-    'nike.com.br'           // SPA com autenticação
-  ];
-
-  return difficultSites.some(site => hostname.includes(site));
-}
-
 
   // ESTRATÉGIA 1: Playwright (mais robusta)
   try {
@@ -99,10 +70,10 @@ function shouldUseAnyCrawl(url: string): boolean {
     console.warn(`[Scraper] ⚠️ HTTP falhou:`, error.message);
   }
 
-  // ESTRATÉGIA 3: AnyCrawl Premium (apenas para sites difíceis)
+  // ESTRATÉGIA 3: AnyCrawl Premium (apenas para sites difíceis E quando necessário)
   if (shouldUseAnyCrawl(processedUrl)) {
     try {
-      console.log(`[Scraper] 💎 TENTATIVA 3: AnyCrawl Premium`);
+      console.log(`[Scraper] 💎 TENTATIVA 3: AnyCrawl Premium (site difícil detectado)`);
       const anyCrawlResult = await anyCrawlService.scrapeProduct(processedUrl);
       if (anyCrawlResult && anyCrawlResult.name !== `Produto de ${anyCrawlResult.store}`) {
         console.log(`[Scraper] ✅ ANYCRAWL SUCESSO: "${anyCrawlResult.name}"`);
@@ -111,15 +82,57 @@ function shouldUseAnyCrawl(url: string): boolean {
     } catch (error) {
       console.warn(`[Scraper] ⚠️ AnyCrawl falhou:`, error.message);
     }
+  } else {
+    console.log(`[Scraper] 🎯 Site não precisa de AnyCrawl - economizando créditos`);
   }
 
   // ESTRATÉGIA 4: Fallback com informações básicas
   console.log(`[Scraper] 🔄 TODAS TENTATIVAS FALHARAM - Usando fallback`);
   const fallback = await createFallbackProduct(processedUrl);
   
-  // Garante que a URL final seja a processada (com afiliado se Shopee)
+  // Garante que a URL final seja a processada (com afiliado se necessário)
   fallback.url = processedUrl;
   return fallback;
+}
+
+// Determina quando usar AnyCrawl (apenas para sites conhecidamente difíceis)
+function shouldUseAnyCrawl(url: string): boolean {
+  if (!anyCrawlService.isAvailable()) {
+    console.log(`[AnyCrawl] 📴 Serviço não disponível - API Key não configurada`);
+    return false;
+  }
+
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    
+    // Sites que frequentemente falham com scraping tradicional
+    const difficultSites = [
+      'mercadolivre.com.br',  // JavaScript pesado + anti-bot
+      'amazon.com.br',        // Anti-bot muito robusto
+      'magazineluiza.com.br', // SPA com conteúdo dinâmico
+      'americanas.com.br',    // SPA complexo
+      'submarino.com.br',     // SPA complexo (mesmo grupo)
+      'casasbahia.com.br',    // JavaScript pesado
+      'extra.com.br',         // Via Varejo (anti-bot forte)
+      'ponto.com.br',         // Via Varejo (anti-bot forte)
+      'zara.com',             // SPA internacional
+      'hm.com',               // SPA internacional
+      'nike.com.br'           // SPA com autenticação
+    ];
+
+    const needsAnyCrawl = difficultSites.some(site => hostname.includes(site));
+    
+    if (needsAnyCrawl) {
+      console.log(`[AnyCrawl] 🎯 Site difícil detectado: ${hostname} - AnyCrawl será usado se necessário`);
+    } else {
+      console.log(`[AnyCrawl] 🌐 Site normal: ${hostname} - AnyCrawl não necessário`);
+    }
+    
+    return needsAnyCrawl;
+  } catch (error) {
+    console.warn(`[AnyCrawl] ⚠️ Erro ao analisar URL:`, error.message);
+    return false;
+  }
 }
 
 async function scrapeWithPlaywright(url: string): Promise<ScrapedProduct> {

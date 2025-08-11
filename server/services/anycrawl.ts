@@ -51,6 +51,7 @@ class AnyCrawlService {
 
     try {
       console.log(`[AnyCrawl] 🚀 Iniciando scraping premium para: ${url}`);
+      console.log(`[AnyCrawl] 💰 IMPORTANTE: Esta operação consumirá créditos AnyCrawl`);
 
       const response = await axios.post(`${this.baseUrl}/crawl`, {
         url: url,
@@ -70,10 +71,13 @@ class AnyCrawlService {
       
       if (!result.success) {
         console.error('[AnyCrawl] ❌ Falha no scraping:', result.error);
+        console.error('[AnyCrawl] 💸 Créditos consumidos mesmo com falha');
         return null;
       }
 
-      console.log(`[AnyCrawl] ✅ Scraping concluído - ${result.credits_used} créditos usados`);
+      console.log(`[AnyCrawl] ✅ Scraping concluído`);
+      console.log(`[AnyCrawl] 💰 Créditos usados: ${result.credits_used || 'N/A'}`);
+      console.log(`[AnyCrawl] 📊 Status: ${result.status || 'N/A'}`)ed} créditos usados`);
 
       // Extrai dados do metadata primeiro
       if (result.data.metadata) {

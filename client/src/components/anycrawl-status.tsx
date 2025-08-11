@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -66,30 +65,28 @@ export function AnyCrawlStatus() {
           Scraping avançado para sites difíceis
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Créditos:</span>
-          <div className="flex items-center gap-2">
-            <Badge 
-              variant="secondary" 
-              className={`${getStatusColor()} text-white border-0`}
-            >
-              {status.remaining_credits}
-            </Badge>
-            <span className="text-xs text-muted-foreground">
-              {getStatusText()}
-            </span>
+      <CardContent className="pt-4">
+        <div className="flex items-center space-x-3">
+          <div className={`w-3 h-3 rounded-full ${
+            status === 'available' ? 'bg-green-500' : 
+            status === 'unavailable' ? 'bg-red-500' : 'bg-yellow-500'
+          }`} />
+          <div className="flex-1">
+            <p className="text-sm font-medium">
+              {status === 'available' ? 'AnyCrawl Ativo' :
+               status === 'unavailable' ? 'AnyCrawl Indisponível' : 'Verificando...'}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {status === 'available' ? 'Usado automaticamente apenas para sites difíceis (economiza créditos)' :
+               status === 'unavailable' ? 'API Key não configurada nos Secrets' : 'Aguardando verificação...'}
+            </p>
+            {status === 'available' && (
+              <p className="text-xs text-orange-600 mt-1">
+                💡 Sites como Mercado Livre e Amazon usarão AnyCrawl apenas se APIs e scraping normal falharem
+              </p>
+            )}
           </div>
         </div>
-        
-        {status.remaining_credits < 20 && (
-          <div className="mt-2 flex items-center gap-2 p-2 bg-amber-50 rounded-md">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <span className="text-xs text-amber-800">
-              Créditos baixos - será usado apenas quando necessário
-            </span>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
