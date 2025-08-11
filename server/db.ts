@@ -5,15 +5,9 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is required');
 }
 
-// Configuração de conexão com retry e timeout
+// Configuração de conexão com timeout otimizado
 const sql = neon(process.env.DATABASE_URL, {
-  // Configurações de conexão
-  connectionTimeoutMillis: 60000, // 60 segundos
-  idleTimeoutMillis: 60000, // 60 segundos de idle
-  maxUses: 50, // Reduzido para evitar problemas de pool
-  poolQueryViaFetch: true, // Força uso via fetch
-  
-  // Configurações de fetch para melhor compatibilidade
+  // Configurações básicas do Neon
   fetchOptions: {
     cache: 'no-store',
     keepalive: false

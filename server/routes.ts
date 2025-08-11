@@ -12,9 +12,57 @@ import bcrypt from "bcryptjs";
 
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // Health check endpoint
+  app.get("/api/health", async (req, res) => {
+    try {
+      // Test database connection
+      await storage.getUser(1);
+      res.status(200).json({ 
+        status: "healthy", 
+        database: "connected",
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      res.status(503).json({ 
+        status: "unhealthy", 
+        database: "disconnected",
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // Database connection middleware for protected routes
+  const requireDatabase = async (req: any, res: any, next: any) => {
+    try {
+      // Quick connection test
+      await storage.getUser(1);
+      next();
+    } catch (error: any) {
+      console.error("Database connection failed:", error.message);
+      
+      if (error.message?.includes('endpoint has been disabled')) {
+        return res.status(503).json({
+          message: "Banco de dados temporariamente indisponível. O endpoint Neon precisa ser habilitado.",
+          error: "DATABASE_ENDPOINT_DISABLED",
+          suggestions: [
+            "Habilite o endpoint no painel Neon dashboard",
+            "Verifique se DATABASE_URL está configurado corretamente",
+            "Aguarde alguns minutos e tente novamente"
+          ]
+        });
+      }
+      
+      return res.status(503).json({
+        message: "Serviço temporariamente indisponível. Problemas de conexão com banco de dados.",
+        error: "DATABASE_CONNECTION_FAILED"
+      });
+    }
+  };
 
   // Auth Routes
-  app.post("/api/auth/register", async (req, res) => {
+  app.post("/api/auth/register", requireDatabase, async (req, res) => {
     try {
       const { username, password } = req.body;
 
@@ -52,7 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", requireDatabase, async (req, res) => {
     try {
       console.log("[LOGIN] Tentativa de login para:", req.body.username);
       const { username, password } = req.body;
@@ -223,7 +271,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPurchased: isPurchased || false,
       };
 
-      const productId = await storage.addProduct(productData);
+      const product = await storage.createProduct(productData);
+      const productId = product.id;
       res.json({ id: productId, ...productData });
     } catch (error) {
       console.error("Manual product creation error:", error);
