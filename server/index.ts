@@ -38,14 +38,25 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  // Verificar conexão com PostgreSQL
+async function initializeDatabase() {
   try {
     // Test the database connection
     await db.select().from(users).limit(1);
     log('✅ Conectado ao PostgreSQL com sucesso!');
+    return true;
   } catch (error) {
     log('❌ Erro ao conectar com o PostgreSQL:', error);
+    return false;
+  }
+}
+
+(async () => {
+  // Inicializar banco de dados antes de tudo
+  console.log("🚀 Iniciando aplicação...");
+
+  const dbConnected = await initializeDatabase();
+  if (!dbConnected) {
+    console.error("❌ Não foi possível conectar ao banco. Aplicação não será iniciada.");
     process.exit(1);
   }
 
@@ -68,15 +79,13 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
+  // ALWAYS serve the app on port 5000, vite serves on 5173
+  const PORT = 5000;
   server.listen({
-    port,
+    port: PORT,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`✅ Servidor rodando na porta ${PORT}`);
   });
 })();
