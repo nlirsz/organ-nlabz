@@ -107,6 +107,26 @@ export function SmartDashboard() {
         return;
       }
 
+      // Check if token is expired before making request
+      try {
+        const payload = JSON.parse(atob(authToken.split('.')[1]));
+        const isExpired = payload.exp * 1000 < Date.now();
+
+        if (isExpired) {
+          console.log('🔓 [DASHBOARD] Token expirado, redirecionando para login...');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userId');
+          window.location.href = '/auth';
+          return;
+        }
+      } catch (error) {
+        console.error('❌ [DASHBOARD] Erro ao verificar token:', error);
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userId');
+        window.location.href = '/auth';
+        return;
+      }
+
       try {
         const [productsRes, statsRes, financesRes, installmentsRes] = await Promise.all([
           fetch("/api/products", {
@@ -132,6 +152,15 @@ export function SmartDashboard() {
         ]);
 
         if (!isMounted) return;
+
+        // Handle 401 Unauthorized errors specifically for token expiration
+        if (productsRes.status === 401 || statsRes.status === 401 || financesRes.status === 401 || installmentsRes.status === 401) {
+          console.log('🔓 [DASHBOARD] Token inválido/expirado em uma das requisições, redirecionando...');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userId');
+          window.location.href = '/auth';
+          return;
+        }
 
         const [productsData, statsData, financesData, installmentsData] = await Promise.all([
           productsRes.ok ? productsRes.json() : [],

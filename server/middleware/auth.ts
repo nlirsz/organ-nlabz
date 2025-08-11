@@ -113,6 +113,24 @@ export const authenticateToken = async (req: AuthenticatedRequest, res: Response
       message: err.message,
       stack: err.stack
     });
-    res.status(401).json({ msg: 'Token não é válido.' });
+
+    // Send more specific error messages for debugging
+    if (err.name === 'TokenExpiredError') {
+      res.status(401).json({ 
+        msg: 'Token expirado.', 
+        error: 'TOKEN_EXPIRED',
+        details: 'Faça login novamente.' 
+      });
+    } else if (err.name === 'JsonWebTokenError') {
+      res.status(401).json({ 
+        msg: 'Token inválido.', 
+        error: 'INVALID_TOKEN' 
+      });
+    } else {
+      res.status(401).json({ 
+        msg: 'Token não é válido.', 
+        error: 'AUTH_ERROR' 
+      });
+    }
   }
 };
