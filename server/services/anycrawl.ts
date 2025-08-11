@@ -77,7 +77,7 @@ class AnyCrawlService {
 
       console.log(`[AnyCrawl] ✅ Scraping concluído`);
       console.log(`[AnyCrawl] 💰 Créditos usados: ${result.credits_used || 'N/A'}`);
-      console.log(`[AnyCrawl] 📊 Status: ${result.status || 'N/A'}`)ed} créditos usados`);
+      console.log(`[AnyCrawl] 📊 Status: ${result.status || 'N/A'}`);
 
       // Extrai dados do metadata primeiro
       if (result.data.metadata) {
