@@ -23,7 +23,7 @@ export const generateToken = (userId: string): string => {
   return token;
 };
 
-export const authenticateToken = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   const token = req.header('x-auth-token');
 
   if (!token) {

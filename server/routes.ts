@@ -1,4 +1,5 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { scrapeProductFromUrl } from "./services/scraper.js";
 import { priceHistoryService } from "./services/priceHistory.js";
@@ -10,8 +11,12 @@ import { generateToken, authenticateToken, type AuthenticatedRequest } from "./m
 import bcrypt from "bcryptjs";
 import { anyCrawlService } from "./services/anycrawl.js";
 
-// Type helpers for Express compatibility
-type AuthHandler = any;
+// Type-safe wrapper for authenticated routes that properly handles Express compatibility
+const withAuth = <T = any>(
+  handler: (req: Request, res: Response, next?: NextFunction) => Promise<T> | T
+): express.RequestHandler => {
+  return handler;
+};
 
 
 
@@ -147,7 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/auth/me", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.get("/api/auth/me", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       res.json({
         userId: req.user.userId,
@@ -156,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ error: "Erro interno do servidor" });
     }
-  }) as any);
+  }));
 
   app.post("/api/auth/logout", (req, res) => {
     try {
@@ -167,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all products for authenticated user
-  app.get('/api/products', authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.get('/api/products', authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = parseInt(req.user.userId);
       console.log(`🔍 [PRODUCTS] Buscando produtos para o usuário: ${userId}`);
@@ -193,10 +198,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Always return an empty array on error to prevent frontend crashes
       res.status(500).json([]);
     }
-  }) as any);
+  }));
 
   // AnyCrawl credits endpoint - Protected with authentication
-  app.get('/api/anycrawl/credits', authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.get('/api/anycrawl/credits', authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const credits = await anyCrawlService.checkCredits();
       
@@ -216,10 +221,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('[API] Erro ao verificar créditos AnyCrawl:', error);
       res.status(500).json({ error: 'Erro interno do servidor' });
     }
-  }) as any);
+  }));
 
   // Get product stats for authenticated user
-  app.get("/api/products/stats/:userId", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.get("/api/products/stats", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = parseInt(req.user.userId);
       const stats = await storage.getProductStats(userId);
@@ -235,10 +240,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching stats:", error);
       res.status(500).json({ error: "Failed to fetch product stats" });
     }
-  }) as any);
+  }));
 
   // Verify URL without adding product
-  app.post("/api/products/verify", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.post("/api/products/verify", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { url } = req.body;
 
@@ -260,10 +265,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Verification error:", error);
       res.status(500).json({ error: "Failed to verify product URL" });
     }
-  }) as any);
+  }));
 
   // Add product manually
-  app.post("/api/products", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.post("/api/products", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { name, price, url, imageUrl, store, description, category, brand, tags, isPurchased } = req.body;
 
@@ -293,10 +298,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Manual product creation error:", error);
       res.status(500).json({ error: "Failed to add product manually" });
     }
-  }) as any);
+  }));
 
   // Add product from URL
-  app.post("/api/products/scrape", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.post("/api/products/scrape", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { url } = req.body;
 
@@ -569,10 +574,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         suggestion: "Tente adicionar o produto manualmente com as informações que você possui"
       });
     }
-  }) as any);
+  }));
 
   // Add product manually
-  app.post("/api/products/manual", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.post("/api/products/manual", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { url, name, price, originalPrice, imageUrl, store, description, category, brand } = req.body;
 
@@ -653,10 +658,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Manual product creation error:", error);
       res.status(500).json({ error: "Failed to create manual product" });
     }
-  }) as any);
+  }));
 
   // Update product
-  app.put("/api/products/:id", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.put("/api/products/:id", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const productId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);
@@ -672,10 +677,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Update error:", error);
       res.status(500).json({ error: "Failed to update product" });
     }
-  }) as any);
+  }));
 
   // Fix Amazon URLs with partner tag
-  app.post("/api/products/fix-amazon-urls", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.post("/api/products/fix-amazon-urls", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = parseInt(req.user.userId);
       console.log(`[Fix Amazon URLs] Corrigindo URLs para usuário: ${userId}`);
@@ -708,10 +713,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Fix Amazon URLs error:", error);
       res.status(500).json({ error: "Failed to fix Amazon URLs" });
     }
-  }) as any);
+  }));
 
   // Delete product
-  app.delete("/api/products/:id", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.delete("/api/products/:id", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const productId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);
@@ -735,10 +740,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Delete error:", error);
       res.status(500).json({ error: "Failed to delete product", details: (error as any).message });
     }
-  }) as any);
+  }));
 
   // APIs para histórico de preços
-  app.get("/api/products/:id/price-history", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.get("/api/products/:id/price-history", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const productId = parseInt(req.params.id);
       const history = priceHistoryService.getPriceHistory(productId);
@@ -746,10 +751,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch price history" });
     }
-  }) as any);
+  }));
 
   // APIs para notificações
-  app.get("/api/notifications", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.get("/api/notifications", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = parseInt(req.user.userId);
       const notifications = notificationService.getUserNotifications(userId);
@@ -757,9 +762,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch notifications" });
     }
-  }) as any);
+  }));
 
-  app.get("/api/notifications/unread-count", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.get("/api/notifications/unread-count", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = parseInt(req.user.userId);
       const count = notificationService.getUnreadCount(userId);
@@ -767,10 +772,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ error: "Failed to get unread count" });
     }
-  }) as any);
+  }));
 
   // Payment routes
-  app.post("/api/payments", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.post("/api/payments", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { productId, paymentMethod, bank, installments, installmentValue, totalValue, purchaseDate, firstDueDate } = req.body;
       const userId = parseInt(req.user.userId);
@@ -807,9 +812,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Payment creation error:", error);
       res.status(500).json({ error: "Failed to create payment", details: (error as any).message });
     }
-  }) as any);
+  }));
 
-  app.get("/api/payments", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.get("/api/payments", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = parseInt(req.user.userId);
       const payments = await storage.getUserPayments(userId);
@@ -818,10 +823,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching payments:", error);
       res.status(500).json({ error: "Failed to fetch payments" });
     }
-  }) as any);
+  }));
 
   // Get user installments
-  app.get("/api/installments", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.get("/api/installments", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = parseInt(req.user.userId);
       console.log(`[API] Buscando parcelas para usuário: ${userId}`);
@@ -832,10 +837,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching installments:", error);
       res.status(500).json({ error: "Failed to fetch installments" });
     }
-  }) as any);
+  }));
 
   // Get payment data for a specific product
-  app.get("/api/payments/product/:productId", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.get("/api/payments/product/:productId", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const productId = parseInt(req.params.productId);
       const userId = parseInt(req.user.userId);
@@ -853,10 +858,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error getting payment data:", error);
       res.status(500).json({ error: "Erro ao buscar dados de pagamento" });
     }
-  }) as any);
+  }));
 
   // Update payment data
-  app.put("/api/payments/:paymentId", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.put("/api/payments/:paymentId", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const paymentId = parseInt(req.params.paymentId);
       const userId = parseInt(req.user.userId);
@@ -873,10 +878,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error updating payment:", error);
       res.status(500).json({ error: "Erro ao atualizar pagamento" });
     }
-  }) as any);
+  }));
 
    // Delete payment by product ID
-   app.delete("/api/payments/product/:productId", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+   app.delete("/api/payments/product/:productId", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = parseInt(req.user.userId);
       const productId = parseInt(req.params.productId);
@@ -894,10 +899,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Erro ao excluir pagamento:', error);
       res.status(500).json({ error: "Failed to delete payment" });
     }
-  }) as any);
+  }));
 
   // Finance routes
-  app.get("/api/finances", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.get("/api/finances", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = parseInt(req.user.userId);
       const finances = await storage.getFinances(userId);
@@ -906,9 +911,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching finances:", error);
       res.status(500).json({ error: "Failed to fetch finances" });
     }
-  }) as any);
+  }));
 
-  app.post("/api/finances", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.post("/api/finances", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = parseInt(req.user.userId);
       const { mes_ano, receita, gastos } = req.body;
@@ -929,9 +934,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error creating finance record:", error);
       res.status(500).json({ error: "Failed to create finance record" });
     }
-  }) as any);
+  }));
 
-  app.put("/api/finances/:id", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.put("/api/finances/:id", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const financeId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);
@@ -952,9 +957,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error updating finance record:", error);
       res.status(500).json({ error: "Failed to update finance record" });
     }
-  }) as any);
+  }));
 
-  app.delete("/api/finances/:id", authenticateToken, (async (req: AuthenticatedRequest, res) => {
+  app.delete("/api/finances/:id", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const financeId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);
@@ -970,7 +975,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error deleting finance record:", error);
       res.status(500).json({ error: "Failed to delete finance record" });
     }
-  }) as any);
+  }));
 
   // API route not found handler - prevents HTML responses for API calls
   app.use("/api/*", (req, res) => {
