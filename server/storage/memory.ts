@@ -189,7 +189,7 @@ export class MemStorage implements IStorage {
     const totalItems = userProducts.length;
     const purchasedItems = userProducts.filter(p => p.isPurchased).length;
     const estimatedTotal = userProducts.reduce((sum, p) => {
-      const price = p.price ? parseFloat(p.price) : 0;
+      const price = p.price ? Number(p.price) : 0;
       return sum + price;
     }, 0);
 
@@ -282,7 +282,7 @@ export class MemStorage implements IStorage {
           productName: product?.name || 'Unknown Product',
           installmentNumber: installment.installmentNumber,
           totalInstallments: payment.installments,
-          amount: parseFloat(installment.value),
+          amount: Number(installment.value),
           dueDate: installment.dueDate.toISOString(),
           isPaid: installment.isPaid || false,
           month: installment.dueDate.getMonth() + 1,

@@ -215,7 +215,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
   }
 
   const purchasedProducts = products.filter(product => product.isPurchased);
-  const totalSpent = purchasedProducts.reduce((sum, product) => sum + parseFloat(product.price), 0);
+  const totalSpent = purchasedProducts.reduce((sum, product) => sum + (Number(product.price) || 0), 0);
   const totalProducts = purchasedProducts.length;
 
   // Estatísticas por categoria
@@ -224,7 +224,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     if (!acc[category]) {
       acc[category] = { total: 0, count: 0 };
     }
-    acc[category].total += parseFloat(product.price);
+    acc[category].total += Number(product.price) || 0;
     acc[category].count += 1;
     return acc;
   }, {} as CategoryStats);
@@ -235,7 +235,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
     if (!acc[store]) {
       acc[store] = { total: 0, count: 0 };
     }
-    acc[store].total += parseFloat(product.price);
+    acc[store].total += Number(product.price) || 0;
     acc[store].count += 1;
     return acc;
   }, {} as StoreStats);
@@ -590,7 +590,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                               </div>
                               <div className="flex-shrink-0">
                                 <span className="text-xl font-bold text-green-300 whitespace-nowrap">
-                                  R$ {parseFloat(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  R$ {(Number(product.price) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </span>
                               </div>
                             </div>
@@ -685,7 +685,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                               </div>
                               <div className="flex-shrink-0">
                                 <span className="text-xl font-bold text-green-300 whitespace-nowrap">
-                                  R$ {parseFloat(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  R$ {(Number(product.price) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </span>
                               </div>
                             </div>
@@ -818,11 +818,11 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                 <div>
                   <h3 className="font-semibold text-gray-700 mb-2">Preço</h3>
                   <p className="text-2xl font-bold text-green-600">
-                    R$ {parseFloat(selectedProduct.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    R$ {(Number(selectedProduct.price) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                   {selectedProduct.originalPrice && selectedProduct.originalPrice !== selectedProduct.price && (
                     <p className="text-gray-500 line-through">
-                      R$ {parseFloat(selectedProduct.originalPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {(Number(selectedProduct.originalPrice) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                   )}
                 </div>

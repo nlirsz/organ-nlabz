@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, decimal, timestamp, real, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, timestamp, real, varchar, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -25,8 +25,8 @@ export const products = pgTable("products", {
   userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   url: text("url").notNull(),
   name: text("name").notNull(),
-  price: text("price"),
-  originalPrice: text("original_price"),
+  price: numeric("price", { precision: 10, scale: 2 }),
+  originalPrice: numeric("original_price", { precision: 10, scale: 2 }),
   imageUrl: text("image_url"),
   store: text("store"),
   description: text("description"),
@@ -58,7 +58,7 @@ export const installments = pgTable("installments", {
   payment_id: integer("payment_id").references(() => payments.id).notNull(),
   installmentNumber: integer("installment_number").notNull(),
   dueDate: timestamp("due_date").notNull(),
-  value: text("value").notNull(),
+  value: numeric("value", { precision: 10, scale: 2 }).notNull(),
   isPaid: boolean("is_paid").default(false),
   paidAt: timestamp("paid_at"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -88,6 +88,8 @@ export const insertProductSchema = createInsertSchema(products).omit({
   updatedAt: true,
 }).extend({
   userId: z.number().default(1),
+  price: z.number().positive().optional().nullable(),
+  originalPrice: z.number().positive().optional().nullable(),
 });
 
 export const updateProductSchema = insertProductSchema.partial();
@@ -110,7 +112,7 @@ export const installmentSchema = z.object({
   paymentId: z.number(),
   installmentNumber: z.number(),
   dueDate: z.string(),
-  value: z.number(),
+  value: z.number().positive(),
   isPaid: z.boolean().default(false),
   paidDate: z.string().nullable(),
 });

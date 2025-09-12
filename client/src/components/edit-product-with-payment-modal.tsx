@@ -60,7 +60,7 @@ export function EditProductWithPaymentModal({
     bank: paymentData?.bank || '',
     installments: paymentData?.installments || 1,
     installmentValue: paymentData?.installmentValue || 0,
-    totalValue: paymentData?.totalValue || parseFloat(product.price || '0'),
+    totalValue: paymentData?.totalValue || Number(product.price) || 0,
     purchaseDate: paymentData?.purchaseDate ? new Date(paymentData.purchaseDate).toISOString().split('T')[0] : '',
     firstDueDate: paymentData?.firstDueDate ? new Date(paymentData.firstDueDate).toISOString().split('T')[0] : '',
   });

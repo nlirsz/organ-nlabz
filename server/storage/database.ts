@@ -180,7 +180,7 @@ export class DatabaseStorage implements IStorage {
     const totalItems = userProducts.length;
     const purchasedItems = userProducts.filter((p: SelectProduct) => p.isPurchased).length;
     const estimatedTotal = userProducts.reduce((sum: number, p: SelectProduct) => {
-      const price = p.price ? parseFloat(p.price) : 0;
+      const price = p.price ? Number(p.price) : 0;
       return sum + price;
     }, 0);
 
@@ -283,7 +283,7 @@ export class DatabaseStorage implements IStorage {
 
         return result.map((item: any) => ({
           ...item,
-          amount: parseFloat(item.amount),
+          amount: Number(item.amount),
           dueDate: typeof item.dueDate === 'string' ? item.dueDate : item.dueDate.toISOString(),
           month: typeof item.dueDate === 'string' ? new Date(item.dueDate).getMonth() + 1 : item.dueDate.getMonth() + 1,
           year: typeof item.dueDate === 'string' ? new Date(item.dueDate).getFullYear() : item.dueDate.getFullYear(),

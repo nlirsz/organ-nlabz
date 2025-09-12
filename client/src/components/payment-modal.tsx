@@ -20,7 +20,7 @@ export function PaymentModal({ isOpen, onClose, product, onPaymentAdded }: Payme
     paymentMethod: "",
     bank: "",
     installments: 1,
-    totalValue: parseFloat(product.price || "0"),
+    totalValue: Number(product.price) || 0,
     purchaseDate: new Date().toISOString().split('T')[0],
     firstDueDate: new Date().toISOString().split('T')[0],
   });
@@ -80,7 +80,7 @@ export function PaymentModal({ isOpen, onClose, product, onPaymentAdded }: Payme
         paymentMethod: "",
         bank: "",
         installments: 1,
-        totalValue: parseFloat(product.price || "0"),
+        totalValue: Number(product.price) || 0,
         purchaseDate: new Date().toISOString().split('T')[0],
         firstDueDate: new Date().toISOString().split('T')[0],
       });

@@ -185,8 +185,8 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
         case "name":
           return a.name.localeCompare(b.name);
         case "price":
-          const priceA = a.price ? parseFloat(a.price) : 0;
-          const priceB = b.price ? parseFloat(b.price) : 0;
+          const priceA = a.price ? Number(a.price) : 0;
+          const priceB = b.price ? Number(b.price) : 0;
           return priceA - priceB;
         case "date":
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -367,13 +367,13 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
                 <div className="flex items-center justify-between">
                   <div className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
                     {product.price ? 
-                      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(product.price))
+                      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price))
                       : 'Preço não informado'
                     }
                   </div>
-                  {product.originalPrice && parseFloat(product.originalPrice) > parseFloat(product.price || '0') && (
+                  {product.originalPrice && Number(product.originalPrice) > (Number(product.price) || 0) && (
                     <span className="text-sm line-through" style={{ color: 'var(--text-secondary)' }}>
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(product.originalPrice))}
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.originalPrice))}
                     </span>
                   )}
                 </div>

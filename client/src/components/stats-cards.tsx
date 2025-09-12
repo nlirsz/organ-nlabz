@@ -31,8 +31,8 @@ export function StatsCards() {
 
   const purchasedProducts = products.filter(p => p.isPurchased);
   const pendingProducts = products.filter(p => !p.isPurchased);
-  const totalValue = products.reduce((sum, p) => sum + parseFloat(p.price || '0'), 0);
-  const purchasedValue = purchasedProducts.reduce((sum, p) => sum + parseFloat(p.price || '0'), 0);
+  const totalValue = products.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
+  const purchasedValue = purchasedProducts.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
 
   const statsData = [
     {

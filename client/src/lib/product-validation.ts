@@ -16,7 +16,7 @@ export function detectProductIssues(product: any): ProductIssue[] {
       message: 'Preço não foi extraído corretamente'
     });
   } else {
-    const price = parseFloat(product.price);
+    const price = Number(product.price);
     // Preços muito baixos ou muito altos podem ser suspeitos
     if (price < 1) {
       issues.push({
