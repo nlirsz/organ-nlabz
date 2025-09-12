@@ -13,7 +13,7 @@ import { CalendarDays, CreditCard, Package, AlertTriangle, Trash2 } from "lucide
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { detectProductIssues, hasAnyIssues, hasCriticalIssues } from "@/lib/product-validation";
-import type { Product } from "@shared/schema";
+import type { SelectProduct } from "@shared/schema";
 
 interface PaymentData {
   id: number;
@@ -27,7 +27,7 @@ interface PaymentData {
 }
 
 interface EditProductWithPaymentModalProps {
-  product: Product;
+  product: SelectProduct;
   paymentData?: PaymentData | null;
   isOpen: boolean;
   onClose: () => void;
@@ -105,13 +105,13 @@ export function EditProductWithPaymentModal({
   }, [product, paymentData, isOpen]);
 
   const updateProductMutation = useMutation({
-    mutationFn: async (updates: Partial<Product>) => {
+    mutationFn: async (updates: Partial<SelectProduct>) => {
       const response = await apiRequest("PUT", `/api/products/${product.id}`, updates);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products", 1] });
-      queryClient.invalidateQueries({ queryKey: ["/api/products/stats", 1] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
       toast({
         title: "Sucesso",
         description: "Produto atualizado com sucesso!",

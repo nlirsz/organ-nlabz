@@ -8,10 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Product } from "@shared/schema";
+import type { SelectProduct } from "@shared/schema";
 
 interface EditProductModalProps {
-  product: Product;
+  product: SelectProduct;
   isOpen: boolean;
   onClose: () => void;
   onProductUpdated: () => void;
@@ -54,13 +54,13 @@ export function EditProductModal({ product, isOpen, onClose, onProductUpdated }:
   }, [product, isOpen]);
 
   const updateProductMutation = useMutation({
-    mutationFn: async (updates: Partial<Product>) => {
+    mutationFn: async (updates: Partial<SelectProduct>) => {
       const response = await apiRequest("PUT", `/api/products/${product.id}`, updates);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products", 1] });
-      queryClient.invalidateQueries({ queryKey: ["/api/products/stats", 1] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
       onProductUpdated();
       onClose();
       toast({

@@ -33,6 +33,8 @@ export const products = pgTable("products", {
   category: text("category"),
   brand: text("brand"),
   tags: text("tags"),
+  priority: text("priority"),
+  notes: text("notes"),
   isPurchased: boolean("is_purchased").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

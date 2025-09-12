@@ -8,10 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useQuery } from "@tanstack/react-query";
 import { PriceHistoryChart } from "@/components/price-history-chart";
 import { useFavorites } from "@/components/favorites-system";
-import type { Product } from "@shared/schema";
+import type { SelectProduct } from "@shared/schema";
 
 interface ProductCardProps {
-  product: Product;
+  product: SelectProduct;
   onProductUpdated: () => void;
   onReScrape?: (id: number) => void;
 }
@@ -26,13 +26,13 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
   const [isReScrapingLoading, setIsReScrapingLoading] = useState(false);
 
   const updateProductMutation = useMutation({
-    mutationFn: async (updates: Partial<Product>) => {
+    mutationFn: async (updates: Partial<SelectProduct>) => {
       const response = await apiRequest("PUT", `/api/products/${product.id}`, updates);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products", 1] });
-      queryClient.invalidateQueries({ queryKey: ["/api/products/stats", 1] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
       onProductUpdated();
     },
     onError: (error: Error) => {
@@ -50,8 +50,8 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
       await apiRequest("DELETE", `/api/products/${product.id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products", 1] });
-      queryClient.invalidateQueries({ queryKey: ["/api/products/stats", 1] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
       onProductUpdated();
       toast({
         title: "Sucesso",
@@ -103,7 +103,7 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
   }, []);
 
   // Function to detect product issues
-  const detectProductIssues = useCallback((product: Product) => {
+  const detectProductIssues = useCallback((product: SelectProduct) => {
     const issues: string[] = [];
 
     if (!product.price || product.price === "0" || product.price === "0.00") {
@@ -130,13 +130,13 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
   }, []);
 
   // Function to check if any issues are present
-    const hasAnyIssues = useCallback((product: Product) => {
+    const hasAnyIssues = useCallback((product: SelectProduct) => {
         const issues = detectProductIssues(product);
         return issues.length > 0;
     }, [detectProductIssues]);
 
     // Function to check if critical issues are present (e.g., no price)
-    const hasCriticalIssues = useCallback((product: Product) => {
+    const hasCriticalIssues = useCallback((product: SelectProduct) => {
         return !product.price || product.price === "0" || product.price === "0.00";
     }, []);
 

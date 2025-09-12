@@ -144,17 +144,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProduct(id: number, userId: number): Promise<boolean> {
-    try {
+    return executeWithRetry(async () => {
+      console.log(`[Storage] Starting deleteProduct - ID: ${id}, UserId: ${userId}`);
+      
       // First verify the product belongs to the user
       const product = await db
-        .select({ id: products.id })
+        .select({ id: products.id, name: products.name })
         .from(products)
         .where(and(eq(products.id, id), eq(products.userId, userId)))
         .limit(1);
 
       if (product.length === 0) {
+        console.log(`[Storage] Product ${id} not found or doesn't belong to user ${userId}`);
         return false; // Product not found or doesn't belong to user
       }
+
+      console.log(`[Storage] Product found: ${product[0].name} (ID: ${id}), proceeding with cascade deletion`);
 
       // Get all payments for this product
       const productPayments = await db
@@ -162,17 +167,27 @@ export class DatabaseStorage implements IStorage {
         .from(payments)
         .where(eq(payments.productId, id));
 
+      console.log(`[Storage] Found ${productPayments.length} payments to delete for product ${id}`);
+
       // Delete all installments for each payment
+      let totalInstallmentsDeleted = 0;
       for (const payment of productPayments) {
-        await db
+        const deletedInstallments = await db
           .delete(installments)
-          .where(eq(installments.payment_id, payment.id));
+          .where(eq(installments.payment_id, payment.id))
+          .returning();
+        totalInstallmentsDeleted += deletedInstallments.length;
       }
 
+      console.log(`[Storage] Deleted ${totalInstallmentsDeleted} installments for product ${id}`);
+
       // Delete all payments for this product
-      await db
+      const deletedPayments = await db
         .delete(payments)
-        .where(eq(payments.productId, id));
+        .where(eq(payments.productId, id))
+        .returning();
+
+      console.log(`[Storage] Deleted ${deletedPayments.length} payments for product ${id}`);
 
       // Finally delete the product
       const result = await db
@@ -180,11 +195,17 @@ export class DatabaseStorage implements IStorage {
         .where(and(eq(products.id, id), eq(products.userId, userId)))
         .returning();
 
-      return result.length > 0;
-    } catch (error) {
-      console.error("Error deleting product with cascade:", error);
-      return false;
-    }
+      const success = result.length > 0;
+      console.log(`[Storage] Product deletion result: ${success ? 'SUCCESS' : 'FAILED'} - Deleted products: ${result.length}`);
+      
+      if (success) {
+        console.log(`[Storage] ✅ Successfully deleted product ${id} (${product[0].name}) and all related data`);
+      } else {
+        console.error(`[Storage] ❌ Failed to delete product ${id} - no rows affected`);
+      }
+
+      return success;
+    });
   }
 
   async getProductStats(userId: number): Promise<{

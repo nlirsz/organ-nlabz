@@ -3,13 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Package, ShoppingCart, DollarSign, Calendar } from "lucide-react";
-import type { Product } from "@shared/schema";
+import type { SelectProduct } from "@shared/schema";
 
 export function StatsCards() {
   const authToken = localStorage.getItem("authToken");
   const userId = localStorage.getItem("userId");
 
-  const { data: products = [] } = useQuery<Product[]>({
+  const { data: products = [] } = useQuery<SelectProduct[]>({
     queryKey: ["/api/products"],
     queryFn: () => fetch("/api/products", {
       headers: {

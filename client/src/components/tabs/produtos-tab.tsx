@@ -6,7 +6,8 @@ import { AdvancedSearch } from "@/components/advanced-search";
 import { EditProductModal } from "@/components/edit-product-modal";
 import { PaymentModal } from "@/components/payment-modal";
 import { useToast } from "@/hooks/use-toast";
-import type { Product } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import type { SelectProduct } from "@shared/schema";
 import { TagsFilter } from "@/components/tags-filter";
 
 interface ProdutosTabProps {
@@ -18,15 +19,15 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [sortBy, setSortBy] = useState("name");
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<SelectProduct | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [paymentProduct, setPaymentProduct] = useState<Product | null>(null);
+  const [paymentProduct, setPaymentProduct] = useState<SelectProduct | null>(null);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const authToken = localStorage.getItem("authToken");
 
-  const { data: products = [], isLoading } = useQuery<Product[]>({
+  const { data: products = [], isLoading } = useQuery<SelectProduct[]>({
     queryKey: ["/api/products", refreshKey],
     queryFn: async () => {
       const response = await fetch("/api/products", {
@@ -107,8 +108,9 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
   });
 
   const addToFavoritesMutation = useMutation({
-    mutationFn: async (product: Product) => {
-      return apiRequest(`/api/favorites`, 'POST', { productId: product.id });
+    mutationFn: async (product: SelectProduct) => {
+      const response = await apiRequest('POST', `/api/favorites`, { productId: product.id });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -118,7 +120,8 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
 
   const reScrapeMutation = useMutation({
     mutationFn: async (productId: number) => {
-      return apiRequest(`/api/products/${productId}/re-scrape`, 'POST');
+      const response = await apiRequest('POST', `/api/products/${productId}/re-scrape`);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -136,7 +139,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
     },
   });
 
-  const handlePurchase = (product: Product) => {
+  const handlePurchase = (product: SelectProduct) => {
     purchaseProductMutation.mutate(product.id);
   };
 

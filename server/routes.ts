@@ -722,23 +722,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.user.userId);
 
       if (isNaN(productId)) {
+        console.log(`[DELETE Product] Invalid product ID: ${req.params.id}`);
         return res.status(400).json({ error: "Invalid product ID" });
       }
 
       console.log(`[DELETE Product] Attempting to delete product ${productId} for user ${userId}`);
 
+      // First verify the product exists and belongs to the user
+      const existingProduct = await storage.getProduct(productId, userId);
+      if (!existingProduct) {
+        console.log(`[DELETE Product] Product ${productId} not found or not owned by user ${userId}`);
+        return res.status(404).json({ 
+          error: "Product not found or access denied",
+          productId: productId,
+          userId: userId
+        });
+      }
+
+      console.log(`[DELETE Product] Product found: ${existingProduct.name} (ID: ${productId})`);
+
+      // Attempt deletion
       const success = await storage.deleteProduct(productId, userId);
 
       if (!success) {
-        console.log(`[DELETE Product] Product ${productId} not found or not owned by user ${userId}`);
-        return res.status(404).json({ error: "Product not found or access denied" });
+        console.error(`[DELETE Product] Failed to delete product ${productId} - storage.deleteProduct returned false`);
+        return res.status(500).json({ 
+          error: "Failed to delete product from database",
+          productId: productId,
+          userId: userId
+        });
       }
 
-      console.log(`[DELETE Product] Successfully deleted product ${productId}`);
-      res.json({ success: true, message: "Product deleted successfully" });
+      console.log(`[DELETE Product] ✅ Successfully deleted product ${productId} (${existingProduct.name}) for user ${userId}`);
+      
+      // Verify deletion by checking if product still exists
+      const verifyDeletion = await storage.getProduct(productId, userId);
+      if (verifyDeletion) {
+        console.error(`[DELETE Product] ❌ ERROR: Product ${productId} still exists after deletion!`);
+        return res.status(500).json({ error: "Product deletion failed - product still exists" });
+      }
+
+      console.log(`[DELETE Product] ✅ Deletion verified - product ${productId} no longer exists`);
+      res.json({ 
+        success: true, 
+        message: "Product deleted successfully",
+        productId: productId,
+        productName: existingProduct.name
+      });
     } catch (error) {
-      console.error("Delete error:", error);
-      res.status(500).json({ error: "Failed to delete product", details: (error as any).message });
+      console.error(`[DELETE Product] Exception during deletion:`, error);
+      res.status(500).json({ 
+        error: "Failed to delete product", 
+        details: (error as any).message || String(error),
+        stack: process.env.NODE_ENV === 'development' ? (error as any).stack : undefined
+      });
     }
   }));
 

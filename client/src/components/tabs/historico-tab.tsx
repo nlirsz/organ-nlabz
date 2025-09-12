@@ -30,6 +30,7 @@ import { PriceHistoryChart } from '@/components/price-history-chart';
 import { InstallmentsTimeline } from '@/components/installments-timeline';
 import { ProfileCard } from '@/components/ui/profile-card';
 import { toast } from 'sonner';
+import type { SelectProduct } from '@shared/schema';
 
 // Componente TiltCard para efeito 3D no desktop
 const TiltCard = ({ children, className = "", ...props }: any) => {
@@ -67,20 +68,6 @@ const TiltCard = ({ children, className = "", ...props }: any) => {
   );
 };
 
-interface Product {
-  id: number;
-  name: string;
-  price: string;
-  store: string;
-  isPurchased: boolean;
-  category?: string;
-  paymentMethod?: string;
-  installments?: number;
-  purchaseDate?: string;
-  imageUrl?: string;
-  url?: string;
-  createdAt: string;
-}
 
 interface FinanceData {
   id: number;
@@ -89,7 +76,7 @@ interface FinanceData {
   installments: number;
   installmentValue: number;
   purchaseDate: string;
-  product: Product;
+  product: SelectProduct;
 }
 
 interface CategoryStats {
@@ -106,8 +93,12 @@ interface StoreStats {
   };
 }
 
-export function HistoricoTab() {
-  const [products, setProducts] = useState<Product[]>([]);
+interface HistoricoTabProps {
+  refreshKey: number;
+}
+
+export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
+  const [products, setProducts] = useState<SelectProduct[]>([]);
   const [financeData, setFinanceData] = useState<FinanceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -116,7 +107,7 @@ export function HistoricoTab() {
   const [storeModalOpen, setStoreModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<SelectProduct | null>(null);
   const [selectedPaymentData, setSelectedPaymentData] = useState<any>(null);
 
   const authToken = localStorage.getItem("authToken");
@@ -270,7 +261,7 @@ export function HistoricoTab() {
     return [];
   };
 
-  const handleEditProduct = async (product: Product) => {
+  const handleEditProduct = async (product: SelectProduct) => {
     setSelectedProduct(product);
 
     // Buscar dados de pagamento se o produto estiver comprado
@@ -297,7 +288,7 @@ export function HistoricoTab() {
     setEditModalOpen(true);
   };
 
-  const handleViewProduct = (product: Product) => {
+  const handleViewProduct = (product: SelectProduct) => {
     setSelectedProduct(product);
     setViewModalOpen(true);
   };

@@ -6,7 +6,7 @@ import { ProdutosTab } from "@/components/tabs/produtos-tab";
 import { AddProdutosTab } from "@/components/tabs/add-produtos-tab";
 import { HistoricoTab } from "@/components/tabs/historico-tab";
 import { AuthForm } from "@/components/auth/login-form";
-import type { Product } from "@shared/schema";
+import type { SelectProduct } from "@shared/schema";
 
 export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -28,12 +28,12 @@ export default function Home() {
     }
   }, []);
 
-  const { data: products = [], isLoading, refetch } = useQuery<Product[]>({
+  const { data: products = [], isLoading, refetch } = useQuery<SelectProduct[]>({
     queryKey: ["/api/products", refreshKey],
     queryFn: () => 
       fetch("/api/products", {
         headers: {
-          "x-auth-token": authToken
+          "x-auth-token": authToken || ""
         }
       }).then(res => res.json()),
     enabled: isAuthenticated && !!authToken,
@@ -44,7 +44,7 @@ export default function Home() {
     queryFn: () => 
       fetch(`/api/products/stats/${currentUser?.id}`, {
         headers: {
-          "x-auth-token": authToken
+          "x-auth-token": authToken || ""
         }
       }).then(res => res.json()),
     enabled: isAuthenticated && !!authToken,
@@ -144,9 +144,7 @@ export default function Home() {
                 )}
                 {activeTab === "produtos" && (
                   <ProdutosTab 
-                    products={products || []} 
-                    isLoading={isLoading} 
-                    onProductUpdated={handleProductUpdated}
+                    refreshKey={refreshKey}
                   />
                 )}
                 {activeTab === "add-produtos" && (
