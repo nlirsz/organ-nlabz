@@ -172,22 +172,22 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
     }, [onProductUpdated]);
 
   return (
-    <div className="product-card slide-in-up">
+    <div className="product-card slide-in-up bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm" data-testid={`product-card-full-${product.id}`}>
       <div className="flex flex-col h-full">
         {/* Image Section */}
-        <div className="relative mb-3 md:mb-4">
+        <div className="relative mb-3 md:mb-4" data-testid={`product-image-section-${product.id}`}>
           <img
             src={product.imageUrl || 'https://via.placeholder.com/400x300/e0e5ec/6c757d?text=Sem+Imagem'}
-            alt={product.name}
-            className="w-full h-32 md:h-36 object-contain rounded-lg p-2"
-            style={{ backgroundColor: 'white' }}
+            alt={`Imagem do produto ${product.name}`}
+            className="w-full h-32 md:h-36 object-contain rounded-lg p-2 bg-white dark:bg-gray-100"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = 'https://via.placeholder.com/400x300/ffffff/6c757d?text=Sem+Imagem';
-              target.style.backgroundColor = 'white';
-              // Adicionar classe para mostrar alerta de imagem
+              target.alt = 'Imagem não disponível';
               target.classList.add('image-error');
             }}
+            data-testid={`product-image-${product.id}`}
+            loading="lazy"
           />
           {/* Alerta para problemas de imagem */}
           {(!product.imageUrl || 
@@ -199,30 +199,30 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
             </div>
           )}
           {product.isPurchased && (
-            <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-              ✓ Comprado
+            <div className="absolute top-2 right-2 bg-green-500 dark:bg-green-600 text-white text-xs px-2 py-1 rounded-full font-semibold" data-testid={`product-purchased-badge-${product.id}`}>
+              <span aria-hidden="true">✓</span> Comprado
             </div>
           )}
            {/* Alerta visual de problemas */}
            {hasCritical && (
-                        <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                            🔴
+                        <div className="absolute top-2 left-2 bg-red-500 dark:bg-red-600 text-white text-xs px-2 py-1 rounded-full font-semibold" data-testid={`product-critical-alert-${product.id}`} aria-label="Produto com problemas críticos">
+                            <span aria-hidden="true">🔴</span>
                         </div>
                     )}
                     {hasIssues && !hasCritical && (
-                        <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                            🟡
+                        <div className="absolute top-2 left-2 bg-yellow-500 dark:bg-yellow-600 text-white text-xs px-2 py-1 rounded-full font-semibold" data-testid={`product-issue-alert-${product.id}`} aria-label="Produto com problemas menores">
+                            <span aria-hidden="true">🟡</span>
                         </div>
                     )}
         </div>
 
         {/* Content Section */}
-        <div className="flex-1 space-y-2 md:space-y-3">
+        <div className="flex-1 space-y-2 md:space-y-3 p-4" data-testid={`product-content-${product.id}`}>
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-            <h3 className="font-semibold text-base md:text-lg leading-tight line-clamp-2 text-gray-800 dark:text-gray-200 flex-1 min-w-0">
+            <h3 className="font-semibold text-base md:text-lg leading-tight line-clamp-2 text-gray-900 dark:text-gray-100 flex-1 min-w-0" data-testid={`product-name-${product.id}`}>
               {product.name}
             </h3>
-            <span className="category-tag text-xs whitespace-nowrap">
+            <span className="category-tag text-xs whitespace-nowrap bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full border border-gray-200 dark:border-gray-600" data-testid={`product-category-${product.id}`}>
               {getCategoryDisplay(product.category)}
             </span>
           </div>
@@ -231,26 +231,26 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
             <div className="flex items-baseline gap-2 flex-wrap">
               {product.price ? (
                 <>
-                  <span className="text-lg md:text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
+                  <span className="text-lg md:text-xl font-bold text-emerald-600 dark:text-emerald-400" data-testid={`product-price-${product.id}`}>
                     {formatPrice(product.price)}
                   </span>
                   {product.originalPrice && product.originalPrice !== product.price && (
-                    <span className="text-sm text-gray-500 line-through">
+                    <span className="text-sm text-gray-500 dark:text-gray-400 line-through" data-testid={`product-original-price-${product.id}`}>
                       {formatPrice(product.originalPrice)}
                     </span>
                   )}
                 </>
               ) : (
-                <span className="text-base md:text-lg text-gray-500">Preço não disponível</span>
+                <span className="text-base md:text-lg text-gray-500 dark:text-gray-400" data-testid={`product-no-price-${product.id}`}>Preço não disponível</span>
               )}
             </div>
 
-            <p className="text-sm text-gray-600 dark:text-gray-400 font-medium truncate">
-              📱 {product.store}
+            <p className="text-sm text-gray-600 dark:text-gray-400 font-medium truncate" data-testid={`product-store-${product.id}`}>
+              <span aria-hidden="true">📱</span> {product.store}
             </p>
 
             {product.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed" data-testid={`product-description-${product.id}`}>
                 {product.description}
               </p>
             )}
@@ -258,8 +258,7 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
         </div>
 
         {/* Actions Section */}
-        <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t"
-           style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+        <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t border-gray-200 dark:border-gray-600 px-4 pb-4" data-testid={`product-actions-${product.id}`}>
           <div className="flex flex-col sm:flex-row gap-2">
             {!product.isPurchased ? (
               <>
@@ -268,10 +267,12 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
                     e.stopPropagation();
                     handlePurchaseToggle();
                   }}
-                  className="w-full sm:flex-1 neomorphic-button-primary"
+                  className="w-full sm:flex-1 bg-emerald-500 dark:bg-emerald-600 text-white hover:bg-emerald-600 dark:hover:bg-emerald-700 disabled:bg-emerald-300 dark:disabled:bg-emerald-800 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 flex items-center justify-center gap-2"
                   disabled={updateProductMutation.isPending}
+                  data-testid={`button-purchase-${product.id}`}
+                  aria-label={`Marcar produto ${product.name} como comprado`}
                 >
-                  {updateProductMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4" />}
+                  {updateProductMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" aria-hidden="true" /> : <ShoppingCart className="w-4 h-4" aria-hidden="true" />}
                   {updateProductMutation.isPending ? "Comprando..." : "Comprar"}
                 </button>
                 <div className="flex gap-2">

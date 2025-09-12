@@ -91,21 +91,22 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
   // Desktop sidebar
   if (!isMobile) {
     return (
-      <aside className="fixed left-0 top-0 h-full w-20 z-50 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 rounded-r-3xl shadow-lg">
+      <aside className="fixed left-0 top-0 h-full w-20 z-50 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 rounded-r-3xl shadow-lg" data-testid="sidebar-desktop">
         <div className="flex flex-col h-full items-center py-6">
           {/* Logo no topo */}
-          <div className="mb-8">
-            <div className="w-12 h-12 bg-[#121212] rounded-2xl flex items-center justify-center p-2">
+          <div className="mb-8" data-testid="sidebar-logo">
+            <div className="w-12 h-12 bg-[#121212] dark:bg-gray-800 rounded-2xl flex items-center justify-center p-2">
               <img 
                 src="/assets/logo.png" 
-                alt="orgaN Logo" 
+                alt="orgaN Logo - Aplicativo de Lista de Compras"
                 className="w-full h-full object-contain"
+                data-testid="sidebar-logo-image"
               />
             </div>
           </div>
 
           {/* Navigation Icons with Gooey Effect */}
-          <nav className="flex-1 flex flex-col items-center space-y-4">
+          <nav className="flex-1 flex flex-col items-center space-y-4" data-testid="sidebar-navigation" role="navigation" aria-label="Menu principal">
             <GooeyNav className="flex flex-col items-center space-y-4">
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -117,13 +118,16 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
                     onClick={() => handleTabChange(item.id)}
                     className={cn(
                       "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300",
-                      "hover:scale-110 transform",
+                      "hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900",
                       isActive 
                         ? "bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30" 
                         : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gradient-to-br hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/20 dark:hover:to-green-900/20"
                     )}
+                    data-testid={`nav-button-${item.id}`}
+                    aria-label={`Navegar para ${item.id}`}
+                    aria-current={isActive ? 'page' : undefined}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-5 h-5" aria-hidden="true" />
                   </button>
                 );
               })}
@@ -131,19 +135,23 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
           </nav>
 
           {/* Bottom actions */}
-          <div className="flex flex-col items-center space-y-3 mt-auto">
+          <div className="flex flex-col items-center space-y-3 mt-auto" data-testid="sidebar-actions">
             <button 
               onClick={toggleTheme}
-              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-all duration-200 hover:scale-105"
+              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              data-testid="button-toggle-theme"
+              aria-label={`Alternar para tema ${isDark ? 'claro' : 'escuro'}`}
             >
-              <span className="text-sm">{isDark ? '☀️' : '🌙'}</span>
+              <span className="text-sm" aria-hidden="true">{isDark ? '☀️' : '🌙'}</span>
             </button>
             
             <button 
               onClick={onLogout}
-              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center transition-all duration-200 hover:scale-105"
+              className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              data-testid="button-logout"
+              aria-label="Fazer logout"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -160,37 +168,45 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
     <>
       {/* Overlay para mobile - clica fora para fechar */}
       <div 
-        className="fixed inset-0 bg-black/60 z-40 backdrop-blur-md"
+        className="fixed inset-0 bg-black/60 dark:bg-black/80 z-40 backdrop-blur-md"
         onClick={close}
+        data-testid="sidebar-overlay"
+        aria-label="Fechar menu"
       />
 
       {/* Menu suspenso centralizado */}
       <div 
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
         onClick={close}
+        data-testid="sidebar-mobile-container"
       >
         <div 
           className={cn(
-            "bg-[#1a1a1a] rounded-3xl p-6 shadow-2xl border border-gray-700",
+            "bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-2xl border border-gray-200 dark:border-gray-700",
             "flex flex-col items-center space-y-6",
             "animate-in zoom-in-95 duration-200",
             "min-w-[280px]"
           )}
           onClick={(e) => e.stopPropagation()}
+          data-testid="sidebar-mobile"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu de navegação"
         >
           {/* Logo no topo */}
-          <div className="mb-4">
-            <div className="w-16 h-16 bg-[#121212] rounded-full flex items-center justify-center p-3">
+          <div className="mb-4" data-testid="sidebar-mobile-logo">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center p-3">
               <img 
                 src="/assets/logo.png" 
-                alt="orgaN Logo" 
+                alt="orgaN Logo - Aplicativo de Lista de Compras" 
                 className="w-full h-full object-contain"
+                data-testid="sidebar-mobile-logo-image"
               />
             </div>
           </div>
 
           {/* Navigation Icons with Gooey Effect */}
-          <div className="flex flex-col items-center space-y-6">
+          <div className="flex flex-col items-center space-y-6" data-testid="sidebar-mobile-navigation">
             <GooeyNav className="flex flex-col items-center space-y-6">
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -202,13 +218,16 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
                     onClick={() => handleTabChange(item.id)}
                     className={cn(
                       "w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300",
-                      "hover:scale-110 transform",
+                      "hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900",
                       isActive 
                         ? "bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30" 
-                        : "bg-gray-100 text-gray-700 hover:bg-gradient-to-br hover:from-emerald-100 hover:to-green-100 shadow-md"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gradient-to-br hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/20 dark:hover:to-green-900/20 shadow-md"
                     )}
+                    data-testid={`nav-button-mobile-${item.id}`}
+                    aria-label={`Navegar para ${item.id}`}
+                    aria-current={isActive ? 'page' : undefined}
                   >
-                    <Icon className="w-6 h-6" />
+                    <Icon className="w-6 h-6" aria-hidden="true" />
                   </button>
                 );
               })}
@@ -216,19 +235,23 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
           </div>
 
           {/* Bottom actions */}
-          <div className="flex items-center space-x-6 mt-8 pt-6 border-t border-gray-600">
+          <div className="flex items-center space-x-6 mt-8 pt-6 border-t border-gray-200 dark:border-gray-700" data-testid="sidebar-mobile-actions">
             <button 
               onClick={toggleTheme}
-              className="w-12 h-12 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-md"
+              className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              data-testid="button-toggle-theme-mobile"
+              aria-label={`Alternar para tema ${isDark ? 'claro' : 'escuro'}`}
             >
-              <span className="text-lg">{isDark ? '☀️' : '🌙'}</span>
+              <span className="text-lg" aria-hidden="true">{isDark ? '☀️' : '🌙'}</span>
             </button>
             
             <button 
               onClick={onLogout}
-              className="w-12 h-12 rounded-full bg-red-500 text-white hover:bg-red-600 flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-md"
+              className="w-12 h-12 rounded-full bg-red-500 dark:bg-red-600 text-white hover:bg-red-600 dark:hover:bg-red-700 flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              data-testid="button-logout-mobile"
+              aria-label="Fazer logout"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -246,13 +269,16 @@ export function MobileMenuButton() {
   return (
     <button
       onClick={toggle}
-      className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-30 md:hidden"
+      className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-30 md:hidden focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+      data-testid="button-mobile-menu"
+      aria-label="Abrir menu de navegação"
     >
-      <div className="w-16 h-16 bg-[#121212] rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all duration-200 p-3 border-2 border-white/10">
+      <div className="w-16 h-16 bg-gray-800 dark:bg-gray-700 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all duration-200 p-3 border-2 border-white/10 dark:border-gray-600/50">
         <img 
           src="/assets/logo.png" 
-          alt="orgaN Logo" 
+          alt="orgaN Logo - Abrir Menu" 
           className="w-full h-full object-contain"
+          data-testid="mobile-menu-logo"
         />
       </div>
     </button>

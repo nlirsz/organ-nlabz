@@ -211,9 +211,9 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-16">
+      <div className="flex items-center justify-center py-16" data-testid="produtos-loading">
         <div className="pulse-animation">
-          <Package className="w-12 h-12" style={{ color: 'var(--text-secondary)' }} />
+          <Package className="w-12 h-12 text-gray-500 dark:text-gray-400" aria-hidden="true" />
         </div>
       </div>
     );
@@ -222,35 +222,39 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" data-testid="produtos-header">
         <div>
-          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid="produtos-title">
             Lista de Compras
-          </h2>
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400" data-testid="produtos-count">
             {finalFilteredProducts.length} produto{finalFilteredProducts.length !== 1 ? 's' : ''} pendente{finalFilteredProducts.length !== 1 ? 's' : ''}
           </p>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="neomorphic-card p-6 rounded-2xl space-y-4">
+      <div className="neomorphic-card p-6 rounded-2xl space-y-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" data-testid="produtos-filters">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400" aria-hidden="true" />
             <input
               type="text"
               placeholder="Buscar produtos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="neomorphic-input w-full pl-10"
+              className="neomorphic-input w-full pl-10 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 border border-gray-200 dark:border-gray-600 focus:ring-emerald-500 focus:border-emerald-500"
+              data-testid="input-search-produtos"
+              aria-label="Buscar produtos na lista"
             />
           </div>
           <button
             onClick={() => setIsAdvancedSearchOpen(true)}
-            className="neomorphic-button whitespace-nowrap"
+            className="neomorphic-button whitespace-nowrap bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600"
+            data-testid="button-advanced-search"
+            aria-label="Abrir busca avançada"
           >
-            <Filter className="w-4 h-4" />
+            <Filter className="w-4 h-4" aria-hidden="true" />
             Busca Avançada
           </button>
         </div>
@@ -260,7 +264,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
           onCategoryChange={setSelectedCategory}
         />
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" data-testid="produtos-sort-options">
           {[
             { value: "name", label: "Nome", icon: SortAsc },
             { value: "price", label: "Preço", icon: SortAsc },
@@ -270,10 +274,15 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
               key={value}
               onClick={() => setSortBy(value)}
               className={`neomorphic-button text-sm ${
-                sortBy === value ? 'neomorphic-button-primary' : ''
-              }`}
+                sortBy === value 
+                  ? 'bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700' 
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              } border border-gray-200 dark:border-gray-600`}
+              data-testid={`button-sort-${value}`}
+              aria-label={`Ordenar por ${label}`}
+              aria-pressed={sortBy === value}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-4 h-4" aria-hidden="true" />
               {label}
             </button>
           ))}
@@ -288,12 +297,12 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
 
       {/* Products Grid */}
       {finalFilteredProducts.length === 0 ? (
-        <div className="neomorphic-card p-12 rounded-2xl text-center">
-          <Package className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--text-secondary)' }} />
-          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+        <div className="neomorphic-card p-12 rounded-2xl text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700" data-testid="produtos-empty-state">
+          <Package className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-500" aria-hidden="true" />
+          <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100" data-testid="text-empty-title">
             Nenhum produto encontrado
           </h3>
-          <p style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-gray-600 dark:text-gray-400" data-testid="text-empty-description">
             {products.length === 0 
               ? "Adicione alguns produtos à sua lista para começar!"
               : "Tente ajustar os filtros para encontrar o que procura."
@@ -301,11 +310,12 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
           </p>
         </div>
       ) : (
-        <div className="product-grid">
+        <div className="product-grid" data-testid="produtos-grid">
           {finalFilteredProducts.map((product) => (
             <div
               key={product.id}
-              className="neomorphic-card p-6 rounded-2xl card-entering product-card-hover"
+              className="neomorphic-card p-6 rounded-2xl card-entering product-card-hover bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+              data-testid={`product-card-${product.id}`}
             >
               {/* Product Image */}
               <div className="mb-4">
@@ -313,16 +323,18 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
                   {product.imageUrl ? (
                     <img
                       src={product.imageUrl}
-                      alt={product.name}
-                      className="w-full h-32 object-contain rounded-lg p-2"
-                      style={{ backgroundColor: 'white' }}
+                      alt={`Imagem do produto ${product.name}`}
+                      className="w-full h-32 object-contain rounded-lg p-2 bg-white dark:bg-gray-100"
                       onError={(e) => {
                         e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgMTAwQzEwNS41MjMgMTAwIDExMCA5NS41MjI4IDExMCA5MEM1MTAgODQuNDc3MiAxMDUuNTIzIDgwIDEwMCA4MEM5NC40NzcyIDgwIDkwIDg0LjQ3NzIgOTAgOTBDOTAgOTUuNTIyOCA5NC40NzcyIDEwMCAxMDAgMTAwWiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNMTM1IDEyMEgxMTVWMTEwSDEzNVYxMjBaIiBmaWxsPSIjOUNBM0FGIi8+CjxwYXRoIGQ9Ik05NSAxMjBINzVWMTEwSDk1VjEyMFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
+                        e.currentTarget.alt = 'Imagem não disponível';
                       }}
+                      data-testid={`product-image-${product.id}`}
+                      loading="lazy"
                     />
                   ) : (
-                    <div className="w-full h-32 rounded-lg image-placeholder flex items-center justify-center" style={{ backgroundColor: 'white' }}>
-                      <Package className="w-12 h-12" style={{ color: 'var(--text-secondary)' }} />
+                    <div className="w-full h-32 rounded-lg image-placeholder flex items-center justify-center bg-white dark:bg-gray-100" data-testid={`product-image-placeholder-${product.id}`}>
+                      <Package className="w-12 h-12 text-gray-400 dark:text-gray-500" aria-hidden="true" />
                     </div>
                   )}
                 </div>
@@ -331,37 +343,37 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
               {/* Product Info */}
               <div className="mb-4">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-lg line-clamp-2" style={{ color: 'var(--text-primary)' }}>
+                  <h3 className="font-semibold text-lg line-clamp-2 text-gray-900 dark:text-gray-100" data-testid={`product-name-${product.id}`}>
                     {product.name}
                   </h3>
                   {product.category && (
-                    <span className="category-tag ml-2">
+                    <span className="category-tag ml-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600" data-testid={`product-category-${product.id}`}>
                       {product.category}
                     </span>
                   )}
                 </div>
 
                 {product.store && (
-                  <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>
-                    📍 {product.store}
+                  <p className="text-sm mb-2 text-gray-600 dark:text-gray-400" data-testid={`product-store-${product.id}`}>
+                    <span aria-hidden="true">📍</span> {product.store}
                   </p>
                 )}
 
                 {product.description && (
-                  <p className="text-sm line-clamp-2 mb-3" style={{ color: 'var(--text-secondary)' }}>
+                  <p className="text-sm line-clamp-2 mb-3 text-gray-600 dark:text-gray-400" data-testid={`product-description-${product.id}`}>
                     {product.description}
                   </p>
                 )}
 
                 <div className="flex items-center justify-between">
-                  <div className="text-xl font-bold" style={{ color: 'var(--primary-action)' }}>
+                  <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400" data-testid={`product-price-${product.id}`}>
                     {product.price ? 
                       new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price))
                       : 'Preço não informado'
                     }
                   </div>
                   {product.originalPrice && Number(product.originalPrice) > (Number(product.price) || 0) && (
-                    <span className="text-sm line-through" style={{ color: 'var(--text-secondary)' }}>
+                    <span className="text-sm line-through text-gray-500 dark:text-gray-400" data-testid={`product-original-price-${product.id}`}>
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.originalPrice))}
                     </span>
                   )}
@@ -369,14 +381,15 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
               </div>
 
               {/* Card Actions */}
-              <div className="flex items-center justify-between gap-2 border-t pt-4" 
-                   style={{ borderColor: 'rgba(0,0,0,0.05)' }}>
+              <div className="flex items-center justify-between gap-2 border-t pt-4 border-gray-200 dark:border-gray-600" data-testid={`product-actions-${product.id}`}>
                 <button
                   onClick={() => window.open(product.url, '_blank')}
-                  className="flex-1 neomorphic-button px-3 py-2 rounded-lg flex items-center justify-center text-sm"
+                  className="flex-1 neomorphic-button px-3 py-2 rounded-lg flex items-center justify-center text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                   title="Ver produto"
+                  data-testid={`button-view-product-${product.id}`}
+                  aria-label={`Ver produto ${product.name} no site da loja`}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
@@ -384,28 +397,34 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
 
                 <button
                   onClick={() => setEditingProduct(product)}
-                  className="flex-1 neomorphic-button px-3 py-2 rounded-lg flex items-center justify-center text-sm"
+                  className="flex-1 neomorphic-button px-3 py-2 rounded-lg flex items-center justify-center text-sm bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                   title="Editar produto"
+                  data-testid={`button-edit-product-${product.id}`}
+                  aria-label={`Editar produto ${product.name}`}
                 >
-                  <Edit className="w-4 h-4" style={{ color: 'var(--edit-color)' }} />
+                  <Edit className="w-4 h-4" aria-hidden="true" />
                 </button>
 
                 <button
                   onClick={() => handlePurchase(product)}
                   disabled={purchaseProductMutation.isPending}
-                  className="flex-1 neomorphic-button-primary px-3 py-2 rounded-lg flex items-center justify-center text-sm"
+                  className="flex-1 bg-emerald-500 dark:bg-emerald-600 text-white hover:bg-emerald-600 dark:hover:bg-emerald-700 disabled:bg-emerald-300 dark:disabled:bg-emerald-800 disabled:cursor-not-allowed px-3 py-2 rounded-lg flex items-center justify-center text-sm border border-emerald-500 dark:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                   title="Marcar como comprado"
+                  data-testid={`button-purchase-product-${product.id}`}
+                  aria-label={`Marcar produto ${product.name} como comprado`}
                 >
-                  <Check className="w-4 h-4" style={{ color: 'white' }} />
+                  <Check className="w-4 h-4" aria-hidden="true" />
                 </button>
 
                 <button
                   onClick={() => handleDelete(product.id, product.name)}
                   disabled={deleteProductMutation.isPending}
-                  className="neomorphic-button p-2 rounded-lg flex items-center justify-center"
+                  className="neomorphic-button p-2 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                   title="Remover da lista"
+                  data-testid={`button-delete-product-${product.id}`}
+                  aria-label={`Remover produto ${product.name} da lista`}
                 >
-                  <Trash2 className="w-4 h-4" style={{ color: 'var(--error-color)' }} />
+                  <Trash2 className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
             </div>
