@@ -6,7 +6,7 @@ import { priceHistoryService } from "./services/priceHistory.js";
 import { notificationService } from "./services/notifications.js";
 import { insertProductSchema, updateProductSchema } from "@shared/schema.js";
 import { z } from "zod";
-import { storage } from "./storage";
+import { storage, getStorage } from "./storage";
 import { generateToken, authenticateToken, type AuthenticatedRequest } from "./middleware/auth";
 import bcrypt from "bcryptjs";
 import { anyCrawlService } from "./services/anycrawl.js";
@@ -25,16 +25,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint
   app.get("/api/health", async (req, res) => {
     try {
-      // Test database connection
+      // Test storage connection
+      const storageInstance = await getStorage();
       await storage.getUser(1);
+      
+      // Determine storage type
+      const isMemStorage = process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL;
+      const storageType = isMemStorage ? 'MemStorage' : 'PostgreSQL';
+      
       res.status(200).json({ 
         status: "healthy", 
-        database: "connected",
+        storage: storageType,
+        database: isMemStorage ? "n/a" : "connected",
+        environment: process.env.NODE_ENV || 'development',
         timestamp: new Date().toISOString()
       });
     } catch (error: any) {
       res.status(503).json({ 
         status: "unhealthy", 
+        storage: "unknown",
         database: "disconnected",
         error: error.message,
         timestamp: new Date().toISOString()
@@ -42,13 +51,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Database connection middleware for protected routes
+  // Storage connection middleware for protected routes
   const requireDatabase = async (req: any, res: any, next: any) => {
     try {
-      // Quick connection test
+      // Quick storage test - works for both DatabaseStorage and MemStorage
       await storage.getUser(1);
       next();
     } catch (error: any) {
+      const isMemStorage = process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL;
+      
+      // If we're using MemStorage in development, this shouldn't fail
+      if (isMemStorage) {
+        console.warn('⚠️ Storage test failed unexpectedly in MemStorage mode:', error.message);
+        // Continue anyway in MemStorage mode
+        return next();
+      }
+      
       console.error("Database connection failed:", error.message);
       
       if (error.message?.includes('endpoint has been disabled')) {
