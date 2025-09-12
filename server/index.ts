@@ -53,6 +53,17 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
+      // Skip logging for frequent health checks to reduce log pollution
+      if (path === "/api" && req.method === "HEAD") {
+        // Only log health checks occasionally (every 30th request) to confirm they're working
+        if (!global.healthCheckCount) global.healthCheckCount = 0;
+        global.healthCheckCount++;
+        if (global.healthCheckCount % 30 === 0) {
+          log(`[Health Check] HEAD /api 200 (logged every 30 requests, count: ${global.healthCheckCount})`);
+        }
+        return; // Skip detailed logging for HEAD /api
+      }
+
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       
       // Filter sensitive data from API response logs

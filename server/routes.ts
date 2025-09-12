@@ -977,6 +977,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
+  // Health check endpoint for infrastructure monitoring
+  // Handles HEAD /api requests from Replit infrastructure
+  app.all("/api", (req, res) => {
+    if (req.method === 'HEAD' || req.method === 'GET') {
+      // Lightweight health check response for infrastructure
+      res.status(200).json({ 
+        status: "healthy",
+        service: "api",
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(405).json({ 
+        error: "Method not allowed",
+        allowed: ["GET", "HEAD"]
+      });
+    }
+  });
+
   // API route not found handler - prevents HTML responses for API calls
   app.use("/api/*", (req, res) => {
     console.error(`[API] Route not found: ${req.method} ${req.path}`);
