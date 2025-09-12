@@ -9,6 +9,36 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Security utility functions for logging
+function shouldLogResponse(path: string): boolean {
+  // Don't log responses for auth endpoints to prevent token exposure
+  const sensitiveEndpoints = ['/api/auth/login', '/api/auth/register'];
+  return !sensitiveEndpoints.some(endpoint => path.includes(endpoint));
+}
+
+function filterSensitiveData(data: any): any {
+  if (!data || typeof data !== 'object') return data;
+  
+  const sensitiveFields = ['token', 'password', 'jwt', 'secret', 'key', 'authorization'];
+  const filtered = { ...data };
+  
+  // Filter sensitive fields
+  for (const field of sensitiveFields) {
+    if (filtered[field]) {
+      filtered[field] = '[FILTERED]';
+    }
+  }
+  
+  // Recursively filter nested objects
+  for (const key in filtered) {
+    if (typeof filtered[key] === 'object' && filtered[key] !== null) {
+      filtered[key] = filterSensitiveData(filtered[key]);
+    }
+  }
+  
+  return filtered;
+}
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -24,8 +54,11 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      
+      // Filter sensitive data from API response logs
+      if (capturedJsonResponse && shouldLogResponse(path)) {
+        const filteredResponse = filterSensitiveData(capturedJsonResponse);
+        logLine += ` :: ${JSON.stringify(filteredResponse)}`;
       }
 
       if (logLine.length > 80) {

@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { scrapeProductFromUrl } from "./services/scraper.js";
 import { priceHistoryService } from "./services/priceHistory.js";
@@ -8,6 +8,10 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { generateToken, authenticateToken, type AuthenticatedRequest } from "./middleware/auth";
 import bcrypt from "bcryptjs";
+import { anyCrawlService } from "./services/anycrawl.js";
+
+// Type helpers for Express compatibility
+type AuthHandler = any;
 
 
 
@@ -143,7 +147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/auth/me", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/auth/me", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       res.json({
         userId: req.user.userId,
@@ -152,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ error: "Erro interno do servidor" });
     }
-  });
+  }) as any);
 
   app.post("/api/auth/logout", (req, res) => {
     try {
@@ -163,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all products for authenticated user
-  app.get('/api/products', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/products', authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const userId = parseInt(req.user.userId);
       console.log(`🔍 [PRODUCTS] Buscando produtos para o usuário: ${userId}`);
@@ -189,46 +193,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Always return an empty array on error to prevent frontend crashes
       res.status(500).json([]);
     }
-  });
+  }) as any);
 
-  // Debug route para verificar products
-  app.get("/api/products/:userId", async (req, res) => {
+  // AnyCrawl credits endpoint - Protected with authentication
+  app.get('/api/anycrawl/credits', authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
-      const userId = parseInt(req.params.userId);
-      const products = await storage.getProducts(userId);
-      res.json(products);
+      const credits = await anyCrawlService.checkCredits();
+      
+      if (credits === null) {
+        return res.status(503).json({ 
+          error: 'AnyCrawl não disponível',
+          available: false 
+        });
+      }
 
-// Endpoint para verificar créditos do AnyCrawl
-app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
-  try {
-    const credits = await anyCrawlService.checkCredits();
-    
-    if (credits === null) {
-      return res.status(503).json({ 
-        error: 'AnyCrawl não disponível',
-        available: false 
+      res.json({ 
+        remaining_credits: credits,
+        available: anyCrawlService.isAvailable()
       });
-    }
-
-    res.json({ 
-      remaining_credits: credits,
-      available: anyCrawlService.isAvailable()
-    });
-    
-  } catch (error) {
-    console.error('[API] Erro ao verificar créditos AnyCrawl:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
-
+      
     } catch (error) {
-      console.error("Error fetching products:", error);
-      res.status(500).json({ error: "Failed to fetch products" });
+      console.error('[API] Erro ao verificar créditos AnyCrawl:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
     }
-  });
+  }) as any);
 
   // Get product stats for authenticated user
-  app.get("/api/products/stats/:userId", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/products/stats/:userId", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const userId = parseInt(req.user.userId);
       const stats = await storage.getProductStats(userId);
@@ -244,10 +235,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Error fetching stats:", error);
       res.status(500).json({ error: "Failed to fetch product stats" });
     }
-  });
+  }) as any);
 
   // Verify URL without adding product
-  app.post("/api/products/verify", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/products/verify", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const { url } = req.body;
 
@@ -269,10 +260,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Verification error:", error);
       res.status(500).json({ error: "Failed to verify product URL" });
     }
-  });
+  }) as any);
 
   // Add product manually
-  app.post("/api/products", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/products", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const { name, price, url, imageUrl, store, description, category, brand, tags, isPurchased } = req.body;
 
@@ -302,10 +293,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Manual product creation error:", error);
       res.status(500).json({ error: "Failed to add product manually" });
     }
-  });
+  }) as any);
 
   // Add product from URL
-  app.post("/api/products/scrape", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/products/scrape", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const { url } = req.body;
 
@@ -373,7 +364,7 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
 
             console.log(`[API] 🔄 API Shopee não encontrou produto - usando scraping`);
           }
-        } catch (apiError) {
+        } catch (apiError: any) {
           console.error(`[API] Erro na API Shopee:`, apiError.message);
         }
       }
@@ -438,7 +429,7 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
 
             console.log(`[API] 🔄 API AliExpress falhou - usando scraping como fallback`);            
           }
-        } catch (apiError) {
+        } catch (apiError: any) {
           console.error(`[API] Erro na API AliExpress:`, apiError.message);
         }
       }
@@ -493,7 +484,7 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
             });
           }
         }
-      } catch (apiError) {
+      } catch (apiError: any) {
         console.error(`[API] Erro em APIs externas:`, apiError.message);
       }
 
@@ -539,7 +530,7 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
 
             console.log(`[API] ✅ Partner tag aplicado após criação: ${url} → ${updatedUrl}`);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.warn(`[API] ⚠️ Erro ao aplicar partner tag após criação:`, error.message);
         }
       }
@@ -573,15 +564,15 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Scraping error:", error);
       res.status(500).json({ 
         error: "Failed to scrape and add product",
-        details: error.message,
+        details: (error as any).message,
         canRetryWithManual: true,
         suggestion: "Tente adicionar o produto manualmente com as informações que você possui"
       });
     }
-  });
+  }) as any);
 
   // Add product manually
-  app.post("/api/products/manual", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/products/manual", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const { url, name, price, originalPrice, imageUrl, store, description, category, brand } = req.body;
 
@@ -594,7 +585,7 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
             finalUrl = addShopeeAffiliateParams(url);
             console.log(`[API Manual] ✅ Partner tag da Shopee aplicado: ${url} → ${finalUrl}`);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.warn(`[API Manual] ⚠️ Erro ao aplicar partner tag da Shopee:`, error.message);
         }
       }
@@ -607,7 +598,7 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
             finalUrl = addAliExpressAffiliateParams(url);
             console.log(`[API Manual] ✅ Partner tag da AliExpress aplicado: ${url} → ${finalUrl}`);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.warn(`[API Manual] ⚠️ Erro ao aplicar partner tag da AliExpress:`, error.message);
         }
       }
@@ -652,7 +643,7 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
 
             console.log(`[API Manual] ✅ Partner tag aplicado: ${url} → ${updatedUrl}`);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.warn(`[API Manual] ⚠️ Erro ao aplicar partner tag:`, error.message);
         }
       }
@@ -662,10 +653,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Manual product creation error:", error);
       res.status(500).json({ error: "Failed to create manual product" });
     }
-  });
+  }) as any);
 
   // Update product
-  app.put("/api/products/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.put("/api/products/:id", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const productId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);
@@ -681,10 +672,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Update error:", error);
       res.status(500).json({ error: "Failed to update product" });
     }
-  });
+  }) as any);
 
   // Fix Amazon URLs with partner tag
-  app.post("/api/products/fix-amazon-urls", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/products/fix-amazon-urls", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const userId = parseInt(req.user.userId);
       console.log(`[Fix Amazon URLs] Corrigindo URLs para usuário: ${userId}`);
@@ -717,10 +708,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Fix Amazon URLs error:", error);
       res.status(500).json({ error: "Failed to fix Amazon URLs" });
     }
-  });
+  }) as any);
 
   // Delete product
-  app.delete("/api/products/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.delete("/api/products/:id", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const productId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);
@@ -742,12 +733,12 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       res.json({ success: true, message: "Product deleted successfully" });
     } catch (error) {
       console.error("Delete error:", error);
-      res.status(500).json({ error: "Failed to delete product", details: error.message });
+      res.status(500).json({ error: "Failed to delete product", details: (error as any).message });
     }
-  });
+  }) as any);
 
   // APIs para histórico de preços
-  app.get("/api/products/:id/price-history", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/products/:id/price-history", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const productId = parseInt(req.params.id);
       const history = priceHistoryService.getPriceHistory(productId);
@@ -755,10 +746,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch price history" });
     }
-  });
+  }) as any);
 
   // APIs para notificações
-  app.get("/api/notifications/:userId", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/notifications", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const userId = parseInt(req.user.userId);
       const notifications = notificationService.getUserNotifications(userId);
@@ -766,9 +757,9 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch notifications" });
     }
-  });
+  }) as any);
 
-  app.get("/api/notifications/:userId/unread-count", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/notifications/unread-count", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const userId = parseInt(req.user.userId);
       const count = notificationService.getUnreadCount(userId);
@@ -776,10 +767,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
     } catch (error) {
       res.status(500).json({ error: "Failed to get unread count" });
     }
-  });
+  }) as any);
 
   // Payment routes
-  app.post("/api/payments", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/payments", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const { productId, paymentMethod, bank, installments, installmentValue, totalValue, purchaseDate, firstDueDate } = req.body;
       const userId = parseInt(req.user.userId);
@@ -805,6 +796,7 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
         bank,
         installments: installments || 1,
         installmentValue: installmentValue || totalValue,
+        totalValue: totalValue || (installmentValue * (installments || 1)),
         purchaseDate,
         firstDueDate
       });
@@ -813,11 +805,11 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       res.json({ id: paymentId, message: "Payment created successfully" });
     } catch (error) {
       console.error("Payment creation error:", error);
-      res.status(500).json({ error: "Failed to create payment", details: error.message });
+      res.status(500).json({ error: "Failed to create payment", details: (error as any).message });
     }
-  });
+  }) as any);
 
-  app.get("/api/payments", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/payments", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const userId = parseInt(req.user.userId);
       const payments = await storage.getUserPayments(userId);
@@ -826,10 +818,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Error fetching payments:", error);
       res.status(500).json({ error: "Failed to fetch payments" });
     }
-  });
+  }) as any);
 
   // Get user installments
-  app.get("/api/installments", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/installments", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const userId = parseInt(req.user.userId);
       console.log(`[API] Buscando parcelas para usuário: ${userId}`);
@@ -840,10 +832,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Error fetching installments:", error);
       res.status(500).json({ error: "Failed to fetch installments" });
     }
-  });
+  }) as any);
 
   // Get payment data for a specific product
-  app.get("/api/payments/product/:productId", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/payments/product/:productId", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const productId = parseInt(req.params.productId);
       const userId = parseInt(req.user.userId);
@@ -861,10 +853,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Error getting payment data:", error);
       res.status(500).json({ error: "Erro ao buscar dados de pagamento" });
     }
-  });
+  }) as any);
 
   // Update payment data
-  app.put("/api/payments/:paymentId", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.put("/api/payments/:paymentId", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const paymentId = parseInt(req.params.paymentId);
       const userId = parseInt(req.user.userId);
@@ -881,10 +873,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Error updating payment:", error);
       res.status(500).json({ error: "Erro ao atualizar pagamento" });
     }
-  });
+  }) as any);
 
    // Delete payment by product ID
-   app.delete("/api/payments/product/:productId", authenticateToken, async (req: AuthenticatedRequest, res) => {
+   app.delete("/api/payments/product/:productId", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const userId = parseInt(req.user.userId);
       const productId = parseInt(req.params.productId);
@@ -902,10 +894,10 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error('Erro ao excluir pagamento:', error);
       res.status(500).json({ error: "Failed to delete payment" });
     }
-  });
+  }) as any);
 
   // Finance routes
-  app.get("/api/finances", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.get("/api/finances", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const userId = parseInt(req.user.userId);
       const finances = await storage.getFinances(userId);
@@ -914,9 +906,9 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Error fetching finances:", error);
       res.status(500).json({ error: "Failed to fetch finances" });
     }
-  });
+  }) as any);
 
-  app.post("/api/finances", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.post("/api/finances", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const userId = parseInt(req.user.userId);
       const { mes_ano, receita, gastos } = req.body;
@@ -937,9 +929,9 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Error creating finance record:", error);
       res.status(500).json({ error: "Failed to create finance record" });
     }
-  });
+  }) as any);
 
-  app.put("/api/finances/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.put("/api/finances/:id", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const financeId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);
@@ -960,9 +952,9 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Error updating finance record:", error);
       res.status(500).json({ error: "Failed to update finance record" });
     }
-  });
+  }) as any);
 
-  app.delete("/api/finances/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
+  app.delete("/api/finances/:id", authenticateToken, (async (req: AuthenticatedRequest, res) => {
     try {
       const financeId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);
@@ -978,7 +970,7 @@ app.get('/api/anycrawl/credits', authenticateToken, async (req, res) => {
       console.error("Error deleting finance record:", error);
       res.status(500).json({ error: "Failed to delete finance record" });
     }
-  });
+  }) as any);
 
   // API route not found handler - prevents HTML responses for API calls
   app.use("/api/*", (req, res) => {
