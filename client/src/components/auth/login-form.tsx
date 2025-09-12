@@ -5,12 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/use-auth";
 
-interface AuthFormProps {
-  onAuthSuccess: (token: string, userId: string, username: string) => void;
-}
-
-export function AuthForm({ onAuthSuccess }: AuthFormProps) {
+export function AuthForm() {
+  const { login } = useAuth();
   const [loginData, setLoginData] = useState({ username: "", password: "" });
   const [registerData, setRegisterData] = useState({ username: "", password: "", confirmPassword: "" });
   const [isLoading, setIsLoading] = useState(false);
@@ -47,12 +45,13 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
 
       if (response.ok) {
         console.log("Login: Salvando dados de autenticação:", {
-          token: data.token?.substring(0, 20) + "...",
+          accessToken: data.accessToken?.substring(0, 20) + "...",
+          refreshToken: data.refreshToken?.substring(0, 20) + "...",
           userId: data.userId,
           username: data.username
         });
         setSuccess("Login realizado com sucesso!");
-        onAuthSuccess(data.token, data.userId, data.username);
+        login(data.accessToken, data.refreshToken, data.userId, data.username);
       } else {
         console.error("Login: Erro no login:", data.message);
         setError(data.message || "Erro no login");
@@ -92,8 +91,10 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess("Usuário criado com sucesso! Faça login para continuar.");
+        setSuccess("Usuário criado e logado com sucesso!");
         setRegisterData({ username: "", password: "", confirmPassword: "" });
+        // Auto-login after successful registration
+        login(data.accessToken, data.refreshToken, data.userId, data.username);
       } else {
         setError(data.error || "Erro ao criar usuário");
       }

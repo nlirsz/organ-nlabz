@@ -7,7 +7,7 @@ import { notificationService } from "./services/notifications.js";
 import { insertProductSchema, updateProductSchema } from "@shared/schema.js";
 import { z } from "zod";
 import { storage, getStorage } from "./storage";
-import { generateToken, authenticateToken, type AuthenticatedRequest } from "./middleware/auth";
+import { generateToken, generateTokenPair, verifyRefreshToken, authenticateToken, type AuthenticatedRequest } from "./middleware/auth";
 import bcrypt from "bcryptjs";
 import { anyCrawlService } from "./services/anycrawl.js";
 import { rateLimiter } from "./services/rate-limiter.js";
@@ -187,13 +187,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create new user
       const user = await storage.createUser({ username, password: hashedPassword });
 
-      // Generate token
-      const token = generateToken(user.id.toString());
+      // Generate token pair
+      const tokenPair = generateTokenPair(user.id.toString());
 
       res.status(201).json({
         message: 'Usuário registrado com sucesso!',
-        token,
-        userId: user.id.toString()
+        accessToken: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken,
+        userId: user.id.toString(),
+        username: user.username
       });
     } catch (error) {
       console.error("Register error:", error);
@@ -227,14 +229,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Credenciais inválidas (senha incorreta).' });
       }
 
-      // Generate token
-      console.log("[LOGIN] Gerando token para usuário:", user.id);
-      const token = generateToken(user.id.toString());
+      // Generate token pair
+      console.log("[LOGIN] Gerando tokens para usuário:", user.id);
+      const tokenPair = generateTokenPair(user.id.toString());
 
       console.log("[LOGIN] Login bem-sucedido para usuário:", user.username);
       res.status(200).json({
         message: 'Login bem-sucedido.',
-        token,
+        accessToken: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken,
         userId: user.id.toString(),
         username: user.username
       });
@@ -260,6 +263,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Logout realizado com sucesso" });
     } catch (error) {
       res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  // Refresh token endpoint
+  app.post("/api/auth/refresh", requireDatabase, async (req, res) => {
+    try {
+      const { refreshToken } = req.body;
+
+      if (!refreshToken) {
+        return res.status(401).json({ message: 'Refresh token é obrigatório.' });
+      }
+
+      // Verify refresh token
+      const decoded = verifyRefreshToken(refreshToken);
+      if (!decoded) {
+        return res.status(401).json({ message: 'Refresh token inválido ou expirado.' });
+      }
+
+      // Check if user still exists
+      const numericUserId = parseInt(decoded.userId);
+      if (isNaN(numericUserId)) {
+        return res.status(401).json({ message: 'ID do usuário inválido.' });
+      }
+
+      const user = await storage.getUser(numericUserId);
+      if (!user) {
+        return res.status(401).json({ message: 'Usuário não encontrado.' });
+      }
+
+      // Generate new token pair
+      const tokenPair = generateTokenPair(user.id.toString());
+
+      res.json({
+        message: 'Tokens renovados com sucesso!',
+        accessToken: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken,
+        userId: user.id.toString(),
+        username: user.username
+      });
+    } catch (error) {
+      console.error("Refresh token error:", error);
+      res.status(500).json({ message: 'Erro interno do servidor ao renovar token.' });
     }
   });
 
