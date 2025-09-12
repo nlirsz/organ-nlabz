@@ -22,16 +22,17 @@ export function NotificationsPanel() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    fetchNotifications();
-    fetchUnreadCount();
+    // Temporarily disabled to fix performance issues
+    // fetchNotifications();
+    // fetchUnreadCount();
     
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(() => {
-      fetchNotifications();
-      fetchUnreadCount();
-    }, 30000);
+    // Poll for new notifications every 30 seconds - DISABLED
+    // const interval = setInterval(() => {
+    //   fetchNotifications();
+    //   fetchUnreadCount();
+    // }, 30000);
 
-    return () => clearInterval(interval);
+    // return () => clearInterval(interval);
   }, []);
 
   const fetchNotifications = async () => {
