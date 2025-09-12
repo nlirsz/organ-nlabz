@@ -4,6 +4,7 @@ import { extractProductInfo } from './gemini.js';
 import { isShopeeUrl, addShopeeAffiliateParams } from './shopee-api.js';
 import { isAliExpressUrl, addAliExpressAffiliateParams } from './aliexpress-api.js';
 import { anyCrawlService } from './anycrawl.js';
+import { playwrightWrapper, anyCrawlWrapper } from './api-wrapper.js';
 import axios from 'axios';
 
 interface ScrapedProduct {
@@ -73,14 +74,47 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
   // ESTRATÉGIA 3: AnyCrawl Premium (apenas para sites difíceis E quando necessário)
   if (shouldUseAnyCrawl(processedUrl)) {
     try {
-      console.log(`[Scraper] 💎 TENTATIVA 3: AnyCrawl Premium (site difícil detectado)`);
-      const anyCrawlResult = await anyCrawlService.scrapeProduct(processedUrl);
-      if (anyCrawlResult && anyCrawlResult.name !== `Produto de ${anyCrawlResult.store}`) {
-        console.log(`[Scraper] ✅ ANYCRAWL SUCESSO: "${anyCrawlResult.name}"`);
-        return anyCrawlResult;
+      console.log(`[Scraper] 💎 TENTATIVA 3: AnyCrawl Premium via rate-limited wrapper`);
+      
+      // USA O WRAPPER COM RATE LIMITING
+      const anyCrawlResult = await anyCrawlWrapper.scrapeUrl(processedUrl, {
+        extractMetadata: true,
+        screenshot: false,
+        waitFor: 'networkidle',
+        timeout: 30000,
+        priority: 'normal'
+      });
+      
+      if (anyCrawlResult && anyCrawlResult.success) {
+        // Extrai informações do resultado do AnyCrawl
+        let productResult: ScrapedProduct;
+        
+        if (anyCrawlResult.data.metadata) {
+          // Usa metadata primeiro
+          const metadata = anyCrawlResult.data.metadata;
+          productResult = {
+            name: metadata.title || 'Produto AnyCrawl',
+            price: metadata.price ? parseFloat(String(metadata.price).replace(/[^\d,.-]/g, '').replace(',', '.')) || null : null,
+            imageUrl: metadata.image || null,
+            store: extractStoreFromUrl(processedUrl),
+            description: metadata.description || null,
+            category: null,
+            brand: null
+          };
+        } else if (anyCrawlResult.data.html) {
+          // Usa HTML + Gemini
+          productResult = await extractProductInfo(processedUrl, anyCrawlResult.data.html);
+        } else {
+          throw new Error('AnyCrawl não retornou dados úteis');
+        }
+        
+        if (productResult && productResult.name !== `Produto de ${productResult.store}`) {
+          console.log(`[Scraper] ✅ ANYCRAWL SUCESSO: "${productResult.name}"`);
+          return productResult;
+        }
       }
     } catch (error) {
-      console.warn(`[Scraper] ⚠️ AnyCrawl falhou:`, error.message);
+      console.warn(`[Scraper] ⚠️ AnyCrawl wrapper falhou:`, error.message);
     }
   } else {
     console.log(`[Scraper] 🎯 Site não precisa de AnyCrawl - economizando créditos`);
@@ -136,73 +170,27 @@ function shouldUseAnyCrawl(url: string): boolean {
 }
 
 async function scrapeWithPlaywright(url: string): Promise<ScrapedProduct> {
-  let browser: Browser | null = null;
-
+  console.log(`[Playwright] 🎭 Iniciando scraping via rate-limited wrapper`);
+  
   try {
-    // Inicializa o navegador com configurações otimizadas
-    browser = await chromium.launch({ 
-      headless: true,
-      args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox', 
-        '--disable-dev-shm-usage',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor',
-        '--disable-gpu',
-        '--disable-software-rasterizer'
-      ]
+    // USA O WRAPPER COM RATE LIMITING
+    const scrapingResult = await playwrightWrapper.scrapeUrl(url, {
+      waitForSelector: 'h1, [data-testid*="title"], [class*="product"]',
+      timeout: REPLIT_BROWSER_CONFIG.timeouts.playwright,
+      priority: 'normal'
     });
 
-    const context = await browser.newContext({
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      viewport: { width: 1366, height: 768 },
-      locale: 'pt-BR',
-      ignoreHTTPSErrors: true
-    });
-
-    const page = await context.newPage();
-
-    // Bloqueia recursos desnecessários
-    await page.route('**/*', (route) => {
-      const resourceType = route.request().resourceType();
-      if (['image', 'stylesheet', 'font', 'media', 'websocket'].includes(resourceType)) {
-        route.abort();
-      } else {
-        route.continue();
-      }
-    });
-
-    console.log(`[Playwright] 🌐 Navegando para: ${url}`);
-    await page.goto(url, { 
-      waitUntil: 'domcontentloaded',
-      timeout: REPLIT_BROWSER_CONFIG.timeouts.playwright 
-    });
-
-    // Aguarda conteúdo dinâmico carregar
-    await page.waitForTimeout(3000);
-
-    // Tenta aguardar elementos específicos
-    try {
-      await page.waitForSelector('h1, [data-testid*="title"], [class*="product"]', { 
-        timeout: REPLIT_BROWSER_CONFIG.timeouts.waitForSelector 
-      });
-    } catch (e) {
-      console.log(`[Playwright] ⚠️ Elementos não encontrados rapidamente, continuando...`);
+    if (!scrapingResult || !scrapingResult.html) {
+      throw new Error('Nenhum HTML capturado pelo Playwright wrapper');
     }
 
-    const html = await page.content();
-    console.log(`[Playwright] ✅ HTML capturado: ${Math.round(html.length / 1000)}KB`);
-
-    return await extractProductInfo(url, html);
-
-  } finally {
-    if (browser) {
-      try {
-        await browser.close();
-      } catch (error) {
-        console.error(`[Playwright] ⚠️ Erro ao fechar navegador:`, error.message);
-      }
-    }
+    console.log(`[Playwright] ✅ HTML capturado via wrapper: ${Math.round(scrapingResult.html.length / 1000)}KB`);
+    
+    return await extractProductInfo(url, scrapingResult.html);
+    
+  } catch (error) {
+    console.error(`[Playwright] ❌ Erro no wrapper:`, error.message);
+    throw error;
   }
 }
 
@@ -476,6 +464,37 @@ function findProductInJsonLd(data: any): Partial<ScrapedProduct> | null {
   }
 
   return null;
+}
+
+function extractStoreFromUrl(url: string): string {
+  try {
+    const hostname = new URL(url).hostname.replace('www.', '');
+    const storeMap: Record<string, string> = {
+      'mercadolivre.com.br': 'Mercado Livre',
+      'amazon.com.br': 'Amazon Brasil',
+      'magazineluiza.com.br': 'Magazine Luiza',
+      'americanas.com.br': 'Americanas',
+      'submarino.com.br': 'Submarino',
+      'casasbahia.com.br': 'Casas Bahia',
+      'extra.com.br': 'Extra',
+      'shopee.com.br': 'Shopee',
+      'zara.com': 'Zara',
+      'nike.com.br': 'Nike Brasil',
+      'netshoes.com.br': 'Netshoes',
+      'kabum.com.br': 'KaBuM',
+      'pichau.com.br': 'Pichau',
+      'aliexpress.com': 'AliExpress',
+      'shoptime.com.br': 'Shoptime'
+    };
+
+    for (const [domain, name] of Object.entries(storeMap)) {
+      if (hostname.includes(domain)) return name;
+    }
+
+    return hostname.split('.')[0].charAt(0).toUpperCase() + hostname.split('.')[0].slice(1);
+  } catch {
+    return 'Loja Online';
+  }
 }
 
 function extractProductFromJsonLd(productData: any): Partial<ScrapedProduct> | null {

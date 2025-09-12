@@ -10,6 +10,8 @@ import { storage, getStorage } from "./storage";
 import { generateToken, authenticateToken, type AuthenticatedRequest } from "./middleware/auth";
 import bcrypt from "bcryptjs";
 import { anyCrawlService } from "./services/anycrawl.js";
+import { rateLimiter } from "./services/rate-limiter.js";
+import { APIWrapperFactory } from "./services/api-wrapper.js";
 
 // Type-safe wrapper for authenticated routes that properly handles Express compatibility
 const withAuth = <T = any>(
@@ -18,11 +20,65 @@ const withAuth = <T = any>(
   return handler;
 };
 
-
+// Rate limiting middleware for scraping endpoints
+const rateLimitScraping = async (req: any, res: any, next: any) => {
+  try {
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    
+    console.log(`[RateLimitMiddleware] Scraping request from ${ip} (${userAgent})`);
+    
+    // Check if system is in emergency mode
+    if (rateLimiter.isEmergencyActive()) {
+      return res.status(503).json({
+        error: 'Sistema temporariamente em modo emergência',
+        message: 'Scraping indisponível devido a controles de custo',
+        retryAfter: 300 // 5 minutes
+      });
+    }
+    
+    // Get current stats
+    const stats = rateLimiter.getStats() as Record<string, any>;
+    const queueStatus = rateLimiter.getQueueStatus();
+    
+    // Check if critical APIs are down
+    const criticalApisDown = Object.values(stats).some((stat: any) => stat.circuitState === 'open');
+    if (criticalApisDown) {
+      return res.status(503).json({
+        error: 'Serviços de scraping temporariamente indisponíveis',
+        message: 'Algumas APIs estão com problemas, tente novamente em alguns minutos',
+        retryAfter: 60
+      });
+    }
+    
+    // Check queue lengths
+    const totalQueueLength = Object.values(queueStatus).reduce((sum: number, length: number) => sum + length, 0);
+    if (totalQueueLength > 10) {
+      return res.status(429).json({
+        error: 'Sistema sobrecarregado',
+        message: `${totalQueueLength} requests na fila. Tente novamente em alguns minutos.`,
+        queuePosition: totalQueueLength + 1,
+        retryAfter: Math.min(totalQueueLength * 10, 300) // Max 5 minutes
+      });
+    }
+    
+    // Add rate limit info to response headers
+    res.set({
+      'X-RateLimit-TotalCost': rateLimiter.getTotalCost().toFixed(4),
+      'X-RateLimit-Queue-Length': totalQueueLength.toString(),
+      'X-RateLimit-Emergency-Mode': rateLimiter.isEmergencyActive() ? 'true' : 'false'
+    });
+    
+    next();
+  } catch (error) {
+    console.error('[RateLimitMiddleware] Error:', error);
+    next(); // Continue on middleware errors
+  }
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Health check endpoint
+  // Enhanced health check with rate limiting information
   app.get("/api/health", async (req, res) => {
     try {
       // Test storage connection
@@ -33,13 +89,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isMemStorage = process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL;
       const storageType = isMemStorage ? 'MemStorage' : 'PostgreSQL';
       
-      res.status(200).json({ 
-        status: "healthy", 
+      // Get rate limiting statistics
+      const rateLimitStats = rateLimiter.getStats() as Record<string, any>;
+      const totalCost = rateLimiter.getTotalCost();
+      const queueStatus = rateLimiter.getQueueStatus();
+      const apiHealth = await APIWrapperFactory.healthCheck();
+      
+      // Check if any APIs are in circuit breaker state
+      const hasOpenCircuits = Object.values(rateLimitStats).some((stat: any) => stat.circuitState === 'open');
+      
+      const healthData = {
+        status: hasOpenCircuits ? "degraded" : "healthy",
         storage: storageType,
         database: isMemStorage ? "n/a" : "connected",
         environment: process.env.NODE_ENV || 'development',
-        timestamp: new Date().toISOString()
-      });
+        timestamp: new Date().toISOString(),
+        rateLimiting: {
+          totalCostToday: `$${totalCost.toFixed(4)}`,
+          apisHealth: apiHealth,
+          stats: rateLimitStats,
+          queueStatus: queueStatus,
+          emergencyMode: rateLimiter.isEmergencyActive() || false
+        }
+      };
+      
+      res.status(hasOpenCircuits ? 503 : 200).json(healthData);
     } catch (error: any) {
       res.status(503).json({ 
         status: "unhealthy", 
@@ -319,7 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Add product from URL
-  app.post("/api/products/scrape", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
+  app.post("/api/products/scrape", authenticateToken, rateLimitScraping, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { url } = req.body;
 
@@ -798,7 +872,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Re-scrape product
-  app.post("/api/products/:id/re-scrape", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
+  app.post("/api/products/:id/re-scrape", authenticateToken, rateLimitScraping, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const productId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);

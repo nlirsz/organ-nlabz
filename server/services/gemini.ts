@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as cheerio from 'cheerio';
 import { extractJSONLD } from './scraper.js';
+import { geminiWrapper, createAPIError } from './api-wrapper.js';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -82,7 +83,7 @@ export async function extractProductInfo(url: string, html: string): Promise<Pro
 }
 
 /**
- * TENTATIVA #2: Extração via Gemini AI com prompt otimizado
+ * TENTATIVA #2: Extração via Gemini AI com rate limiting e timeout
  */
 async function extractViaGeminiAI(html: string, url: string): Promise<ProductInfo | null> {
   if (!GEMINI_API_KEY) {
@@ -90,15 +91,6 @@ async function extractViaGeminiAI(html: string, url: string): Promise<ProductInf
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: {
-        temperature: 0.1,
-        responseMimeType: "application/json"
-      }
-    });
-
     // Limpa o HTML para análise mais eficiente
     const cleanHtml = cleanHtmlForGeminiAnalysis(html);
     const store = extractStoreFromUrl(url);
@@ -145,28 +137,9 @@ ${cleanHtml}
 `;
 
     // Para AliExpress, usa prompt mais específico
-    let systemPrompt = `Você é um especialista em extração de dados de produtos.
-
-    INSTRUÇÕES GERAIS:
-    1. Analise o HTML e identifique o nome do produto, preço, imagem e outros detalhes.
-    2. Seja preciso ao extrair o preço (formato: 199.90)
-    3. Retorne apenas JSON, sem texto adicional.
-    4. Se não encontrar algo, retorne null.
-
-    Formato esperado:
-    {
-      "name": "Nome do produto",
-      "price": 199.90,
-      "imageUrl": "URL da imagem",
-      "description": "Descrição do produto",
-      "category": "Categoria do produto",
-      "brand": "Marca do produto"
-    }
-    `;
-
-    // Para AliExpress, usa prompt mais específico
+    let finalPrompt = optimizedPrompt;
     if (url.includes('aliexpress.com')) {
-      systemPrompt = `Você é um especialista em extração de dados de produtos da AliExpress.
+      finalPrompt = `Você é um especialista em extração de dados de produtos da AliExpress.
 
     INSTRUÇÕES ESPECÍFICAS PARA ALIEXPRESS:
     1. Procure dados de produto em estruturas JSON, especialmente em scripts com window.runParams ou similar
@@ -191,14 +164,29 @@ ${cleanHtml}
     - category: categoria inferida
     - brand: marca se identificada
 
-    Se não conseguir extrair dados confiáveis do produto correto, retorne: {"error": "Dados não encontrados"}`;
+    Se não conseguir extrair dados confiáveis do produto correto, retorne: {"error": "Dados não encontrados"}
+    
+    CONTEÚDO DA PÁGINA:
+    ${cleanHtml}`;
     }
 
-    console.log(`[Gemini] 🤖 Enviando análise especializada para ${store}...`);
-    const result = await model.generateContent(optimizedPrompt);
-    const response = result.response;
-    const text = response.text();
+    console.log(`[Gemini] 🤖 Enviando análise via rate-limited wrapper para ${store}...`);
+    
+    // USA O WRAPPER COM RATE LIMITING E TIMEOUT
+    const result = await geminiWrapper.generateContent(finalPrompt, {
+      model: "gemini-1.5-flash",
+      temperature: 0.1,
+      maxTokens: 1000,
+      timeout: 30000,
+      priority: 'normal'
+    });
+    
+    if (!result.response || !result.response.text()) {
+      console.log(`[Gemini] ⚠️ Resposta vazia ou inválida`);
+      return null;
+    }
 
+    const text = result.response.text();
     console.log(`[Gemini] 📥 Resposta recebida (${text.length} chars)`);
 
     // Parse da resposta JSON
