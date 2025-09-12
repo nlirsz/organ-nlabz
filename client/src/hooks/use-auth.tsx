@@ -68,6 +68,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     
     setUser({ userId, username });
     console.log("✅ User logged in:", username);
+    
+    // Redirect to home page after successful login
+    setLocation("/");
   };
 
   const logout = useCallback(async () => {
