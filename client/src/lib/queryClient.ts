@@ -47,7 +47,7 @@ export const getQueryFn: <T>(options: {
       headers["x-auth-token"] = authToken;
     }
 
-    const res = await fetch(queryKey.join("/") as string, {
+    const res = await fetch(String(queryKey[0]), {
       headers,
       credentials: "include",
     });

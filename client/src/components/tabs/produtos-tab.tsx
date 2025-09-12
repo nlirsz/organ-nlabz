@@ -29,17 +29,6 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
 
   const { data: products = [], isLoading } = useQuery<SelectProduct[]>({
     queryKey: ["/api/products", refreshKey],
-    queryFn: async () => {
-      const response = await fetch("/api/products", {
-        headers: { 
-          "x-auth-token": authToken || ""
-        }
-      });
-      if (!response.ok) {
-        throw new Error("Erro ao carregar produtos");
-      }
-      return response.json();
-    },
     enabled: !!authToken,
     staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: false,

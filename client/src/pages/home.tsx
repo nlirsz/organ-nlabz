@@ -30,23 +30,11 @@ export default function Home() {
 
   const { data: products = [], isLoading, refetch } = useQuery<SelectProduct[]>({
     queryKey: ["/api/products", refreshKey],
-    queryFn: () => 
-      fetch("/api/products", {
-        headers: {
-          "x-auth-token": authToken || ""
-        }
-      }).then(res => res.json()),
     enabled: isAuthenticated && !!authToken,
   });
 
   const { data: stats } = useQuery({
     queryKey: ["/api/products/stats", refreshKey],
-    queryFn: () => 
-      fetch(`/api/products/stats/${currentUser?.id}`, {
-        headers: {
-          "x-auth-token": authToken || ""
-        }
-      }).then(res => res.json()),
     enabled: isAuthenticated && !!authToken,
   });
 

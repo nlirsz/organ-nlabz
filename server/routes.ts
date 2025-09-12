@@ -797,6 +797,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
+  // Re-scrape product
+  app.post("/api/products/:id/re-scrape", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const productId = parseInt(req.params.id);
+      const userId = parseInt(req.user.userId);
+
+      if (isNaN(productId)) {
+        return res.status(400).json({ error: "Invalid product ID" });
+      }
+
+      // Get existing product
+      const existingProduct = await storage.getProduct(productId, userId);
+      if (!existingProduct) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      console.log(`[RE-SCRAPE] Re-scraping product ${productId}: ${existingProduct.name}`);
+
+      // Re-scrape the product using the existing URL
+      const scrapedProduct = await scrapeProductFromUrl(existingProduct.url);
+
+      if (!scrapedProduct || !scrapedProduct.name) {
+        return res.status(400).json({ 
+          error: "Failed to re-scrape product. URL may be invalid or inaccessible." 
+        });
+      }
+
+      // Update product with new scraped data
+      const updateData = {
+        name: scrapedProduct.name,
+        price: scrapedProduct.price?.toString() || existingProduct.price,
+        originalPrice: scrapedProduct.originalPrice?.toString() || existingProduct.originalPrice,
+        imageUrl: scrapedProduct.imageUrl || existingProduct.imageUrl,
+        description: scrapedProduct.description || existingProduct.description,
+        category: scrapedProduct.category || existingProduct.category,
+        brand: scrapedProduct.brand || existingProduct.brand,
+        store: scrapedProduct.store || existingProduct.store
+      };
+
+      const updatedProduct = await storage.updateProduct(productId, updateData, userId);
+
+      console.log(`[RE-SCRAPE] ✅ Successfully re-scraped product ${productId}`);
+      res.json({
+        success: true,
+        message: "Product re-scraped successfully",
+        product: updatedProduct
+      });
+    } catch (error) {
+      console.error(`[RE-SCRAPE] Error re-scraping product:`, error);
+      res.status(500).json({ 
+        error: "Failed to re-scrape product", 
+        details: (error as any).message 
+      });
+    }
+  }));
+
   // APIs para histórico de preços
   app.get("/api/products/:id/price-history", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {

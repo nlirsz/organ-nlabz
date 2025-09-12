@@ -2,11 +2,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Home, LogIn } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 
 export default function NotFound() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function NotFound() {
             <div className="space-y-3">
               {isAuthenticated ? (
                 <Button 
-                  onClick={() => navigate('/home')}
+                  onClick={() => setLocation('/home')}
                   className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
                 >
                   <Home className="w-4 h-4 mr-2" />
@@ -39,7 +39,7 @@ export default function NotFound() {
               ) : (
                 <>
                   <Button 
-                    onClick={() => navigate('/auth')}
+                    onClick={() => setLocation('/auth')}
                     className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
                   >
                     <LogIn className="w-4 h-4 mr-2" />
@@ -47,7 +47,7 @@ export default function NotFound() {
                   </Button>
                   <Button 
                     variant="outline"
-                    onClick={() => navigate('/')}
+                    onClick={() => setLocation('/')}
                     className="w-full border-gray-600 text-gray-300 hover:bg-gray-800"
                   >
                     <Home className="w-4 h-4 mr-2" />

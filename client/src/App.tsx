@@ -1,8 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Router, Route, Switch, Redirect } from "wouter";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "@/components/ui/toaster";
 import { useState, useEffect } from "react";
+import { queryClient } from "@/lib/queryClient";
 
 import HomePage from "@/pages/home";
 import LandingPage from "@/pages/landing";
@@ -10,15 +11,6 @@ import AuthPage from "@/pages/auth";
 import NotFound from "@/pages/not-found";
 
 import "./index.css";
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
-    },
-  },
-});
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -54,21 +46,20 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <div className="min-h-screen">
-          <Routes>
-            <Route 
-              path="/" 
-              element={isAuthenticated ? <Navigate to="/home" replace /> : <LandingPage />} 
-            />
-            <Route 
-              path="/auth" 
-              element={isAuthenticated ? <Navigate to="/home" replace /> : <AuthPage onAuthSuccess={handleAuthSuccess} />} 
-            />
-            <Route 
-              path="/home" 
-              element={isAuthenticated ? <HomePage /> : <Navigate to="/auth" replace />} 
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Switch>
+            <Route path="/">
+              {isAuthenticated ? <Redirect to="/home" /> : <LandingPage />}
+            </Route>
+            <Route path="/auth">
+              {isAuthenticated ? <Redirect to="/home" /> : <AuthPage onAuthSuccess={handleAuthSuccess} />}
+            </Route>
+            <Route path="/home">
+              {isAuthenticated ? <HomePage /> : <Redirect to="/auth" />}
+            </Route>
+            <Route>
+              <NotFound />
+            </Route>
+          </Switch>
           <Toaster />
         </div>
       </Router>
