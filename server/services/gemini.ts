@@ -94,6 +94,9 @@ async function extractViaGeminiAI(html: string, url: string): Promise<ProductInf
     // Limpa o HTML para análise mais eficiente
     const cleanHtml = cleanHtmlForGeminiAnalysis(html);
     const store = extractStoreFromUrl(url);
+    
+    console.log(`[Gemini] 📝 HTML limpo para análise (${cleanHtml.length} chars)`);
+    console.log(`[Gemini] 📄 Preview do conteúdo:`, cleanHtml.substring(0, 800));
 
     const optimizedPrompt = `
 ESPECIALISTA EM E-COMMERCE: Extraia informações de produto desta página ${store}.
