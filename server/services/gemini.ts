@@ -341,35 +341,20 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
     'title'
   ];
 
-  // Palavras de botões/ações para filtrar (PT, EN, ES)
-  const buttonKeywords = [
-    // Português
-    'adicionar', 'comprar', 'carrinho', 'checkout', 'finalizar',
-    'voltar', 'continuar', 'salvar', 'editar', 'excluir', 'cancelar',
-    'confirmar', 'enviar', 'próximo', 'anterior', 'entrar', 'sair',
-    // English
-    'add to', 'buy', 'cart', 'checkout', 'purchase', 'order',
-    'back', 'continue', 'save', 'edit', 'delete', 'cancel',
-    'confirm', 'submit', 'next', 'previous', 'sign in', 'sign out',
-    'add item', 'add product', 'shop now', 'buy now',
-    // Español
-    'añadir', 'comprar', 'carrito', 'finalizar', 'ordenar',
-    'volver', 'continuar', 'guardar', 'editar', 'eliminar', 'cancelar'
-  ];
-
+  // Simplified approach: Only filter by element type, not keywords
+  // Gemini AI handles the heavy lifting - CSS fallback is last resort
   for (const selector of nameSelectors) {
     const element = $(selector).first();
     const nameText = element.text().trim();
     const tagName = element.prop('tagName')?.toLowerCase();
     
-    // Verifica se é nome válido (não é botão/link e não contém palavras de ação)
+    // Simple validation: proper length + not a button/link element
     const isValid = nameText && 
-                    nameText.length > 5 && 
+                    nameText.length > 3 && 
                     nameText.length < 200 &&
                     tagName !== 'button' &&
                     tagName !== 'a' &&
-                    !element.is('button, a, [role="button"]') &&
-                    !buttonKeywords.some(kw => nameText.toLowerCase().includes(kw));
+                    !element.is('button, a, [role="button"]');
     
     if (isValid) {
       name = nameText;
