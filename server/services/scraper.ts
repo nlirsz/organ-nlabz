@@ -55,7 +55,7 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
       console.log(`[Scraper] ✅ PLAYWRIGHT SUCESSO: "${playwrightResult.name}"`);
       return playwrightResult;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.warn(`[Scraper] ⚠️ Playwright falhou:`, error.message);
   }
 
@@ -67,7 +67,7 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
       console.log(`[Scraper] ✅ HTTP SUCESSO: "${httpResult.name}"`);
       return httpResult;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.warn(`[Scraper] ⚠️ HTTP falhou:`, error.message);
   }
 
@@ -113,7 +113,7 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
           return productResult;
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.warn(`[Scraper] ⚠️ AnyCrawl wrapper falhou:`, error.message);
     }
   } else {
@@ -163,7 +163,7 @@ function shouldUseAnyCrawl(url: string): boolean {
     }
     
     return needsAnyCrawl;
-  } catch (error) {
+  } catch (error: any) {
     console.warn(`[AnyCrawl] ⚠️ Erro ao analisar URL:`, error.message);
     return false;
   }
@@ -188,7 +188,7 @@ async function scrapeWithPlaywright(url: string): Promise<ScrapedProduct> {
     
     return await extractProductInfo(url, scrapingResult.html);
     
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[Playwright] ❌ Erro no wrapper:`, error.message);
     throw error;
   }
@@ -198,17 +198,25 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
   try {
     console.log(`[HTTP] 🌐 Fazendo requisição HTTP para: ${url}`);
 
-    // Configurações especiais para AliExpress
-    let axiosConfig = {
+    // User agents rotativos para evitar bloqueios
+    const userAgents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0'
+    ];
+
+    // Configuração base com timeout aumentado
+    let axiosConfig: any = {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': userAgents[0],
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
       },
-      timeout: 20000,
+      timeout: 45000, // Aumentado de 20s para 45s
       maxRedirects: 10
     };
 
@@ -221,21 +229,14 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
       axiosConfig.headers['sec-ch-ua-platform'] = '"Windows"';
       axiosConfig.headers['Cache-Control'] = 'no-cache';
       axiosConfig.headers['Pragma'] = 'no-cache';
-      axiosConfig.timeout = 30000; // Timeout maior para AliExpress
+      axiosConfig.timeout = 60000; // Timeout maior para AliExpress
       axiosConfig.maxRedirects = 15; // Mais redirecionamentos
 
       // Múltiplas tentativas para AliExpress
-      let lastError;
+      let lastError: any;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           console.log(`[HTTP] 🛒 Tentativa ${attempt}/3 para AliExpress`);
-          
-          // Varia User-Agent nas tentativas
-          const userAgents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-          ];
           
           axiosConfig.headers['User-Agent'] = userAgents[attempt - 1];
           
@@ -254,7 +255,7 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
             continue;
           }
           
-        } catch (error) {
+        } catch (error: any) {
           lastError = error;
           console.warn(`[HTTP] 🛒 Tentativa ${attempt} falhou:`, error.message);
           if (attempt < 3) {
@@ -266,14 +267,43 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
       if (lastError) throw lastError;
     }
 
-    const response = await axios.get(url, axiosConfig);
+    // Para outros sites: também usa retry com user agents rotativos
+    let lastError: any;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        console.log(`[HTTP] 🌐 Tentativa ${attempt}/2 para ${new URL(url).hostname}`);
+        
+        // Rotaciona user agent
+        axiosConfig.headers['User-Agent'] = userAgents[attempt - 1];
+        
+        const response = await axios.get(url, axiosConfig);
+        const html = response.data;
+        
+        console.log(`[HTTP] ✅ HTML recebido na tentativa ${attempt}: ${Math.round(html.length / 1000)}KB`);
+        
+        // Verifica se HTML tem conteúdo mínimo
+        if (html.length > 1000) {
+          return await extractProductInfo(url, html);
+        } else {
+          console.warn(`[HTTP] ⚠️ HTML muito pequeno (${html.length} chars), tentando novamente...`);
+          if (attempt < 2) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
+        }
+        
+      } catch (error: any) {
+        lastError = error;
+        console.warn(`[HTTP] ⚠️ Tentativa ${attempt} falhou:`, error.message);
+        if (attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5s antes de retry
+        }
+      }
+    }
+    
+    if (lastError) throw lastError;
+    throw new Error('Falha em todas as tentativas de requisição HTTP');
 
-    const html = response.data;
-    console.log(`[HTTP] ✅ HTML recebido: ${Math.round(html.length / 1000)}KB`);
-
-    return await extractProductInfo(url, html);
-
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[HTTP] ❌ Erro na requisição:`, error.message);
     if (error.code === 'ECONNABORTED') {
       console.error(`[HTTP] ⏰ Timeout na requisição`);
@@ -316,12 +346,11 @@ async function createFallbackProduct(url: string): Promise<ScrapedProduct> {
       'pichau.com.br': 'Pichau',
       'aliexpress.com': 'AliExpress',
       'shoptime.com.br': 'Shoptime',
-      'shopee.com.br': 'Shopee',
       'shopee.com': 'Shopee',
-      'aliexpress.com': 'AliExpress',
       'aliexpress.us': 'AliExpress',
       'aliexpress.ru': 'AliExpress',
-      'pt.aliexpress.com': 'AliExpress'
+      'pt.aliexpress.com': 'AliExpress',
+      'sephora.com.br': 'Sephora'
     };
 
     // Identifica a loja
@@ -382,7 +411,7 @@ async function createFallbackProduct(url: string): Promise<ScrapedProduct> {
       }
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Fallback] ❌ Erro ao processar URL:', error.message);
   }
 
@@ -426,7 +455,7 @@ export function extractJSONLD(html: string): Partial<ScrapedProduct> | null {
           });
           return product;
         }
-      } catch (parseError) {
+      } catch (parseError: any) {
         console.warn(`[JSON-LD] ⚠️ Erro ao parsear script ${i}:`, parseError.message);
         continue;
       }
@@ -434,7 +463,7 @@ export function extractJSONLD(html: string): Partial<ScrapedProduct> | null {
 
     console.log(`[JSON-LD] ❌ Nenhum produto válido encontrado`);
     return null;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[JSON-LD] ❌ Erro geral:`, error.message);
     return null;
   }
@@ -550,7 +579,7 @@ function extractProductFromJsonLd(productData: any): Partial<ScrapedProduct> | n
       brand: brand ? String(brand).trim() : null,
       category: category ? String(category).trim() : null
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[JSON-LD] ❌ Erro ao extrair produto:`, error.message);
     return null;
   }
