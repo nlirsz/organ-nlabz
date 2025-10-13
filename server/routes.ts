@@ -1,8 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
-import { scrapeProductSimple } from "./services/scraper.js";
-import { scrapeProductSimple } from "./services/scraper-simple.js";
+import { scrapeProductFromUrl } from "./services/scraper.js";
 import { priceHistoryService } from "./services/priceHistory.js";
 import { notificationService } from "./services/notifications.js";
 import { insertProductSchema, updateProductSchema } from "@shared/schema.js";
@@ -389,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Valid URL is required" });
       }
 
-      const scrapedProduct = await scrapeProductSimple(url);
+      const scrapedProduct = await scrapeProductFromUrl(url);
 
       res.json({
         name: scrapedProduct.name,
@@ -633,7 +632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // ESTRATÉGIA 4: SCRAPING TRADICIONAL (com AnyCrawl como fallback embutido)
       console.log(`[API] 🌐 Todas APIs falharam - usando scraping tradicional (+ AnyCrawl se necessário)`);
-      const scrapedProduct = await scrapeProductSimple(finalUrl);
+      const scrapedProduct = await scrapeProductFromUrl(finalUrl);
 
       if (!scrapedProduct || !scrapedProduct.name || scrapedProduct.name.length < 3) {
         return res.status(400).json({
@@ -936,7 +935,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[RE-SCRAPE] Re-scraping product ${productId}: ${existingProduct.name}`);
 
       // Re-scrape the product using the existing URL
-      const scrapedProduct = await scrapeProductSimple(existingProduct.url);
+      const scrapedProduct = await scrapeProductFromUrl(existingProduct.url);
 
       if (!scrapedProduct || !scrapedProduct.name) {
         return res.status(400).json({ 
