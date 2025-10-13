@@ -47,22 +47,14 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
     console.log(`[Scraper] 🛒 URL da AliExpress convertida para afiliado: ${url} → ${processedUrl}`);
   }
 
-  // ESTRATÉGIA 1: Playwright (mais robusta)
-  try {
-    console.log(`[Scraper] 📱 TENTATIVA 1: Playwright com navegador real`);
-    const playwrightResult = await scrapeWithPlaywright(processedUrl);
-    if (playwrightResult && playwrightResult.name !== `Produto de ${playwrightResult.store}`) {
-      console.log(`[Scraper] ✅ PLAYWRIGHT SUCESSO: "${playwrightResult.name}"`);
-      return playwrightResult;
-    }
-  } catch (error: any) {
-    console.warn(`[Scraper] ⚠️ Playwright falhou:`, error.message);
-  }
+  // ESTRATÉGIA 1: Playwright (DESABILITADA - não funciona no Replit)
+  // Playwright requer dependências do sistema que não estão disponíveis
+  console.log(`[Scraper] ⏭️ Playwright desabilitado (Replit não suporta) - pulando para HTTP`);
 
-  // ESTRATÉGIA 2: HTTP + Cheerio (mais leve)
+  // ESTRATÉGIA 2: HTTP + Cheerio (primeira tentativa real)
   let httpFailed = false;
   try {
-    console.log(`[Scraper] 🌐 TENTATIVA 2: HTTP direto + Cheerio`);
+    console.log(`[Scraper] 🌐 TENTATIVA 1: HTTP direto + Cheerio`);
     const httpResult = await scrapeWithHttp(processedUrl);
     if (httpResult && httpResult.name !== `Produto de ${httpResult.store}`) {
       console.log(`[Scraper] ✅ HTTP SUCESSO: "${httpResult.name}"`);
@@ -73,17 +65,13 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
     httpFailed = true;
   }
 
-  // ESTRATÉGIA 3: AnyCrawl Premium (usado quando HTTP falha OU para sites difíceis)
+  // ESTRATÉGIA 3: AnyCrawl Premium (SEMPRE usado quando HTTP falha)
   const isAnyCrawlAvailable = anyCrawlService.isAvailable();
-  const isDifficultSite = shouldUseAnyCrawl(processedUrl);
   
-  if (isAnyCrawlAvailable && (httpFailed || isDifficultSite)) {
+  if (isAnyCrawlAvailable && httpFailed) {
     try {
-      if (httpFailed) {
-        console.log(`[Scraper] 💎 TENTATIVA 3: AnyCrawl Premium (fallback - HTTP falhou)`);
-      } else {
-        console.log(`[Scraper] 💎 TENTATIVA 3: AnyCrawl Premium (site difícil)`);
-      }
+      console.log(`[Scraper] 💎 TENTATIVA 2: AnyCrawl Premium (HTTP falhou - usando fallback)`);
+      console.log(`[Scraper] 💰 AVISO: Esta operação consumirá créditos AnyCrawl`);
       
       // USA O WRAPPER COM RATE LIMITING
       const anyCrawlResult = await anyCrawlWrapper.scrapeUrl(processedUrl, {
@@ -213,7 +201,7 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0'
     ];
 
-    // Configuração base com timeout aumentado
+    // Configuração base com timeout otimizado
     let axiosConfig: any = {
       headers: {
         'User-Agent': userAgents[0],
@@ -223,7 +211,7 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
       },
-      timeout: 45000, // Aumentado de 20s para 45s
+      timeout: 25000, // 25 segundos (balanceado)
       maxRedirects: 10
     };
 
@@ -236,7 +224,7 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
       axiosConfig.headers['sec-ch-ua-platform'] = '"Windows"';
       axiosConfig.headers['Cache-Control'] = 'no-cache';
       axiosConfig.headers['Pragma'] = 'no-cache';
-      axiosConfig.timeout = 60000; // Timeout maior para AliExpress
+      axiosConfig.timeout = 35000; // 35s para AliExpress (sites complexos)
       axiosConfig.maxRedirects = 15; // Mais redirecionamentos
 
       // Múltiplas tentativas para AliExpress
