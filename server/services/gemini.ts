@@ -177,7 +177,7 @@ ${cleanHtml}
     
     // USA O WRAPPER COM RATE LIMITING E TIMEOUT
     const result = await geminiWrapper.generateContent(finalPrompt, {
-      model: "gemini-pro",
+      model: "gemini-1.5-flash",
       temperature: 0.1,
       maxTokens: 1000,
       timeout: 30000,
