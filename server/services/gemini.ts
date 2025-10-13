@@ -335,15 +335,29 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
   // Extrai nome com seletores hierárquicos
   const nameSelectors = [
     'h1[class*="title"], h1[class*="name"], h1[class*="product"]',
-    'h1',
+    'h1:not([class*="cart"]):not([class*="button"])',
     '[class*="product-title"], [class*="product-name"]',
     '[data-testid*="title"], [data-testid*="name"]',
     'title'
   ];
 
+  // Palavras de botões/ações para filtrar
+  const buttonKeywords = [
+    'adicionar', 'comprar', 'carrinho', 'checkout', 'finalizar',
+    'voltar', 'continuar', 'salvar', 'editar', 'excluir', 'cancelar',
+    'confirmar', 'enviar', 'próximo', 'anterior', 'entrar', 'sair'
+  ];
+
   for (const selector of nameSelectors) {
     const nameText = $(selector).first().text().trim();
-    if (nameText && nameText.length > 3 && nameText.length < 200) {
+    
+    // Verifica se é nome válido
+    const isValid = nameText && 
+                    nameText.length > 5 && 
+                    nameText.length < 200 &&
+                    !buttonKeywords.some(kw => nameText.toLowerCase().includes(kw));
+    
+    if (isValid) {
       name = nameText;
       console.log(`[CSS-Fallback] 📛 Nome encontrado via ${selector}: ${name}`);
       break;
