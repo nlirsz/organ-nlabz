@@ -133,11 +133,7 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
 
   // ESTRATÉGIA 4: Fallback com informações básicas
   console.log(`[Scraper] 🔄 TODAS TENTATIVAS FALHARAM - Usando fallback`);
-  const fallback = await createFallbackProduct(processedUrl);
-  
-  // Garante que a URL final seja a processada (com afiliado se necessário)
-  fallback.url = processedUrl;
-  return fallback;
+  return await createFallbackProduct(processedUrl);
 }
 
 // Determina quando usar AnyCrawl (apenas para sites conhecidamente difíceis)
