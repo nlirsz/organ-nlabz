@@ -50,7 +50,7 @@ export async function extractProductInfo(url: string, html: string): Promise<Pro
         priceValue: jsonLdData?.price
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.warn(`[ExtractInfo] ❌ Erro no JSON-LD:`, error.message);
   }
 
@@ -70,7 +70,7 @@ export async function extractProductInfo(url: string, html: string): Promise<Pro
           priceValue: geminiData?.price
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.warn(`[ExtractInfo] ❌ Erro na Gemini AI:`, error.message);
     }
   } else {
@@ -188,6 +188,7 @@ ${cleanHtml}
 
     const text = result.response.text();
     console.log(`[Gemini] 📥 Resposta recebida (${text.length} chars)`);
+    console.log(`[Gemini] 📄 Conteúdo da resposta:`, text.substring(0, 500));
 
     // Parse da resposta JSON
     let productData;
@@ -201,6 +202,12 @@ ${cleanHtml}
       }
 
       productData = JSON.parse(cleanText);
+      console.log(`[Gemini] ✅ JSON parseado com sucesso:`, {
+        name: productData.name,
+        rawPrice: productData.price,
+        rawImageUrl: productData.imageUrl,
+        hasDescription: !!productData.description
+      });
     } catch (jsonError) {
       // Último recurso: busca por JSON no texto
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -282,18 +289,28 @@ ${cleanHtml}
         : null
     };
 
-    console.log(`[Gemini] ✅ Produto extraído:`, {
+    console.log(`[Gemini] ✅ Produto extraído com SUCESSO:`, {
       name: result_product.name,
       price: result_product.price,
-      originalRawPrice: productData.price,
+      imageUrl: result_product.imageUrl,
       hasImage: !!result_product.imageUrl,
+      hasDescription: !!result_product.description,
       brand: result_product.brand,
+      category: result_product.category,
       store: store
     });
 
+    // LOG CRÍTICO: Verifica se dados essenciais estão faltando
+    if (!result_product.price) {
+      console.error(`[Gemini] 🚨 PROBLEMA: Preço não foi extraído! Raw price:`, productData.price);
+    }
+    if (!result_product.imageUrl || result_product.imageUrl.includes('placeholder')) {
+      console.error(`[Gemini] 🚨 PROBLEMA: Imagem não foi extraída! Raw imageUrl:`, productData.imageUrl);
+    }
+
     return result_product;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[Gemini] ❌ Erro na análise:`, error.message);
     throw error;
   }
@@ -492,7 +509,7 @@ function cleanHtmlForGeminiAnalysis(html: string): string {
     }
 
     return relevantContent || html.substring(0, maxLength);
-  } catch (error) {
+  } catch (error: any) {
     console.warn(`[Gemini] ⚠️ Erro ao limpar HTML:`, error.message);
     return html.substring(0, 12000);
   }
@@ -530,7 +547,7 @@ function extractFallbackImage(html: string): string | null {
     }
 
     return 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Sem+Imagem';
-  } catch (error) {
+  } catch (error: any) {
     console.warn(`[FallbackImage] ⚠️ Erro ao extrair imagem:`, error.message);
     return 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Erro+Imagem';
   }
@@ -556,7 +573,6 @@ function extractStoreFromUrl(url: string): string {
       'netshoes.com.br': 'Netshoes',
       'kabum.com.br': 'KaBuM',
       'pichau.com.br': 'Pichau',
-      'shopee.com.br': 'Shopee',
       'shopee.com': 'Shopee'
     };
 
