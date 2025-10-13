@@ -60,6 +60,7 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
   }
 
   // ESTRATÉGIA 2: HTTP + Cheerio (mais leve)
+  let httpFailed = false;
   try {
     console.log(`[Scraper] 🌐 TENTATIVA 2: HTTP direto + Cheerio`);
     const httpResult = await scrapeWithHttp(processedUrl);
@@ -69,12 +70,20 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
     }
   } catch (error: any) {
     console.warn(`[Scraper] ⚠️ HTTP falhou:`, error.message);
+    httpFailed = true;
   }
 
-  // ESTRATÉGIA 3: AnyCrawl Premium (apenas para sites difíceis E quando necessário)
-  if (shouldUseAnyCrawl(processedUrl)) {
+  // ESTRATÉGIA 3: AnyCrawl Premium (usado quando HTTP falha OU para sites difíceis)
+  const isAnyCrawlAvailable = anyCrawlService.isAvailable();
+  const isDifficultSite = shouldUseAnyCrawl(processedUrl);
+  
+  if (isAnyCrawlAvailable && (httpFailed || isDifficultSite)) {
     try {
-      console.log(`[Scraper] 💎 TENTATIVA 3: AnyCrawl Premium via rate-limited wrapper`);
+      if (httpFailed) {
+        console.log(`[Scraper] 💎 TENTATIVA 3: AnyCrawl Premium (fallback - HTTP falhou)`);
+      } else {
+        console.log(`[Scraper] 💎 TENTATIVA 3: AnyCrawl Premium (site difícil)`);
+      }
       
       // USA O WRAPPER COM RATE LIMITING
       const anyCrawlResult = await anyCrawlWrapper.scrapeUrl(processedUrl, {
@@ -116,8 +125,10 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
     } catch (error: any) {
       console.warn(`[Scraper] ⚠️ AnyCrawl wrapper falhou:`, error.message);
     }
+  } else if (!isAnyCrawlAvailable) {
+    console.log(`[Scraper] 📴 AnyCrawl não disponível - API Key não configurada`);
   } else {
-    console.log(`[Scraper] 🎯 Site não precisa de AnyCrawl - economizando créditos`);
+    console.log(`[Scraper] 💰 Site normal e HTTP funcionou - economizando créditos`);
   }
 
   // ESTRATÉGIA 4: Fallback com informações básicas
