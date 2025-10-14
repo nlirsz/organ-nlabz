@@ -23,8 +23,16 @@ async function initializeStorage(): Promise<IStorage> {
       const { DatabaseStorage } = await import('./database');
       const dbStorage = new DatabaseStorage();
       
-      // Test database connection with a simple query
-      await dbStorage.getUser(1);
+      // Test database connection with a simple query with timeout
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database connection timeout (10s) - database may be paused')), 10000)
+      );
+      
+      await Promise.race([
+        dbStorage.getUser(1),
+        timeoutPromise
+      ]);
+      
       console.log('✅ DatabaseStorage initialized successfully');
       return dbStorage;
     } catch (error: any) {
@@ -32,6 +40,7 @@ async function initializeStorage(): Promise<IStorage> {
       
       if (process.env.NODE_ENV === 'development') {
         console.warn('⚠️  Database connection failed in development, falling back to MemStorage');
+        console.warn('💡 If database is paused, it will auto-resume on next connection');
         console.warn('Database error details:', error.message);
         const { MemStorage } = await import('./memory');
         return new MemStorage();
