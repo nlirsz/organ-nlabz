@@ -39,8 +39,8 @@ export function EditProductModal({ product, isOpen, onClose, onProductUpdated }:
     if (isOpen) {
       setFormData({
         name: product.name,
-        price: product.price || '',
-        originalPrice: product.originalPrice || '',
+        price: product.price ?? '',
+        originalPrice: product.originalPrice ?? '',
         url: product.url,
         imageUrl: product.imageUrl || '',
         store: product.store || '',

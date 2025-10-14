@@ -803,15 +803,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const productId = parseInt(req.params.id);
       const userId = parseInt(req.user.userId);
 
-      const product = await storage.updateProduct(productId, req.body, userId);
+      console.log(`[UPDATE Product] ID: ${productId}, UserId: ${userId}`);
+      console.log(`[UPDATE Product] Body:`, JSON.stringify(req.body, null, 2));
+
+      // Converte price e originalPrice para números, ou null se vazios
+      const updateData: any = { ...req.body };
+      
+      // Converte price: null se vazio, número se válido, ou remove se inválido
+      if (updateData.price !== undefined) {
+        if (updateData.price === '' || updateData.price === null) {
+          updateData.price = null;
+        } else {
+          const parsedPrice = parseFloat(updateData.price);
+          if (!isNaN(parsedPrice)) {
+            updateData.price = parsedPrice;
+          } else {
+            delete updateData.price;
+          }
+        }
+      }
+      
+      // Converte originalPrice: null se vazio, número se válido, ou remove se inválido
+      if (updateData.originalPrice !== undefined) {
+        if (updateData.originalPrice === '' || updateData.originalPrice === null) {
+          updateData.originalPrice = null;
+        } else {
+          const parsedOriginalPrice = parseFloat(updateData.originalPrice);
+          if (!isNaN(parsedOriginalPrice)) {
+            updateData.originalPrice = parsedOriginalPrice;
+          } else {
+            delete updateData.originalPrice;
+          }
+        }
+      }
+
+      console.log(`[UPDATE Product] Processed data:`, JSON.stringify(updateData, null, 2));
+
+      const product = await storage.updateProduct(productId, updateData, userId);
 
       if (!product) {
+        console.log(`[UPDATE Product] Product not found: ${productId}`);
         return res.status(404).json({ error: "Product not found" });
       }
 
+      console.log(`[UPDATE Product] Success: ${product.id} - ${product.name}`);
       res.json(product);
     } catch (error) {
-      console.error("Update error:", error);
+      console.error("[UPDATE Product] Error:", error);
       res.status(500).json({ error: "Failed to update product" });
     }
   }));

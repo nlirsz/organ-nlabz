@@ -206,4 +206,23 @@ Currency: Brazilian Real (BRL)
 - Added intelligent duplicate detection with 10% tolerance
 - Implemented class-based priority system for main product prices
 
+## Scraping System Improvements (October 14, 2025)
+- **Image URL Normalization**: Fixed critical issue with relative and protocol-relative image URLs
+  - Added `normalizeImageUrl()` function to convert all image URLs to absolute format
+  - Supports: absolute (http://), protocol-relative (//cdn), relative (/) and relative without slash
+  - Applied normalization across all extraction paths: JSON-LD, Gemini AI, and CSS selectors
+- **JSON-LD Image Handling**: Added defensive extraction for Schema.org image variants
+  - Handles string, array, and ImageObject formats per Schema.org specification
+  - Safely extracts first image from arrays and .url property from objects
+- **Product Name Validation**: Relaxed minimum length from 5 to 3 characters
+  - Now accepts valid short product names like "PS5", "SSD", "RAM", "GPU"
+  - Maintains filters for generic/invalid keywords
+- **HTTP Success Validation**: Improved criteria for legitimate scraping results
+  - Requires: valid name (≥3 chars) AND (price > 0 OR valid image)
+  - Accepts absolute, protocol-relative, and relative image URLs
+- **Product Update Endpoint**: Enhanced field handling for empty values
+  - Empty string ("") converted to NULL in database (not 0 or removed)
+  - NULL values properly displayed as empty in edit modal
+  - Robust type conversion with parseFloat validation
+
 The application follows a clean architecture pattern with clear separation between frontend, backend, and data layers, making it maintainable and scalable for future enhancements.
