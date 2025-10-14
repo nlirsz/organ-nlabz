@@ -56,9 +56,35 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
   try {
     console.log(`[Scraper] 🌐 TENTATIVA 1: HTTP direto + Cheerio`);
     const httpResult = await scrapeWithHttp(processedUrl);
-    if (httpResult && httpResult.name !== `Produto de ${httpResult.store}`) {
-      console.log(`[Scraper] ✅ HTTP SUCESSO: "${httpResult.name}"`);
+    
+    // Valida se obteve dados reais (nome específico E pelo menos preço OU imagem válida)
+    const hasValidName = httpResult?.name && 
+                        httpResult.name !== 'Produto encontrado' && 
+                        httpResult.name !== `Produto de ${httpResult.store}` &&
+                        httpResult.name.length >= 3; // Aceita nomes curtos como "PS5", "SSD"
+    
+    const hasPrice = httpResult?.price && httpResult.price > 0;
+    
+    // Valida imagem: aceita URLs absolutas, protocol-relative (//cdn.example.com) e relativas
+    const hasValidImage = httpResult?.imageUrl && 
+                         !httpResult.imageUrl.includes('placeholder') &&
+                         (httpResult.imageUrl.startsWith('http') || 
+                          httpResult.imageUrl.startsWith('//') ||
+                          httpResult.imageUrl.startsWith('/'));
+    
+    // Considera sucesso se tem nome válido E (preço OU imagem)
+    if (httpResult && hasValidName && (hasPrice || hasValidImage)) {
+      console.log(`[Scraper] ✅ HTTP SUCESSO: "${httpResult.name}" - Preço: ${hasPrice ? 'R$ ' + httpResult.price : 'N/A'}, Imagem: ${hasValidImage ? 'OK' : 'N/A'}`);
       return httpResult;
+    } else {
+      console.log(`[Scraper] ⚠️ HTTP retornou dados incompletos:`, {
+        name: httpResult?.name,
+        hasValidName,
+        hasPrice,
+        hasValidImage,
+        imageUrl: httpResult?.imageUrl
+      });
+      httpFailed = true;
     }
   } catch (error: any) {
     console.warn(`[Scraper] ⚠️ HTTP falhou:`, error.message);

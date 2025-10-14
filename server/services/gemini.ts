@@ -33,11 +33,35 @@ export async function extractProductInfo(url: string, html: string): Promise<Pro
     if (jsonLdData?.name && jsonLdData?.price && jsonLdData.price > 0) {
       console.log(`[ExtractInfo] ✅ JSON-LD SUCESSO: "${jsonLdData.name}" - R$ ${jsonLdData.price}`);
 
+      // Normaliza URL da imagem se presente (JSON-LD pode retornar string, array ou objeto)
+      let imageUrl: string | null = null;
+      if (jsonLdData.imageUrl) {
+        const imgData: any = jsonLdData.imageUrl; // Type-safe cast para lidar com Schema.org variants
+        
+        if (typeof imgData === 'string') {
+          imageUrl = imgData;
+        } else if (Array.isArray(imgData) && imgData.length > 0) {
+          // Pega primeira imagem do array
+          imageUrl = typeof imgData[0] === 'string' 
+            ? imgData[0] 
+            : imgData[0]?.url || null;
+        } else if (typeof imgData === 'object' && imgData.url) {
+          // Objeto ImageObject do Schema.org
+          imageUrl = imgData.url;
+        }
+        
+        // Normaliza se não for absoluta
+        if (imageUrl && typeof imageUrl === 'string' && !imageUrl.startsWith('http')) {
+          imageUrl = normalizeImageUrl(imageUrl, url);
+          console.log(`[ExtractInfo] 🔄 Imagem JSON-LD normalizada: ${imageUrl.substring(0, 80)}...`);
+        }
+      }
+
       return {
         name: jsonLdData.name,
         price: jsonLdData.price,
         originalPrice: jsonLdData.originalPrice || null,
-        imageUrl: jsonLdData.imageUrl || extractFallbackImage(html),
+        imageUrl: imageUrl || extractFallbackImage(html, url),
         store: extractStoreFromUrl(url),
         description: jsonLdData.description || null,
         category: jsonLdData.category || extractCategoryFromUrl(url),
@@ -267,12 +291,15 @@ ${cleanHtml}
 
     // Valida URL da imagem
     let imageUrl: string | null = null;
-    if (productData.imageUrl && 
-        typeof productData.imageUrl === 'string' && 
-        productData.imageUrl.startsWith('http')) {
-      imageUrl = productData.imageUrl;
+    if (productData.imageUrl && typeof productData.imageUrl === 'string') {
+      // Normaliza se for relativa
+      if (!productData.imageUrl.startsWith('http')) {
+        imageUrl = normalizeImageUrl(productData.imageUrl, url);
+      } else {
+        imageUrl = productData.imageUrl;
+      }
     } else {
-      imageUrl = extractFallbackImage(html);
+      imageUrl = extractFallbackImage(html, url);
     }
 
     const result_product = {
@@ -332,29 +359,48 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
   let description: string | null = null;
   let brand: string | null = null;
 
-  // Extrai nome com seletores hierárquicos
+  // Extrai nome com seletores hierárquicos e validação aprimorada
   const nameSelectors = [
     'h1[class*="title"], h1[class*="name"], h1[class*="product"]',
-    'h1:not([class*="cart"]):not([class*="button"])',
+    'h1[itemprop="name"], h1[data-testid*="product"]',
     '[class*="product-title"], [class*="product-name"]',
+    '[class*="ProductTitle"], [class*="ProductName"]',
     '[data-testid*="title"], [data-testid*="name"]',
+    'h1:not([class*="cart"]):not([class*="button"])',
+    'meta[property="og:title"]',
     'title'
   ];
 
-  // Simplified approach: Only filter by element type, not keywords
-  // Gemini AI handles the heavy lifting - CSS fallback is last resort
+  // Lista de palavras que indicam que NÃO é um nome de produto
+  const invalidKeywords = [
+    'carrinho', 'cart', 'checkout', 'login', 'entrar', 'cadastro',
+    'seu pedido', 'meu pedido', 'minha conta', 'finalizar compra',
+    'adicionar ao', 'comprar agora', 'sign in', 'register'
+  ];
+
   for (const selector of nameSelectors) {
     const element = $(selector).first();
-    const nameText = element.text().trim();
+    let nameText = element.text().trim();
     const tagName = element.prop('tagName')?.toLowerCase();
     
-    // Simple validation: proper length + not a button/link element
+    // Para meta tags, usa o atributo content
+    if (tagName === 'meta') {
+      nameText = element.attr('content') || '';
+    }
+    
+    // Validação rigorosa do nome
+    const hasInvalidKeyword = invalidKeywords.some(keyword => 
+      nameText.toLowerCase().includes(keyword)
+    );
+    
     const isValid = nameText && 
-                    nameText.length > 3 && 
+                    nameText.length >= 3 &&  // Mínimo 3 caracteres (aceita "PS5", "SSD", etc.)
                     nameText.length < 200 &&
+                    !hasInvalidKeyword &&
                     tagName !== 'button' &&
                     tagName !== 'a' &&
-                    !element.is('button, a, [role="button"]');
+                    !element.is('button, a, [role="button"]') &&
+                    !/^(home|início|loja|store|shop)$/i.test(nameText); // Não aceita títulos genéricos
     
     if (isValid) {
       name = nameText;
@@ -363,26 +409,59 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
     }
   }
 
-  // Extrai preço com seletores hierárquicos (Amazon específicos incluídos)
+  // Extrai preço com seletores hierárquicos e validação melhorada
   const priceSelectors = [
+    // Meta tags (mais confiáveis)
+    'meta[property="product:price:amount"]',
+    'meta[property="og:price:amount"]',
+    
     // Amazon específicos
     '.a-price-whole, .a-price .a-offscreen',
     '#apex_desktop .a-price .a-offscreen',
-    '.a-price-current .a-price-fraction',
-
-    // Genéricos
-    '[class*="price"]:not([class*="original"]):not([class*="old"])',
-    '[data-testid*="price"]',
-    '[class*="valor"]',
-    '[class*="cost"]',
+    '.a-price-current',
+    
+    // Atributos data com preço
     '[data-price]',
-    '.price, .valor, .preco'
+    '[data-product-price]',
+    '[itemprop="price"]',
+    
+    // Classes comuns de preço (excluindo antigas/originais)
+    '[class*="price"]:not([class*="original"]):not([class*="old"]):not([class*="was"]):not([class*="from"])',
+    '[class*="Price"]:not([class*="Original"]):not([class*="Old"]):not([class*="Was"])',
+    '[data-testid*="price"]:not([data-testid*="original"])',
+    '[class*="valor"]:not([class*="antigo"])',
+    '[class*="preco"]:not([class*="antigo"])',
+    
+    // Genéricos
+    '.price, .valor, .preco, .cost'
   ];
+
+  // Palavras que indicam que o preço NÃO é o preço atual
+  const invalidPriceKeywords = ['de:', 'era:', 'was:', 'original:', 'antigo:', 'from:', 'antes:'];
 
   for (const selector of priceSelectors) {
     const priceElements = $(selector);
     for (let i = 0; i < priceElements.length; i++) {
-      const priceText = $(priceElements[i]).text();
+      const $el = $(priceElements[i]);
+      let priceText = $el.text().trim();
+      
+      // Para meta tags e data attributes, usa o valor do atributo
+      if ($el.is('[data-price]')) {
+        priceText = $el.attr('data-price') || priceText;
+      } else if ($el.is('[data-product-price]')) {
+        priceText = $el.attr('data-product-price') || priceText;
+      } else if ($el.is('meta')) {
+        priceText = $el.attr('content') || '';
+      }
+      
+      // Ignora preços com palavras-chave inválidas
+      const hasInvalidKeyword = invalidPriceKeywords.some(keyword => 
+        priceText.toLowerCase().includes(keyword)
+      );
+      
+      if (hasInvalidKeyword) continue;
+      
+      // Extrai números do texto
       const priceMatch = priceText.match(/[\d.,]+/);
       if (priceMatch) {
         // Normaliza formato brasileiro (1.234,56 -> 1234.56)
@@ -394,7 +473,8 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
         }
 
         const priceValue = parseFloat(priceStr);
-        if (!isNaN(priceValue) && priceValue > 0 && priceValue < 1000000) {
+        // Validação: preço realista para e-commerce (entre R$ 1 e R$ 1 milhão)
+        if (!isNaN(priceValue) && priceValue >= 1 && priceValue < 1000000) {
           price = priceValue;
           console.log(`[CSS-Fallback] 💰 Preço encontrado via ${selector}: R$ ${price}`);
           break;
@@ -404,8 +484,8 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
     if (price) break;
   }
 
-  // Extrai imagem
-  imageUrl = extractFallbackImage(html);
+  // Extrai imagem (passa a URL para normalização)
+  imageUrl = extractFallbackImage(html, url);
 
   // Extrai descrição
   const descSelectors = [
@@ -532,36 +612,145 @@ function cleanHtmlForGeminiAnalysis(html: string): string {
 }
 
 /**
+ * Normaliza URL de imagem (relativa, protocol-relative ou absoluta) para URL absoluta
+ */
+function normalizeImageUrl(imgUrl: string, baseUrl: string): string {
+  try {
+    // Se já é absoluta, retorna como está
+    if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
+      return imgUrl;
+    }
+    
+    // Se é protocol-relative (//cdn.example.com/img.jpg)
+    if (imgUrl.startsWith('//')) {
+      const protocol = baseUrl.startsWith('https') ? 'https:' : 'http:';
+      return protocol + imgUrl;
+    }
+    
+    // Se é relativa, combina com a URL base
+    if (imgUrl.startsWith('/')) {
+      const urlObj = new URL(baseUrl);
+      return `${urlObj.protocol}//${urlObj.host}${imgUrl}`;
+    }
+    
+    // Relativa sem barra inicial
+    const urlObj = new URL(baseUrl);
+    const pathParts = urlObj.pathname.split('/').slice(0, -1);
+    return `${urlObj.protocol}//${urlObj.host}${pathParts.join('/')}/${imgUrl}`;
+  } catch (error) {
+    console.warn(`[NormalizeImageUrl] ⚠️ Erro ao normalizar URL: ${imgUrl}`, error);
+    return imgUrl;
+  }
+}
+
+/**
  * Extrai imagem com múltiplas estratégias
  */
-function extractFallbackImage(html: string): string | null {
+function extractFallbackImage(html: string, baseUrl?: string): string | null {
   try {
     const $ = cheerio.load(html);
 
-    // Prioridade de seletores para imagem
+    // Prioridade de seletores para imagem (ordem de confiabilidade)
     const imageSelectors = [
+      // Meta tags (mais confiáveis)
       'meta[property="og:image"]',
+      'meta[property="og:image:secure_url"]',
       'meta[name="twitter:image"]',
+      'meta[itemprop="image"]',
+      
+      // Imagens com itemprop (Schema.org)
+      'img[itemprop="image"]',
+      
+      // Classes específicas de produto
+      'img[class*="ProductImage"], img[class*="product-image"]',
       'img[class*="product"][class*="main"], img[class*="produto"][class*="principal"]',
-      'img[class*="product"]:not([class*="thumb"]):not([class*="mini"])',
+      'img[class*="product"]:not([class*="thumb"]):not([class*="mini"]):not([class*="related"])',
+      
+      // Data attributes
+      'img[data-testid*="product-image"]',
+      'img[data-image-role="main"]',
+      
+      // Alt text
       'img[alt*="product"], img[alt*="produto"]',
+      
+      // Src contém product
       'img[src*="product"], img[src*="produto"]'
     ];
 
+    // Palavras que indicam que a imagem NÃO é a principal
+    const invalidImageKeywords = [
+      'logo', 'icon', 'banner', 'ad', 'advertisement', 
+      'thumbnail', 'thumb', 'mini', 'small', 'related',
+      'similar', 'sponsored', 'promo', 'badge'
+    ];
+
     for (const selector of imageSelectors) {
-      const imgSrc = $(selector).attr('content') || $(selector).attr('src');
-      if (imgSrc && imgSrc.startsWith('http') && !imgSrc.includes('placeholder')) {
-        console.log(`[FallbackImage] 🖼️ Imagem encontrada via ${selector}: ${imgSrc}`);
+      const $el = $(selector);
+      let imgSrc = $el.attr('content') || $el.attr('src') || $el.attr('data-src');
+      const imgAlt = $el.attr('alt') || '';
+      const imgClass = $el.attr('class') || '';
+      
+      // Valida se tem alguma URL
+      if (!imgSrc) continue;
+      
+      // Normaliza URL (relativa -> absoluta)
+      if (baseUrl && !imgSrc.startsWith('http')) {
+        imgSrc = normalizeImageUrl(imgSrc, baseUrl);
+        console.log(`[FallbackImage] 🔄 URL normalizada: ${imgSrc.substring(0, 80)}...`);
+      }
+      
+      // Valida se a URL final é HTTP/HTTPS válida
+      if (!imgSrc.startsWith('http')) continue;
+      
+      // Ignora placeholders
+      if (imgSrc.includes('placeholder') || imgSrc.includes('no-image')) continue;
+      
+      // Ignora imagens muito pequenas (geralmente ícones)
+      const width = parseInt($el.attr('width') || '0');
+      const height = parseInt($el.attr('height') || '0');
+      if ((width > 0 && width < 100) || (height > 0 && height < 100)) continue;
+      
+      // Verifica palavras-chave inválidas
+      const hasInvalidKeyword = invalidImageKeywords.some(keyword => 
+        imgSrc.toLowerCase().includes(keyword) ||
+        imgAlt.toLowerCase().includes(keyword) ||
+        imgClass.toLowerCase().includes(keyword)
+      );
+      
+      if (!hasInvalidKeyword) {
+        console.log(`[FallbackImage] 🖼️ Imagem encontrada via ${selector}: ${imgSrc.substring(0, 80)}...`);
         return imgSrc;
       }
     }
 
-    // Se não encontrar, usa primeira imagem http válida
-    const firstImg = $('img[src^="http"]').first().attr('src');
-    if (firstImg && !firstImg.includes('placeholder')) {
-      return firstImg;
+    // Se não encontrar, tenta primeira imagem com validações (aceita relativas também)
+    const allImages = $('img[src]');
+    for (let i = 0; i < allImages.length; i++) {
+      const $img = $(allImages[i]);
+      let src = $img.attr('src');
+      
+      if (!src) continue;
+      
+      // Normaliza URL se necessário
+      if (baseUrl && !src.startsWith('http')) {
+        src = normalizeImageUrl(src, baseUrl);
+      }
+      
+      if (!src.startsWith('http') || src.includes('placeholder') || src.includes('logo') || src.includes('icon')) {
+        continue;
+      }
+      
+      const width = parseInt($img.attr('width') || '0');
+      const height = parseInt($img.attr('height') || '0');
+      
+      // Aceita imagens sem dimensões especificadas ou com dimensões razoáveis
+      if ((width === 0 || width >= 200) && (height === 0 || height >= 200)) {
+        console.log(`[FallbackImage] 🖼️ Imagem genérica encontrada: ${src.substring(0, 80)}...`);
+        return src;
+      }
     }
 
+    console.log(`[FallbackImage] ⚠️ Nenhuma imagem válida encontrada, usando placeholder`);
     return 'https://via.placeholder.com/400x400/e0e5ec/6c757d?text=Sem+Imagem';
   } catch (error: any) {
     console.warn(`[FallbackImage] ⚠️ Erro ao extrair imagem:`, error.message);
