@@ -23,15 +23,36 @@ async function initializeStorage(): Promise<IStorage> {
       const { DatabaseStorage } = await import('./database');
       const dbStorage = new DatabaseStorage();
       
-      // Test database connection with a simple query with timeout
+      // Test database connection with a simple query with timeout and retries
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database connection timeout (10s) - database may be paused')), 10000)
+        setTimeout(() => reject(new Error('Database connection timeout (15s) - database may be paused')), 15000)
       );
       
-      await Promise.race([
-        dbStorage.getUser(1),
-        timeoutPromise
-      ]);
+      // Try to wake up the database with retries
+      let retries = 3;
+      let lastError;
+      
+      while (retries > 0) {
+        try {
+          console.log(`🔌 Attempting database connection (${4 - retries}/3)...`);
+          await Promise.race([
+            dbStorage.getUser(1),
+            timeoutPromise
+          ]);
+          break; // Success!
+        } catch (error: any) {
+          lastError = error;
+          retries--;
+          if (retries > 0) {
+            console.log(`⏳ Retry in 2s... (${retries} attempts left)`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      }
+      
+      if (retries === 0) {
+        throw lastError;
+      }
       
       console.log('✅ DatabaseStorage initialized successfully');
       return dbStorage;
