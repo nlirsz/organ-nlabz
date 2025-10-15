@@ -244,6 +244,11 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
                 <span className="text-base md:text-lg text-gray-500 dark:text-gray-400" data-testid={`product-no-price-${product.id}`}>Preço não disponível</span>
               )}
             </div>
+            {product.quantity && parseInt(product.quantity as string) > 1 && (
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {product.quantity}x de {formatPrice(product.unitPrice || (parseFloat(product.price || '0') / parseInt(product.quantity as string)).toString())}
+              </p>
+            )}</div>
 
             <p className="text-sm text-gray-600 dark:text-gray-400 font-medium truncate" data-testid={`product-store-${product.id}`}>
               <span aria-hidden="true">📱</span> {product.store}

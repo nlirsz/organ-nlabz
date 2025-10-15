@@ -19,6 +19,44 @@ export function ImageUploadModal({ isOpen, onClose, onProductExtracted }: ImageU
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  // Handler para Ctrl+V
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      if (!isOpen) return;
+      
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              setImagePreview(reader.result as string);
+              setImageFile(blob);
+            };
+            reader.readAsDataURL(blob);
+            
+            toast({
+              title: "Imagem colada com sucesso!",
+              description: "Clique em 'Extrair Dados' para processar",
+            });
+          }
+          break;
+        }
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('paste', handlePaste);
+    }
+
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, [isOpen, toast]);
+
   const extractFromImageMutation = useMutation({
     mutationFn: async (imageData: string) => {
       const mimeType = imageData.split(';')[0].split(':')[1];
@@ -79,6 +117,28 @@ export function ImageUploadModal({ isOpen, onClose, onProductExtracted }: ImageU
     reader.readAsDataURL(file);
   };
 
+  const copyToClipboard = async () => {
+    if (!imagePreview) return;
+
+    try {
+      const blob = await fetch(imagePreview).then(r => r.blob());
+      await navigator.clipboard.write([
+        new ClipboardItem({ [blob.type]: blob })
+      ]);
+      
+      toast({
+        title: "Copiado!",
+        description: "Screenshot copiado para área de transferência",
+      });
+    } catch (err) {
+      toast({
+        title: "Erro ao copiar",
+        description: "Navegador não suporta cópia de imagens",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleExtract = () => {
     if (!imagePreview) {
       toast({
@@ -120,7 +180,7 @@ export function ImageUploadModal({ isOpen, onClose, onProductExtracted }: ImageU
             Adicionar Produto por Imagem
           </DialogTitle>
           <DialogDescription>
-            Envie um screenshot da página do produto. Custo: ~R$ 0,003 por imagem
+            Tire um screenshot (Print Screen) e cole aqui com <kbd className="px-1 py-0.5 text-xs font-semibold bg-gray-100 border border-gray-300 rounded">Ctrl+V</kbd> ou arraste o arquivo. Custo: ~R$ 0,003
           </DialogDescription>
         </DialogHeader>
 
@@ -176,9 +236,16 @@ export function ImageUploadModal({ isOpen, onClose, onProductExtracted }: ImageU
                     setImageFile(null);
                   }}
                   disabled={extractFromImageMutation.isPending}
-                  className="flex-1"
                 >
-                  Trocar Imagem
+                  Trocar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={copyToClipboard}
+                  disabled={extractFromImageMutation.isPending}
+                  title="Copiar para área de transferência"
+                >
+                  <Upload className="h-4 w-4" />
                 </Button>
                 <Button
                   onClick={handleExtract}

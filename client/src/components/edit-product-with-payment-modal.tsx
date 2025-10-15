@@ -34,12 +34,12 @@ interface EditProductWithPaymentModalProps {
   onProductUpdated: () => void;
 }
 
-export function EditProductWithPaymentModal({ 
-  product, 
-  paymentData, 
-  isOpen, 
-  onClose, 
-  onProductUpdated 
+export function EditProductWithPaymentModal({
+  product,
+  paymentData,
+  isOpen,
+  onClose,
+  onProductUpdated
 }: EditProductWithPaymentModalProps) {
   const [activeTab, setActiveTab] = useState("produto");
   const [productForm, setProductForm] = useState({
@@ -53,6 +53,8 @@ export function EditProductWithPaymentModal({
     category: product.category || 'Outros',
     brand: product.brand || '',
     tags: product.tags || '',
+    quantity: product.quantity?.toString() || '1', // Novo campo
+    unitPrice: product.unitPrice?.toString() || product.price || '', // Novo campo
   });
 
   const [paymentForm, setPaymentForm] = useState({
@@ -88,6 +90,8 @@ export function EditProductWithPaymentModal({
         category: product.category || 'Outros',
         brand: product.brand || '',
         tags: product.tags || '',
+        quantity: product.quantity?.toString() || '1', // Definir valor inicial
+        unitPrice: product.unitPrice?.toString() || product.price || '', // Definir valor inicial
       });
 
       if (paymentData) {
@@ -191,9 +195,91 @@ export function EditProductWithPaymentModal({
     }
   };
 
+  const handleProductInputChange = (field: string, value: string) => {
+    setProductForm(prev => {
+      const updated = { ...prev, [field]: value };
+
+      // Recalcula preço quando quantidade muda
+      if (field === 'quantity') {
+        const qty = parseInt(value) || 1;
+        const unit = parseFloat(prev.unitPrice as string) || 0;
+        if (unit > 0) {
+          updated.price = (unit * qty).toFixed(2);
+        } else {
+          updated.price = '0.00'; // Reset price if unitPrice is invalid
+        }
+      }
+
+      // Recalcula preço unitário quando preço total muda
+      if (field === 'price') {
+        const total = parseFloat(value) || 0;
+        const qty = parseInt(prev.quantity as string) || 1;
+        if (total > 0 && qty > 0) {
+          updated.unitPrice = (total / qty).toFixed(2);
+        } else {
+          updated.unitPrice = '0.00'; // Reset unitPrice if total or qty is invalid
+        }
+      }
+
+      // Atualiza preço total quando preço unitário muda
+      if (field === 'unitPrice') {
+        const unit = parseFloat(value) || 0;
+        const qty = parseInt(prev.quantity as string) || 1;
+        if (unit > 0) {
+          updated.price = (unit * qty).toFixed(2);
+        } else {
+          updated.price = '0.00'; // Reset price if unitPrice is invalid
+        }
+      }
+
+      return updated;
+    });
+  };
+
+  const handleImagePaste = async (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = event.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        const file = items[i].getAsFile();
+        if (file) {
+          try {
+            const formData = new FormData();
+            formData.append("image", file);
+
+            // Replace with your actual upload endpoint
+            const response = await fetch("/api/upload-image", {
+              method: "POST",
+              body: formData,
+            });
+
+            if (!response.ok) {
+              throw new Error("Failed to upload image");
+            }
+
+            const data = await response.json();
+            setProductForm(prev => ({ ...prev, imageUrl: data.url }));
+            toast({
+              title: "Sucesso",
+              description: "Imagem enviada com sucesso!",
+            });
+          } catch (error) {
+            console.error("Image upload error:", error);
+            toast({
+              title: "Erro",
+              description: "Falha ao enviar imagem.",
+              variant: "destructive",
+            });
+          }
+          event.preventDefault(); // Prevent default paste behavior
+          return;
+        }
+      }
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" onPaste={handleImagePaste}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="w-5 h-5" />
@@ -205,8 +291,8 @@ export function EditProductWithPaymentModal({
             )}
             {hasAnyIssues(product) && (
               <Badge variant="secondary" className={
-                hasCriticalIssues(product) 
-                  ? "bg-red-100 text-red-800" 
+                hasCriticalIssues(product)
+                  ? "bg-red-100 text-red-800"
                   : "bg-yellow-100 text-yellow-800"
               }>
                 <AlertTriangle className="w-3 h-3 mr-1" />
@@ -219,8 +305,8 @@ export function EditProductWithPaymentModal({
         {/* Alerta de Problemas */}
         {hasAnyIssues(product) && (
           <div className={`p-4 rounded-lg border-l-4 ${
-            hasCriticalIssues(product) 
-              ? 'bg-red-50 border-red-400 text-red-800' 
+            hasCriticalIssues(product)
+              ? 'bg-red-50 border-red-400 text-red-800'
               : 'bg-yellow-50 border-yellow-400 text-yellow-800'
           }`}>
             <div className="flex items-start">
@@ -249,400 +335,429 @@ export function EditProductWithPaymentModal({
 
         <div className="space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="produto">Dados do Produto</TabsTrigger>
-          <TabsTrigger value="pagamento" disabled={!product.isPurchased}>Dados do Pagamento</TabsTrigger>
-        </TabsList>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="produto">Dados do Produto</TabsTrigger>
+              <TabsTrigger value="pagamento" disabled={!product.isPurchased}>Dados do Pagamento</TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="produto" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações do Produto</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleProductSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome do Produto</Label>
-                    <Input
-                      id="name"
-                      value={productForm.name}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, name: e.target.value }))}
-                      className="product-name-field"
-                      maxLength={100}
-                      required
-                    />
-                  </div>
+            <TabsContent value="produto" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informações do Produto</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleProductSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Nome do Produto</Label>
+                        <Input
+                          id="name"
+                          value={productForm.name}
+                          onChange={(e) => setProductForm(prev => ({ ...prev, name: e.target.value }))}
+                          className="product-name-field"
+                          maxLength={100}
+                          required
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="store">Loja</Label>
-                    <Input
-                      id="store"
-                      value={productForm.store}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, store: e.target.value }))}
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="store">Loja</Label>
+                        <Input
+                          id="store"
+                          value={productForm.store}
+                          onChange={(e) => setProductForm(prev => ({ ...prev, store: e.target.value }))}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Preço Atual</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      value={productForm.price}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, price: e.target.value }))}
-                    />
-                  </div>
+                      {/* Campos de Quantidade e Preço Unitário/Total */}
+                      <div className="space-y-2">
+                        <Label htmlFor="quantity">Quantidade</Label>
+                        <Input
+                          id="quantity"
+                          type="number"
+                          min="1"
+                          value={productForm.quantity}
+                          onChange={(e) => handleProductInputChange('quantity', e.target.value)}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="originalPrice">Preço Original</Label>
-                    <Input
-                      id="originalPrice"
-                      type="number"
-                      step="0.01"
-                      value={productForm.originalPrice}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, originalPrice: e.target.value }))}
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="unitPrice">Preço Unitário (R$)</Label>
+                        <Input
+                          id="unitPrice"
+                          type="number"
+                          step="0.01"
+                          value={productForm.unitPrice}
+                          onChange={(e) => handleProductInputChange('unitPrice', e.target.value)}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Categoria</Label>
-                    <Select 
-                      value={productForm.category} 
-                      onValueChange={(value) => setProductForm(prev => ({ ...prev, category: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Outros">Outros</SelectItem>
-                        <SelectItem value="Casa">Casa e Decoração</SelectItem>
-                        <SelectItem value="Roupas">Roupas e Acessórios</SelectItem>
-                        <SelectItem value="Eletrônicos">Eletrônicos</SelectItem>
-                        <SelectItem value="Games">Games</SelectItem>
-                        <SelectItem value="Livros">Livros</SelectItem>
-                        <SelectItem value="Esportes">Esportes</SelectItem>
-                        <SelectItem value="Automotivo">Automotivo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="price">Preço Total (R$)</Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          step="0.01"
+                          value={productForm.price}
+                          onChange={(e) => handleProductInputChange('price', e.target.value)}
+                        />
+                        {productForm.quantity && parseInt(productForm.quantity as string) > 1 && (
+                          <p className="text-xs text-gray-500">
+                            {productForm.quantity}x de R$ {productForm.unitPrice || '0.00'}
+                          </p>
+                        )}
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="brand">Marca</Label>
-                    <Input
-                      id="brand"
-                      value={productForm.brand}
-                      onChange={(e) => setProductForm(prev => ({ ...prev, brand: e.target.value }))}
-                    />
-                  </div>
-                </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="originalPrice">Preço Original</Label>
+                        <Input
+                          id="originalPrice"
+                          type="number"
+                          step="0.01"
+                          value={productForm.originalPrice}
+                          onChange={(e) => setProductForm(prev => ({ ...prev, originalPrice: e.target.value }))}
+                        />
+                      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="url">URL do Produto</Label>
-                  <Input
-                    id="url"
-                    type="url"
-                    value={productForm.url}
-                    onChange={(e) => setProductForm(prev => ({ ...prev, url: e.target.value }))}
-                    className="modal-field-restricted"
-                    maxLength={500}
-                    required
-                  />
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="imageUrl">URL da Imagem</Label>
-                  <Input
-                    id="imageUrl"
-                    type="url"
-                    value={productForm.imageUrl}
-                    onChange={(e) => setProductForm(prev => ({ ...prev, imageUrl: e.target.value }))}
-                    className="modal-field-restricted"
-                    maxLength={500}
-                  />
-                </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="category">Categoria</Label>
+                        <Select
+                          value={productForm.category}
+                          onValueChange={(value) => setProductForm(prev => ({ ...prev, category: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Outros">Outros</SelectItem>
+                            <SelectItem value="Casa">Casa e Decoração</SelectItem>
+                            <SelectItem value="Roupas">Roupas e Acessórios</SelectItem>
+                            <SelectItem value="Eletrônicos">Eletrônicos</SelectItem>
+                            <SelectItem value="Games">Games</SelectItem>
+                            <SelectItem value="Livros">Livros</SelectItem>
+                            <SelectItem value="Esportes">Esportes</SelectItem>
+                            <SelectItem value="Automotivo">Automotivo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descrição</Label>
-                  <Textarea
-                    id="description"
-                    value={productForm.description}
-                    onChange={(e) => setProductForm(prev => ({ ...prev, description: e.target.value }))}
-                    className="product-description-field"
-                    maxLength={300}
-                    rows={3}
-                  />
-                </div>
-
-                <Button type="submit" disabled={updateProductMutation.isPending}>
-                  {updateProductMutation.isPending ? "Salvando..." : "Salvar Produto"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="pagamento" className="space-y-4">
-          {paymentData ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Informações do Pagamento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handlePaymentSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="paymentMethod">Forma de Pagamento</Label>
-                      <Select
-                        value={paymentForm.paymentMethod}
-                        onValueChange={(value) => setPaymentForm(prev => ({ ...prev, paymentMethod: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a forma de pagamento" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="credito">Cartão de Crédito</SelectItem>
-                          <SelectItem value="debito">Cartão de Débito</SelectItem>
-                          <SelectItem value="pix">PIX</SelectItem>
-                          <SelectItem value="boleto">Boleto</SelectItem>
-                          <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="space-y-2">
+                        <Label htmlFor="brand">Marca</Label>
+                        <Input
+                          id="brand"
+                          value={productForm.brand}
+                          onChange={(e) => setProductForm(prev => ({ ...prev, brand: e.target.value }))}
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="bank">Banco/Cartão</Label>
+                      <Label htmlFor="url">URL do Produto</Label>
                       <Input
-                        id="bank"
-                        value={paymentForm.bank}
-                        onChange={(e) => setPaymentForm(prev => ({ ...prev, bank: e.target.value }))}
-                        placeholder="Ex: Nubank, Itaú, Santander..."
+                        id="url"
+                        type="url"
+                        value={productForm.url}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, url: e.target.value }))}
+                        className="modal-field-restricted"
+                        maxLength={500}
+                        required
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="installments">Número de Parcelas</Label>
+                      <Label htmlFor="imageUrl">URL da Imagem</Label>
                       <Input
-                        id="installments"
-                        type="number"
-                        min="1"
-                        max="48"
-                        value={paymentForm.installments}
-                        onChange={(e) => {
-                          const installments = parseInt(e.target.value);
-                          setPaymentForm(prev => ({ 
-                            ...prev, 
-                            installments,
-                            installmentValue: prev.totalValue / installments
-                          }));
-                        }}
+                        id="imageUrl"
+                        type="url"
+                        value={productForm.imageUrl}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                        className="modal-field-restricted"
+                        maxLength={500}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="installmentValue">Valor da Parcela</Label>
-                      <Input
-                        id="installmentValue"
-                        type="number"
-                        step="0.01"
-                        value={paymentForm.installmentValue}
-                        onChange={(e) => {
-                          const installmentValue = parseFloat(e.target.value);
-                          setPaymentForm(prev => ({ 
-                            ...prev, 
-                            installmentValue,
-                            totalValue: installmentValue * prev.installments
-                          }));
-                        }}
+                      <Label htmlFor="description">Descrição</Label>
+                      <Textarea
+                        id="description"
+                        value={productForm.description}
+                        onChange={(e) => setProductForm(prev => ({ ...prev, description: e.target.value }))}
+                        className="product-description-field"
+                        maxLength={300}
+                        rows={3}
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="totalValue">Valor Total</Label>
-                      <Input
-                        id="totalValue"
-                        type="number"
-                        step="0.01"
-                        value={paymentForm.totalValue}
-                        onChange={(e) => {
-                          const totalValue = parseFloat(e.target.value);
-                          setPaymentForm(prev => ({ 
-                            ...prev, 
-                            totalValue,
-                            installmentValue: totalValue / prev.installments
-                          }));
-                        }}
-                      />
+                    <Button type="submit" disabled={updateProductMutation.isPending}>
+                      {updateProductMutation.isPending ? "Salvando..." : "Salvar Produto"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="pagamento" className="space-y-4">
+              {paymentData ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Informações do Pagamento</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="paymentMethod">Forma de Pagamento</Label>
+                          <Select
+                            value={paymentForm.paymentMethod}
+                            onValueChange={(value) => setPaymentForm(prev => ({ ...prev, paymentMethod: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a forma de pagamento" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="credito">Cartão de Crédito</SelectItem>
+                              <SelectItem value="debito">Cartão de Débito</SelectItem>
+                              <SelectItem value="pix">PIX</SelectItem>
+                              <SelectItem value="boleto">Boleto</SelectItem>
+                              <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="bank">Banco/Cartão</Label>
+                          <Input
+                            id="bank"
+                            value={paymentForm.bank}
+                            onChange={(e) => setPaymentForm(prev => ({ ...prev, bank: e.target.value }))}
+                            placeholder="Ex: Nubank, Itaú, Santander..."
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="installments">Número de Parcelas</Label>
+                          <Input
+                            id="installments"
+                            type="number"
+                            min="1"
+                            max="48"
+                            value={paymentForm.installments}
+                            onChange={(e) => {
+                              const installments = parseInt(e.target.value);
+                              setPaymentForm(prev => ({
+                                ...prev,
+                                installments,
+                                installmentValue: prev.totalValue / installments
+                              }));
+                            }}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="installmentValue">Valor da Parcela</Label>
+                          <Input
+                            id="installmentValue"
+                            type="number"
+                            step="0.01"
+                            value={paymentForm.installmentValue}
+                            onChange={(e) => {
+                              const installmentValue = parseFloat(e.target.value);
+                              setPaymentForm(prev => ({
+                                ...prev,
+                                installmentValue,
+                                totalValue: installmentValue * prev.installments
+                              }));
+                            }}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="totalValue">Valor Total</Label>
+                          <Input
+                            id="totalValue"
+                            type="number"
+                            step="0.01"
+                            value={paymentForm.totalValue}
+                            onChange={(e) => {
+                              const totalValue = parseFloat(e.target.value);
+                              setPaymentForm(prev => ({
+                                ...prev,
+                                totalValue,
+                                installmentValue: totalValue / prev.installments
+                              }));
+                            }}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="purchaseDate">Data da Compra</Label>
+                          <Input
+                            id="purchaseDate"
+                            type="date"
+                            value={paymentForm.purchaseDate}
+                            onChange={(e) => setPaymentForm(prev => ({ ...prev, purchaseDate: e.target.value }))}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="firstDueDate">Primeiro Vencimento</Label>
+                          <Input
+                            id="firstDueDate"
+                            type="date"
+                            value={paymentForm.firstDueDate}
+                            onChange={(e) => setPaymentForm(prev => ({ ...prev, firstDueDate: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+
+                      <Button type="submit" disabled={updatePaymentMutation.isPending}>
+                        {updatePaymentMutation.isPending ? "Salvando..." : "Salvar Pagamento"}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              ) : product.isPurchased ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Adicionar Informações do Pagamento</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="paymentMethod">Forma de Pagamento</Label>
+                          <Select
+                            value={paymentForm.paymentMethod}
+                            onValueChange={(value) => setPaymentForm(prev => ({ ...prev, paymentMethod: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a forma de pagamento" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="credito">Cartão de Crédito</SelectItem>
+                              <SelectItem value="debito">Cartão de Débito</SelectItem>
+                              <SelectItem value="pix">PIX</SelectItem>
+                              <SelectItem value="boleto">Boleto</SelectItem>
+                              <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="bank">Banco/Cartão</Label>
+                          <Input
+                            id="bank"
+                            value={paymentForm.bank}
+                            onChange={(e) => setPaymentForm(prev => ({ ...prev, bank: e.target.value }))}
+                            placeholder="Ex: Nubank, Itaú, Santander..."
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="installments">Número de Parcelas</Label>
+                          <Input
+                            id="installments"
+                            type="number"
+                            min="1"
+                            max="48"
+                            value={paymentForm.installments}
+                            onChange={(e) => {
+                              const installments = parseInt(e.target.value);
+                              setPaymentForm(prev => ({
+                                ...prev,
+                                installments,
+                                installmentValue: prev.totalValue / installments
+                              }));
+                            }}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="installmentValue">Valor da Parcela</Label>
+                          <Input
+                            id="installmentValue"
+                            type="number"
+                            step="0.01"
+                            value={paymentForm.installmentValue}
+                            onChange={(e) => {
+                              const installmentValue = parseFloat(e.target.value);
+                              setPaymentForm(prev => ({
+                                ...prev,
+                                installmentValue,
+                                totalValue: installmentValue * prev.installments
+                              }));
+                            }}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="totalValue">Valor Total</Label>
+                          <Input
+                            id="totalValue"
+                            type="number"
+                            step="0.01"
+                            value={paymentForm.totalValue}
+                            onChange={(e) => {
+                              const totalValue = parseFloat(e.target.value);
+                              setPaymentForm(prev => ({
+                                ...prev,
+                                totalValue,
+                                installmentValue: totalValue / prev.installments
+                              }));
+                            }}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="purchaseDate">Data da Compra</Label>
+                          <Input
+                            id="purchaseDate"
+                            type="date"
+                            value={paymentForm.purchaseDate}
+                            onChange={(e) => setPaymentForm(prev => ({ ...prev, purchaseDate: e.target.value }))}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="firstDueDate">Primeiro Vencimento</Label>
+                          <Input
+                            id="firstDueDate"
+                            type="date"
+                            value={paymentForm.firstDueDate}
+                            onChange={(e) => setPaymentForm(prev => ({ ...prev, firstDueDate: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="text-center text-sm text-gray-500 mb-4">
+                        Complete as informações de pagamento para este produto já comprado.
+                      </div>
+
+                      <Button type="submit" disabled={updatePaymentMutation.isPending}>
+                        {updatePaymentMutation.isPending ? "Salvando..." : "Salvar Dados de Pagamento"}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center space-y-4">
+                      <p className="text-gray-500">
+                        Este produto não está marcado como comprado.
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        Para adicionar dados de pagamento, marque o produto como comprado primeiro.
+                      </p>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          </Tabs>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="purchaseDate">Data da Compra</Label>
-                      <Input
-                        id="purchaseDate"
-                        type="date"
-                        value={paymentForm.purchaseDate}
-                        onChange={(e) => setPaymentForm(prev => ({ ...prev, purchaseDate: e.target.value }))}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="firstDueDate">Primeiro Vencimento</Label>
-                      <Input
-                        id="firstDueDate"
-                        type="date"
-                        value={paymentForm.firstDueDate}
-                        onChange={(e) => setPaymentForm(prev => ({ ...prev, firstDueDate: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-
-                  <Button type="submit" disabled={updatePaymentMutation.isPending}>
-                    {updatePaymentMutation.isPending ? "Salvando..." : "Salvar Pagamento"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          ) : product.isPurchased ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Adicionar Informações do Pagamento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handlePaymentSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="paymentMethod">Forma de Pagamento</Label>
-                      <Select
-                        value={paymentForm.paymentMethod}
-                        onValueChange={(value) => setPaymentForm(prev => ({ ...prev, paymentMethod: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a forma de pagamento" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="credito">Cartão de Crédito</SelectItem>
-                          <SelectItem value="debito">Cartão de Débito</SelectItem>
-                          <SelectItem value="pix">PIX</SelectItem>
-                          <SelectItem value="boleto">Boleto</SelectItem>
-                          <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="bank">Banco/Cartão</Label>
-                      <Input
-                        id="bank"
-                        value={paymentForm.bank}
-                        onChange={(e) => setPaymentForm(prev => ({ ...prev, bank: e.target.value }))}
-                        placeholder="Ex: Nubank, Itaú, Santander..."
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="installments">Número de Parcelas</Label>
-                      <Input
-                        id="installments"
-                        type="number"
-                        min="1"
-                        max="48"
-                        value={paymentForm.installments}
-                        onChange={(e) => {
-                          const installments = parseInt(e.target.value);
-                          setPaymentForm(prev => ({ 
-                            ...prev, 
-                            installments,
-                            installmentValue: prev.totalValue / installments
-                          }));
-                        }}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="installmentValue">Valor da Parcela</Label>
-                      <Input
-                        id="installmentValue"
-                        type="number"
-                        step="0.01"
-                        value={paymentForm.installmentValue}
-                        onChange={(e) => {
-                          const installmentValue = parseFloat(e.target.value);
-                          setPaymentForm(prev => ({ 
-                            ...prev, 
-                            installmentValue,
-                            totalValue: installmentValue * prev.installments
-                          }));
-                        }}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="totalValue">Valor Total</Label>
-                      <Input
-                        id="totalValue"
-                        type="number"
-                        step="0.01"
-                        value={paymentForm.totalValue}
-                        onChange={(e) => {
-                          const totalValue = parseFloat(e.target.value);
-                          setPaymentForm(prev => ({ 
-                            ...prev, 
-                            totalValue,
-                            installmentValue: totalValue / prev.installments
-                          }));
-                        }}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="purchaseDate">Data da Compra</Label>
-                      <Input
-                        id="purchaseDate"
-                        type="date"
-                        value={paymentForm.purchaseDate}
-                        onChange={(e) => setPaymentForm(prev => ({ ...prev, purchaseDate: e.target.value }))}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="firstDueDate">Primeiro Vencimento</Label>
-                      <Input
-                        id="firstDueDate"
-                        type="date"
-                        value={paymentForm.firstDueDate}
-                        onChange={(e) => setPaymentForm(prev => ({ ...prev, firstDueDate: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="text-center text-sm text-gray-500 mb-4">
-                    Complete as informações de pagamento para este produto já comprado.
-                  </div>
-
-                  <Button type="submit" disabled={updatePaymentMutation.isPending}>
-                    {updatePaymentMutation.isPending ? "Salvando..." : "Salvar Dados de Pagamento"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center space-y-4">
-                  <p className="text-gray-500">
-                    Este produto não está marcado como comprado.
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Para adicionar dados de pagamento, marque o produto como comprado primeiro.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      <div className="flex justify-end gap-2 pt-4 border-t">
+          <div className="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" onClick={onClose}>
               Cancelar
             </Button>

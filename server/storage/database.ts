@@ -104,7 +104,7 @@ export class DatabaseStorage implements IStorage {
     const { db, executeWithRetry } = await this.initializeDb();
     return executeWithRetry(async () => {
       console.log(`[Storage] Starting deleteProduct - ID: ${id}, UserId: ${userId}`);
-      
+
       // First verify the product belongs to the user
       const product = await db
         .select({ id: products.id, name: products.name })
@@ -155,7 +155,7 @@ export class DatabaseStorage implements IStorage {
 
       const success = result.length > 0;
       console.log(`[Storage] Product deletion result: ${success ? 'SUCCESS' : 'FAILED'} - Deleted products: ${result.length}`);
-      
+
       if (success) {
         console.log(`[Storage] ✅ Successfully deleted product ${id} (${product[0].name}) and all related data`);
       } else {
@@ -203,7 +203,7 @@ export class DatabaseStorage implements IStorage {
     firstDueDate: string;
   }): Promise<number> {
     const { db } = await this.initializeDb();
-    
+
     // Insere o pagamento
     const [createdPayment] = await db
       .insert(payments)

@@ -90,6 +90,8 @@ export const insertProductSchema = createInsertSchema(products).omit({
   userId: z.number().default(1),
   price: z.number().positive().optional().nullable(),
   originalPrice: z.number().positive().optional().nullable(),
+  quantity: z.number().optional().default(1),
+  unitPrice: z.string().optional(),
 });
 
 export const updateProductSchema = insertProductSchema.partial();
