@@ -393,17 +393,23 @@ async function createFallbackProduct(url: string): Promise<ScrapedProduct> {
       // Pega o último segmento significativo
       let productSlug = pathSegments[pathSegments.length - 1];
 
-      // Remove códigos de produto comuns
+      // Remove extensão e códigos de produto comuns
+      productSlug = productSlug.split('.html')[0];
+      productSlug = productSlug.split('?')[0];
       productSlug = productSlug.replace(/dp\/[A-Z0-9]+/i, '');
       productSlug = productSlug.replace(/\/p\/\d+/i, '');
-      productSlug = productSlug.replace(/\?.*$/, '');
+      productSlug = productSlug.replace(/[-_]?p\d{6,}$/i, ''); // Zara: -p07545715
+      productSlug = productSlug.replace(/[-_]?sku[-_]?\w+$/i, ''); // SKU codes
+      productSlug = productSlug.replace(/[-_]?\d{6,}$/i, ''); // Números longos
 
       // Converte slug em nome legível
       if (productSlug.length > 3) {
         productName = productSlug
-          .replace(/[-_]/g, ' ')
-          .replace(/\b\w/g, l => l.toUpperCase())
-          .substring(0, 50);
+          .split('-')
+          .filter(word => word.length > 1)
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ')
+          .substring(0, 80);
       }
     }
 

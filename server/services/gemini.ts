@@ -212,7 +212,7 @@ ${cleanHtml}
 
     // USA O WRAPPER COM RATE LIMITING E TIMEOUT
     const result = await geminiWrapper.generateContent(finalPrompt, {
-      model: "gemini-1.5-flash",
+      model: "gemini-1.5-flash-latest",
       temperature: 0.1,
       maxTokens: 1000,
       timeout: 30000,
@@ -596,7 +596,7 @@ Se não conseguir encontrar o preço, retorne null no campo price.
 `;
 
     const result = await geminiWrapper.generateContent(prompt, {
-      model: "gemini-1.5-flash",
+      model: "gemini-1.5-flash-latest",
       temperature: 0.1,
       maxTokens: 1000,
       timeout: 30000,
@@ -673,10 +673,15 @@ function extractProductNameFromUrl(url: string): string {
     
     // Remove extensões e parâmetros
     let productSlug = pathname.split('/').filter(s => s.length > 3).pop() || '';
-    productSlug = productSlug.replace(/\.html.*$/, '').replace(/\?.*$/, '');
     
-    // Remove códigos de produto (ex: p07545715, p07484303)
-    productSlug = productSlug.replace(/[-_]?p\d+$/i, '');
+    // Remove extensão .html e tudo depois
+    productSlug = productSlug.split('.html')[0];
+    productSlug = productSlug.split('?')[0];
+    
+    // Remove códigos de produto comuns (ex: p07545715, -p07484303, _SKU123)
+    productSlug = productSlug.replace(/[-_]?p\d{6,}$/i, ''); // Zara: -p07545715
+    productSlug = productSlug.replace(/[-_]?sku[-_]?\w+$/i, ''); // SKU codes
+    productSlug = productSlug.replace(/[-_]?\d{6,}$/i, ''); // Números longos no final
     
     // Converte para nome legível
     const name = productSlug
