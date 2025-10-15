@@ -5,8 +5,9 @@ import { setupVite, serveStatic, log } from "./vite";
 import { getStorage } from "./storage";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Aumenta limite para suportar imagens base64 (max 10MB)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
 // Security utility functions for logging
 function shouldLogResponse(path: string): boolean {
