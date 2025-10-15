@@ -379,6 +379,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
+  // Extract product info from uploaded image (screenshot)
+  app.post("/api/products/extract-from-image", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { imageData, mimeType } = req.body;
+
+      if (!imageData || typeof imageData !== 'string') {
+        return res.status(400).json({ error: "Image data (base64) is required" });
+      }
+
+      const { extractProductFromImage, cropProductImage } = await import('./services/vision-extractor.js');
+      
+      console.log(`[API] 📸 Extraindo produto de imagem para usuário ${req.user.userId}`);
+      
+      // Extrai dados do produto
+      const productInfo = await extractProductFromImage(imageData, mimeType || 'image/png');
+      
+      // Tenta fazer crop da imagem do produto
+      const croppedImage = await cropProductImage(imageData, mimeType || 'image/png');
+
+      res.json({
+        name: productInfo.name,
+        price: productInfo.price,
+        imageUrl: croppedImage, // Base64 da imagem cropada
+        description: productInfo.description,
+        brand: productInfo.brand,
+        category: productInfo.category,
+        confidence: productInfo.confidence,
+        store: 'Extraído de Imagem'
+      });
+
+    } catch (error: any) {
+      console.error("[API] ❌ Erro ao extrair produto de imagem:", error);
+      res.status(500).json({ 
+        error: error.message || "Falha ao processar imagem" 
+      });
+    }
+  }));
+
   // Verify URL without adding product
   app.post("/api/products/verify", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {

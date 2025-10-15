@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UrlInput } from "@/components/url-input";
 import { TagsInput } from "@/components/tags-input";
+import { ImageUploadModal } from "@/components/image-upload-modal";
 import { cn } from "@/lib/utils";
 import { 
   Plus, 
@@ -22,7 +23,8 @@ import {
   DollarSign,
   Image as ImageIcon,
   FileText,
-  Store
+  Store,
+  Camera
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AnyCrawlStatus } from "../anycrawl-status";
@@ -33,6 +35,7 @@ interface AddProdutosTabProps {
 
 export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
   const [isManualMode, setIsManualMode] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [formData, setFormData] = useState({
     name: "",
@@ -199,6 +202,23 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
     }
 
     scrapeProductMutation.mutate(url);
+  };
+
+  const handleProductExtractedFromImage = (productData: any) => {
+    const productToAdd = {
+      name: productData.name,
+      price: productData.price || null,
+      url: `https://extracted-from-image/${Date.now()}`,
+      imageUrl: productData.imageUrl, // Base64 cropado
+      store: productData.store || "Extraído de Imagem",
+      description: productData.description || null,
+      category: productData.category || "Outros",
+      brand: productData.brand || null,
+      tags: null,
+      isPurchased: false,
+    };
+
+    addProductMutation.mutate(productToAdd);
   };
 
   if (isManualMode) {
@@ -459,8 +479,17 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
           </button>
         </form>
 
-        {/* Manual Option */}
-        <div className="mt-6 pt-6 border-t border-gray-200/20">
+        {/* Alternative Options */}
+        <div className="mt-6 pt-6 border-t border-gray-200/20 space-y-3">
+          <button
+            type="button"
+            onClick={() => setIsImageModalOpen(true)}
+            className="w-full neomorphic-button flex items-center justify-center gap-2 icon-button py-3"
+          >
+            <Camera className="w-5 h-5" />
+            Adicionar por Imagem
+          </button>
+          
           <button
             type="button"
             onClick={() => setIsManualMode(true)}
@@ -471,6 +500,13 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
           </button>
         </div>
       </div>
+
+      {/* Image Upload Modal */}
+      <ImageUploadModal
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+        onProductExtracted={handleProductExtractedFromImage}
+      />
 
       {/* Instructions */}
       <div className="neomorphic-card p-6 rounded-2xl pulse-highlight staggered-fade">
