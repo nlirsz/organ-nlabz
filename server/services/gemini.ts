@@ -816,6 +816,11 @@ function extractFallbackImage(html: string, baseUrl?: string): string | null {
       // Imagens com itemprop (Schema.org)
       'img[itemprop="image"]',
 
+      // AMAZON ESPECÍFICO (prioridade máxima para produto)
+      'img[data-a-dynamic-image]', // Imagem principal da Amazon
+      'img#landingImage', // ID da imagem principal
+      'img.a-dynamic-image', // Classe principal
+      
       // Classes específicas de produto
       'img[class*="ProductImage"], img[class*="product-image"]',
       'img[class*="product"][class*="main"], img[class*="produto"][class*="principal"]',
@@ -824,12 +829,12 @@ function extractFallbackImage(html: string, baseUrl?: string): string | null {
       // Data attributes
       'img[data-testid*="product-image"]',
       'img[data-image-role="main"]',
-      'img[data-a-dynamic-image]', // Para Amazon
 
       // Alt text
       'img[alt*="product"], img[alt*="produto"]',
 
-      // Src contém product
+      // Src contém product (mas não /images/I/ da Amazon que são produtos reais)
+      'img[src*="/images/I/"]', // Amazon product images
       'img[src*="product"], img[src*="produto"]'
     ];
 
@@ -862,15 +867,20 @@ function extractFallbackImage(html: string, baseUrl?: string): string | null {
         }
       }
 
-      // Filtros para ignorar imagens que não são de produto
+      // Filtros RIGOROSOS para ignorar imagens que não são de produto
       const isInvalidImage = imgUrl && (
         imgUrl.includes('placeholder') ||
         imgUrl.includes('loading') ||
         imgUrl.includes('sprite') ||
+        imgUrl.includes('nav-sprite') || // Sprites de navegação
+        imgUrl.includes('gno/sprites') || // Sprites globais da Amazon
         imgUrl.includes('nav-') ||
         imgUrl.includes('icon') ||
         imgUrl.includes('logo') ||
-        imgUrl.includes('/G/') // Sprites da Amazon geralmente estão em /G/
+        imgUrl.includes('/G/') || // Sprites da Amazon geralmente estão em /G/
+        imgUrl.includes('_CB') || // IDs de cache da Amazon em sprites
+        imgUrl.match(/\.(png|jpg|jpeg|webp)\?.*sprite/i) || // Query params com sprite
+        imgUrl.match(/sprite.*\.(png|jpg|jpeg|webp)/i) // Nome contém sprite
       );
 
       if (imgUrl && !isInvalidImage) {
