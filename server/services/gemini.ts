@@ -122,6 +122,17 @@ async function extractViaGeminiAI(html: string, url: string): Promise<ProductInf
     console.log(`[Gemini] 📝 HTML limpo para análise (${cleanHtml.length} chars)`);
     console.log(`[Gemini] 📄 Preview do conteúdo:`, cleanHtml.substring(0, 800));
 
+    // Detecta se é uma página de bloqueio/redirecionamento
+    const isBlockedPage = html.includes('bm-verify') || 
+                          html.includes('refresh') || 
+                          html.length < 5000 ||
+                          html.includes('noscript') && html.length < 10000;
+
+    if (isBlockedPage) {
+      console.log(`[Gemini] 🚫 Página de bloqueio detectada - usando extração via URL`);
+      return await extractFromUrlWithGemini(url, store);
+    }
+
     const optimizedPrompt = `
 ESPECIALISTA EM E-COMMERCE: Extraia informações de produto desta página ${store}.
 
@@ -409,6 +420,15 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
     }
   }
 
+  // Se não encontrou nome válido, tenta extrair da URL
+  if (name === 'Produto encontrado' && url) {
+    const urlName = extractProductNameFromUrl(url);
+    if (urlName && urlName !== 'Produto' && urlName.length >= 3) {
+      name = urlName;
+      console.log(`[CSS-Fallback] 📛 Nome extraído da URL: ${name}`);
+    }
+  }
+
   // Extrai preço com seletores hierárquicos e validação melhorada
   const priceSelectors = [
     // Meta tags (mais confiáveis)
@@ -534,6 +554,141 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
     category: extractCategoryFromUrl(url),
     brand: brand
   };
+}
+
+/**
+ * Extrai informações do produto usando apenas a URL com Gemini Search
+ */
+async function extractFromUrlWithGemini(url: string, store: string): Promise<ProductInfo | null> {
+  try {
+    console.log(`[Gemini URL] 🔍 Extraindo informações via busca: ${url}`);
+
+    const prompt = `
+Você é um assistente especializado em e-commerce. Analise esta URL de produto e retorne as informações do produto.
+
+URL: ${url}
+Loja: ${store}
+
+IMPORTANTE:
+1. Use sua capacidade de busca para encontrar informações sobre este produto específico
+2. Extraia nome, preço, descrição, categoria e marca do produto
+3. Para imagens, tente encontrar a URL da imagem principal do produto
+4. Se não encontrar informações completas, use os dados da URL para inferir o nome do produto
+
+REGRAS:
+- Preço deve ser um número decimal (ex: 279.00, 309.00)
+- Nome deve ser limpo e descritivo, sem códigos
+- Se encontrar "CAMISA ESTRUTURA EASY CARE" na URL, o nome é "Camisa Estrutura Easy Care"
+- Se encontrar "CALCA DE CINTURA JOGGER CONFORT" na URL, o nome é "Calça de Cintura Jogger Confort"
+
+Retorne APENAS um JSON válido no formato:
+{
+  "name": "Nome do produto",
+  "price": 299.99,
+  "originalPrice": null,
+  "imageUrl": "https://...",
+  "description": "Descrição do produto",
+  "brand": "Marca",
+  "category": "Categoria"
+}
+
+Se não conseguir encontrar o preço, retorne null no campo price.
+`;
+
+    const result = await geminiWrapper.generateContent(prompt, {
+      model: "gemini-1.5-flash",
+      temperature: 0.1,
+      maxTokens: 1000,
+      timeout: 30000,
+      priority: 'normal'
+    });
+
+    if (!result.response || !result.response.text()) {
+      console.log(`[Gemini URL] ⚠️ Resposta vazia`);
+      return null;
+    }
+
+    const text = result.response.text();
+    console.log(`[Gemini URL] 📥 Resposta recebida:`, text.substring(0, 300));
+
+    // Parse JSON
+    let cleanText = text.trim();
+    if (cleanText.startsWith('```json')) {
+      cleanText = cleanText.replace(/```json\n/, '').replace(/\n```$/, '');
+    } else if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/```\n/, '').replace(/\n```$/, '');
+    }
+
+    const productData = JSON.parse(cleanText);
+
+    // Valida dados básicos
+    if (!productData.name || productData.name.length < 3) {
+      console.log(`[Gemini URL] ⚠️ Nome inválido, usando fallback da URL`);
+      productData.name = extractProductNameFromUrl(url);
+    }
+
+    // Normaliza preço
+    let price: number | null = null;
+    if (productData.price !== null && productData.price !== undefined) {
+      const priceStr = String(productData.price).replace(/[^\d.,]/g, '');
+      const normalized = priceStr.includes(',') ? priceStr.replace(/\./g, '').replace(',', '.') : priceStr;
+      const priceNum = parseFloat(normalized);
+      if (!isNaN(priceNum) && priceNum >= 1 && priceNum < 1000000) {
+        price = priceNum;
+      }
+    }
+
+    const result_product = {
+      name: productData.name.trim(),
+      price: price,
+      originalPrice: null,
+      imageUrl: productData.imageUrl || null,
+      store: store,
+      description: productData.description?.trim()?.substring(0, 500) || null,
+      category: productData.category?.trim() || extractCategoryFromUrl(url),
+      brand: productData.brand?.trim() || null
+    };
+
+    console.log(`[Gemini URL] ✅ Produto extraído:`, {
+      name: result_product.name,
+      price: result_product.price,
+      hasImage: !!result_product.imageUrl
+    });
+
+    return result_product;
+
+  } catch (error: any) {
+    console.error(`[Gemini URL] ❌ Erro:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * Extrai nome do produto a partir da URL
+ */
+function extractProductNameFromUrl(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
+    
+    // Remove extensões e parâmetros
+    let productSlug = pathname.split('/').filter(s => s.length > 3).pop() || '';
+    productSlug = productSlug.replace(/\.html.*$/, '').replace(/\?.*$/, '');
+    
+    // Remove códigos de produto (ex: p07545715, p07484303)
+    productSlug = productSlug.replace(/[-_]?p\d+$/i, '');
+    
+    // Converte para nome legível
+    const name = productSlug
+      .split('-')
+      .filter(word => word.length > 1)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+    
+    return name || 'Produto';
+  } catch {
+    return 'Produto';
+  }
 }
 
 /**
