@@ -37,7 +37,7 @@ export async function extractProductInfo(url: string, html: string): Promise<Pro
       let imageUrl: string | null = null;
       if (jsonLdData.imageUrl) {
         const imgData: any = jsonLdData.imageUrl; // Type-safe cast para lidar com Schema.org variants
-        
+
         if (typeof imgData === 'string') {
           imageUrl = imgData;
         } else if (Array.isArray(imgData) && imgData.length > 0) {
@@ -49,7 +49,7 @@ export async function extractProductInfo(url: string, html: string): Promise<Pro
           // Objeto ImageObject do Schema.org
           imageUrl = imgData.url;
         }
-        
+
         // Normaliza se não for absoluta
         if (imageUrl && typeof imageUrl === 'string' && !imageUrl.startsWith('http')) {
           imageUrl = normalizeImageUrl(imageUrl, url);
@@ -118,7 +118,7 @@ async function extractViaGeminiAI(html: string, url: string): Promise<ProductInf
     // Limpa o HTML para análise mais eficiente
     const cleanHtml = cleanHtmlForGeminiAnalysis(html);
     const store = extractStoreFromUrl(url);
-    
+
     console.log(`[Gemini] 📝 HTML limpo para análise (${cleanHtml.length} chars)`);
     console.log(`[Gemini] 📄 Preview do conteúdo:`, cleanHtml.substring(0, 800));
 
@@ -192,13 +192,13 @@ ${cleanHtml}
     - brand: marca se identificada
 
     Se não conseguir extrair dados confiáveis do produto correto, retorne: {"error": "Dados não encontrados"}
-    
+
     CONTEÚDO DA PÁGINA:
     ${cleanHtml}`;
     }
 
     console.log(`[Gemini] 🤖 Enviando análise via rate-limited wrapper para ${store}...`);
-    
+
     // USA O WRAPPER COM RATE LIMITING E TIMEOUT
     const result = await geminiWrapper.generateContent(finalPrompt, {
       model: "gemini-1.5-flash",
@@ -207,7 +207,7 @@ ${cleanHtml}
       timeout: 30000,
       priority: 'normal'
     });
-    
+
     if (!result.response || !result.response.text()) {
       console.log(`[Gemini] ⚠️ Resposta vazia ou inválida`);
       return null;
@@ -382,17 +382,17 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
     const element = $(selector).first();
     let nameText = element.text().trim();
     const tagName = element.prop('tagName')?.toLowerCase();
-    
+
     // Para meta tags, usa o atributo content
     if (tagName === 'meta') {
       nameText = element.attr('content') || '';
     }
-    
+
     // Validação rigorosa do nome
     const hasInvalidKeyword = invalidKeywords.some(keyword => 
       nameText.toLowerCase().includes(keyword)
     );
-    
+
     const isValid = nameText && 
                     nameText.length >= 3 &&  // Mínimo 3 caracteres (aceita "PS5", "SSD", etc.)
                     nameText.length < 200 &&
@@ -401,7 +401,7 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
                     tagName !== 'a' &&
                     !element.is('button, a, [role="button"]') &&
                     !/^(home|início|loja|store|shop)$/i.test(nameText); // Não aceita títulos genéricos
-    
+
     if (isValid) {
       name = nameText;
       console.log(`[CSS-Fallback] 📛 Nome encontrado via ${selector}: ${name}`);
@@ -414,24 +414,24 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
     // Meta tags (mais confiáveis)
     'meta[property="product:price:amount"]',
     'meta[property="og:price:amount"]',
-    
+
     // Amazon específicos
     '.a-price-whole, .a-price .a-offscreen',
     '#apex_desktop .a-price .a-offscreen',
     '.a-price-current',
-    
+
     // Atributos data com preço
     '[data-price]',
     '[data-product-price]',
     '[itemprop="price"]',
-    
+
     // Classes comuns de preço (excluindo antigas/originais)
     '[class*="price"]:not([class*="original"]):not([class*="old"]):not([class*="was"]):not([class*="from"])',
     '[class*="Price"]:not([class*="Original"]):not([class*="Old"]):not([class*="Was"])',
     '[data-testid*="price"]:not([data-testid*="original"])',
     '[class*="valor"]:not([class*="antigo"])',
     '[class*="preco"]:not([class*="antigo"])',
-    
+
     // Genéricos
     '.price, .valor, .preco, .cost'
   ];
@@ -444,7 +444,7 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
     for (let i = 0; i < priceElements.length; i++) {
       const $el = $(priceElements[i]);
       let priceText = $el.text().trim();
-      
+
       // Para meta tags e data attributes, usa o valor do atributo
       if ($el.is('[data-price]')) {
         priceText = $el.attr('data-price') || priceText;
@@ -453,14 +453,14 @@ function extractViaCSSelectors(url: string, html: string): ProductInfo {
       } else if ($el.is('meta')) {
         priceText = $el.attr('content') || '';
       }
-      
+
       // Ignora preços com palavras-chave inválidas
       const hasInvalidKeyword = invalidPriceKeywords.some(keyword => 
         priceText.toLowerCase().includes(keyword)
       );
-      
+
       if (hasInvalidKeyword) continue;
-      
+
       // Extrai números do texto
       const priceMatch = priceText.match(/[\d.,]+/);
       if (priceMatch) {
@@ -620,19 +620,19 @@ function normalizeImageUrl(imgUrl: string, baseUrl: string): string {
     if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
       return imgUrl;
     }
-    
+
     // Se é protocol-relative (//cdn.example.com/img.jpg)
     if (imgUrl.startsWith('//')) {
       const protocol = baseUrl.startsWith('https') ? 'https:' : 'http:';
       return protocol + imgUrl;
     }
-    
+
     // Se é relativa, combina com a URL base
     if (imgUrl.startsWith('/')) {
       const urlObj = new URL(baseUrl);
       return `${urlObj.protocol}//${urlObj.host}${imgUrl}`;
     }
-    
+
     // Relativa sem barra inicial
     const urlObj = new URL(baseUrl);
     const pathParts = urlObj.pathname.split('/').slice(0, -1);
@@ -657,22 +657,23 @@ function extractFallbackImage(html: string, baseUrl?: string): string | null {
       'meta[property="og:image:secure_url"]',
       'meta[name="twitter:image"]',
       'meta[itemprop="image"]',
-      
+
       // Imagens com itemprop (Schema.org)
       'img[itemprop="image"]',
-      
+
       // Classes específicas de produto
       'img[class*="ProductImage"], img[class*="product-image"]',
       'img[class*="product"][class*="main"], img[class*="produto"][class*="principal"]',
       'img[class*="product"]:not([class*="thumb"]):not([class*="mini"]):not([class*="related"])',
-      
+
       // Data attributes
       'img[data-testid*="product-image"]',
       'img[data-image-role="main"]',
-      
+      'img[data-a-dynamic-image]', // Para Amazon
+
       // Alt text
       'img[alt*="product"], img[alt*="produto"]',
-      
+
       // Src contém product
       'img[src*="product"], img[src*="produto"]'
     ];
@@ -685,41 +686,44 @@ function extractFallbackImage(html: string, baseUrl?: string): string | null {
     ];
 
     for (const selector of imageSelectors) {
-      const $el = $(selector);
-      let imgSrc = $el.attr('content') || $el.attr('src') || $el.attr('data-src');
-      const imgAlt = $el.attr('alt') || '';
-      const imgClass = $el.attr('class') || '';
-      
-      // Valida se tem alguma URL
-      if (!imgSrc) continue;
-      
-      // Normaliza URL (relativa -> absoluta)
-      if (baseUrl && !imgSrc.startsWith('http')) {
-        imgSrc = normalizeImageUrl(imgSrc, baseUrl);
-        console.log(`[FallbackImage] 🔄 URL normalizada: ${imgSrc.substring(0, 80)}...`);
+      const imgElement = $(selector).first();
+      let imgUrl = imgElement.attr('content') || imgElement.attr('src') || imgElement.attr('data-src') || imgElement.attr('data-lazy');
+
+      // Para Amazon: extrai URL de alta resolução do atributo data-a-dynamic-image
+      if (!imgUrl && selector.includes('data-a-dynamic-image')) {
+        const dynamicImageData = imgElement.attr('data-a-dynamic-image');
+        if (dynamicImageData) {
+          try {
+            const imageObj = JSON.parse(dynamicImageData);
+            const imageUrls = Object.keys(imageObj);
+            if (imageUrls.length > 0) {
+              // Pega a primeira URL (geralmente a de maior resolução)
+              imgUrl = imageUrls[0];
+              console.log(`[FallbackImage] 🔍 Imagem Amazon extraída de data-a-dynamic-image: ${imgUrl}`);
+            }
+          } catch (e) {
+            console.warn(`[FallbackImage] ⚠️ Erro ao parsear data-a-dynamic-image`);
+          }
+        }
       }
-      
-      // Valida se a URL final é HTTP/HTTPS válida
-      if (!imgSrc.startsWith('http')) continue;
-      
-      // Ignora placeholders
-      if (imgSrc.includes('placeholder') || imgSrc.includes('no-image')) continue;
-      
-      // Ignora imagens muito pequenas (geralmente ícones)
-      const width = parseInt($el.attr('width') || '0');
-      const height = parseInt($el.attr('height') || '0');
-      if ((width > 0 && width < 100) || (height > 0 && height < 100)) continue;
-      
-      // Verifica palavras-chave inválidas
-      const hasInvalidKeyword = invalidImageKeywords.some(keyword => 
-        imgSrc.toLowerCase().includes(keyword) ||
-        imgAlt.toLowerCase().includes(keyword) ||
-        imgClass.toLowerCase().includes(keyword)
+
+      // Filtros para ignorar imagens que não são de produto
+      const isInvalidImage = imgUrl && (
+        imgUrl.includes('placeholder') ||
+        imgUrl.includes('loading') ||
+        imgUrl.includes('sprite') ||
+        imgUrl.includes('nav-') ||
+        imgUrl.includes('icon') ||
+        imgUrl.includes('logo') ||
+        imgUrl.includes('/G/') // Sprites da Amazon geralmente estão em /G/
       );
-      
-      if (!hasInvalidKeyword) {
-        console.log(`[FallbackImage] 🖼️ Imagem encontrada via ${selector}: ${imgSrc.substring(0, 80)}...`);
-        return imgSrc;
+
+      if (imgUrl && !isInvalidImage) {
+        console.log(`[FallbackImage] 🖼️ Imagem encontrada via ${selector}: ${imgUrl.substring(0, 100)}...`);
+
+        // Normaliza a URL da imagem
+        const normalizedUrl = normalizeImageUrl(imgUrl, baseUrl || ''); // Passa baseUrl como string vazia se for undefined
+        return normalizedUrl;
       }
     }
 
@@ -728,21 +732,21 @@ function extractFallbackImage(html: string, baseUrl?: string): string | null {
     for (let i = 0; i < allImages.length; i++) {
       const $img = $(allImages[i]);
       let src = $img.attr('src');
-      
+
       if (!src) continue;
-      
+
       // Normaliza URL se necessário
       if (baseUrl && !src.startsWith('http')) {
         src = normalizeImageUrl(src, baseUrl);
       }
-      
+
       if (!src.startsWith('http') || src.includes('placeholder') || src.includes('logo') || src.includes('icon')) {
         continue;
       }
-      
+
       const width = parseInt($img.attr('width') || '0');
       const height = parseInt($img.attr('height') || '0');
-      
+
       // Aceita imagens sem dimensões especificadas ou com dimensões razoáveis
       if ((width === 0 || width >= 200) && (height === 0 || height >= 200)) {
         console.log(`[FallbackImage] 🖼️ Imagem genérica encontrada: ${src.substring(0, 80)}...`);
