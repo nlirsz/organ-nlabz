@@ -30,17 +30,46 @@ interface ScrapedProduct {
 
 class AnyCrawlService {
   private apiKey: string;
-  private baseUrl = 'https://api.anycrawl.com/v1';
+  private baseUrls = [
+    'https://api.anycrawl.com/v2',
+    'https://api.anycrawl.com/v1',
+    'https://anycrawl.com/api/v1'
+  ];
+  private workingUrl: string | null = null;
 
   constructor() {
     this.apiKey = process.env.ANYCRAWL_API_KEY || '';
     if (!this.apiKey) {
       console.warn('[AnyCrawl] ⚠️ API Key não configurada - serviço desabilitado');
+    } else {
+      console.log(`[AnyCrawl] 🔑 API Key configurada: ${this.apiKey.substring(0, 10)}...`);
+      this.testConnectivity();
     }
   }
 
+  private async testConnectivity() {
+    const axios = (await import('axios')).default;
+    
+    for (const baseUrl of this.baseUrls) {
+      try {
+        console.log(`[AnyCrawl] 🔍 Testando conectividade com: ${baseUrl}`);
+        await axios.get(`${baseUrl}/health`, { 
+          timeout: 5000,
+          validateStatus: () => true // Aceita qualquer status
+        });
+        this.workingUrl = baseUrl;
+        console.log(`[AnyCrawl] ✅ Conectado com sucesso: ${baseUrl}`);
+        return;
+      } catch (error: any) {
+        console.log(`[AnyCrawl] ❌ Falha em ${baseUrl}: ${error.message}`);
+      }
+    }
+    
+    console.warn('[AnyCrawl] ⚠️ Nenhum endpoint AnyCrawl acessível');
+  }
+
   isAvailable(): boolean {
-    return !!this.apiKey;
+    return !!this.apiKey && !!this.workingUrl;
   }
 
   async scrapeProduct(url: string): Promise<ScrapedProduct | null> {

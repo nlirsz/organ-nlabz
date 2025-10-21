@@ -84,6 +84,13 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
   // ESTRATÉGIA 3: AnyCrawl Premium (SEMPRE usado quando HTTP falha)
   const isAnyCrawlAvailable = anyCrawlService.isAvailable();
   
+  if (httpFailed) {
+    if (!isAnyCrawlAvailable) {
+      console.log(`[Scraper] ⚠️ AnyCrawl não disponível (API Key: ${process.env.ANYCRAWL_API_KEY ? 'OK' : 'AUSENTE'}, Conectividade: FALHOU)`);
+      console.log(`[Scraper] 💡 Verifique: 1) API Key nos Secrets, 2) Conectividade de rede do Replit`);
+    }
+  }
+  
   if (isAnyCrawlAvailable && httpFailed) {
     try {
       console.log(`[Scraper] 💎 TENTATIVA 2: AnyCrawl Premium (HTTP falhou - usando fallback)`);

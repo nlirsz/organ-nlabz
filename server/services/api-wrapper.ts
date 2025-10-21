@@ -260,36 +260,57 @@ export class AnyCrawlAPIWrapper {
       try {
         console.log(`[AnyCrawlWrapper] 📤 Enviando request para AnyCrawl`);
         console.log(`[AnyCrawlWrapper] 💰 ATENÇÃO: Esta operação consumirá créditos`);
+        console.log(`[AnyCrawlWrapper] 🔑 API Key: ${apiKey.substring(0, 10)}...`);
 
-        const response = await axios.post('https://api.anycrawl.com/v1/crawl', {
+        // Tenta múltiplos endpoints (v1 e v2)
+        const endpoints = [
+          'https://api.anycrawl.com/v2/crawl',
+          'https://api.anycrawl.com/v1/crawl',
+          'https://anycrawl.com/api/v1/crawl'
+        ];
+
+        let lastError: any;
+        for (const endpoint of endpoints) {
+          try {
+            console.log(`[AnyCrawlWrapper] 🔗 Tentando endpoint: ${endpoint}`);
+            
+            const response = await axios.post(endpoint, {
           url: url,
-          extract_metadata: options.extractMetadata !== false,
-          screenshot: options.screenshot || false,
-          wait_for: options.waitFor || 'networkidle',
-          timeout: options.timeout || 30000
-        }, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: config.timeout
-        });
+              extract_metadata: options.extractMetadata !== false,
+              screenshot: options.screenshot || false,
+              wait_for: options.waitFor || 'networkidle',
+              timeout: options.timeout || 30000
+            }, {
+              headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+              },
+              timeout: config.timeout,
+              validateStatus: (status) => status < 500
+            });
 
-        const result = response.data;
-        
-        if (!result.success) {
-          throw createAPIError(
-            result.error || 'Falha no scraping AnyCrawl',
-            'SCRAPING_FAILED',
-            200,
-            false,
-            'anycrawl'
-          );
+            const result = response.data;
+            
+            if (!result.success && !result.data) {
+              console.log(`[AnyCrawlWrapper] ⚠️ Endpoint ${endpoint} retornou erro, tentando próximo...`);
+              lastError = new Error(result.error || 'Falha no scraping');
+              continue;
+            }
+
+            console.log(`[AnyCrawlWrapper] ✅ Scraping concluído com ${endpoint}`);
+            console.log(`[AnyCrawlWrapper] 💰 Créditos usados: ${result.credits_used || 'N/A'}`);
+            
+            return result;
+            
+          } catch (endpointError: any) {
+            lastError = endpointError;
+            console.log(`[AnyCrawlWrapper] ⚠️ Falha em ${endpoint}: ${endpointError.message}`);
+            continue;
+          }
         }
 
-        console.log(`[AnyCrawlWrapper] ✅ Scraping concluído. Créditos usados: ${result.credits_used || 'N/A'}`);
-        
-        return result;
+        // Se chegou aqui, todos os endpoints falharam
+        throw lastError || new Error('Todos os endpoints AnyCrawl falharam');
         
       } catch (error: any) {
         if (error.response?.status === 402) {
