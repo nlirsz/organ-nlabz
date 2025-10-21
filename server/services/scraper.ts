@@ -1,10 +1,10 @@
-import { chromium, Browser, Page } from 'playwright';
 import * as cheerio from 'cheerio';
 import { extractProductInfo } from './gemini.js';
 import { isShopeeUrl, addShopeeAffiliateParams } from './shopee-api.js';
 import { isAliExpressUrl, addAliExpressAffiliateParams } from './aliexpress-api.js';
 import { anyCrawlService } from './anycrawl.js';
-import { playwrightWrapper, anyCrawlWrapper } from './api-wrapper.js';
+import { anyCrawlWrapper } from './api-wrapper.js';
+import { extractStoreFromUrl, isDifficultSite, extractCategoryFromUrl } from '../utils/store-mapping.js';
 import axios from 'axios';
 
 interface ScrapedProduct {
@@ -18,17 +18,10 @@ interface ScrapedProduct {
   brand?: string | null;
 }
 
-// Configurações do navegador para Replit
-const REPLIT_BROWSER_CONFIG = {
-  timeouts: {
-    playwright: 30000, // Timeout geral do Playwright (ms)
-    waitForSelector: 5000, // Timeout para esperar por seletores (ms)
-  },
-  http: {
-    timeout: 15000, // Timeout para requisições HTTP (ms)
-    maxRedirects: 5, // Máximo de redirecionamentos
-  },
-  // Outras configurações...
+// Configurações HTTP otimizadas
+const HTTP_CONFIG = {
+  timeout: 15000, // 15s timeout
+  maxRedirects: 5,
 };
 
 export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct> {
@@ -47,11 +40,8 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
     console.log(`[Scraper] 🛒 URL da AliExpress convertida para afiliado: ${url} → ${processedUrl}`);
   }
 
-  // ESTRATÉGIA 1: Playwright (DESABILITADA - não funciona no Replit)
-  // Playwright requer dependências do sistema que não estão disponíveis
-  console.log(`[Scraper] ⏭️ Playwright desabilitado (Replit não suporta) - pulando para HTTP`);
+  // ESTRATÉGIA 1: HTTP + Cheerio (método principal)
 
-  // ESTRATÉGIA 2: HTTP + Cheerio (primeira tentativa real)
   let httpFailed = false;
   try {
     console.log(`[Scraper] 🌐 TENTATIVA 1: HTTP direto + Cheerio`);
@@ -150,70 +140,6 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
   return await createFallbackProduct(processedUrl);
 }
 
-// Determina quando usar AnyCrawl (apenas para sites conhecidamente difíceis)
-function shouldUseAnyCrawl(url: string): boolean {
-  if (!anyCrawlService.isAvailable()) {
-    console.log(`[AnyCrawl] 📴 Serviço não disponível - API Key não configurada`);
-    return false;
-  }
-
-  try {
-    const hostname = new URL(url).hostname.toLowerCase();
-    
-    // Sites que frequentemente falham com scraping tradicional
-    const difficultSites = [
-      'mercadolivre.com.br',  // JavaScript pesado + anti-bot
-      'amazon.com.br',        // Anti-bot muito robusto
-      'magazineluiza.com.br', // SPA com conteúdo dinâmico
-      'americanas.com.br',    // SPA complexo
-      'submarino.com.br',     // SPA complexo (mesmo grupo)
-      'casasbahia.com.br',    // JavaScript pesado
-      'extra.com.br',         // Via Varejo (anti-bot forte)
-      'ponto.com.br',         // Via Varejo (anti-bot forte)
-      'zara.com',             // SPA internacional
-      'hm.com',               // SPA internacional
-      'nike.com.br'           // SPA com autenticação
-    ];
-
-    const needsAnyCrawl = difficultSites.some(site => hostname.includes(site));
-    
-    if (needsAnyCrawl) {
-      console.log(`[AnyCrawl] 🎯 Site difícil detectado: ${hostname} - AnyCrawl será usado se necessário`);
-    } else {
-      console.log(`[AnyCrawl] 🌐 Site normal: ${hostname} - AnyCrawl não necessário`);
-    }
-    
-    return needsAnyCrawl;
-  } catch (error: any) {
-    console.warn(`[AnyCrawl] ⚠️ Erro ao analisar URL:`, error.message);
-    return false;
-  }
-}
-
-async function scrapeWithPlaywright(url: string): Promise<ScrapedProduct> {
-  console.log(`[Playwright] 🎭 Iniciando scraping via rate-limited wrapper`);
-  
-  try {
-    // USA O WRAPPER COM RATE LIMITING
-    const scrapingResult = await playwrightWrapper.scrapeUrl(url, {
-      waitForSelector: 'h1, [data-testid*="title"], [class*="product"]',
-      timeout: REPLIT_BROWSER_CONFIG.timeouts.playwright,
-      priority: 'normal'
-    });
-
-    if (!scrapingResult || !scrapingResult.html) {
-      throw new Error('Nenhum HTML capturado pelo Playwright wrapper');
-    }
-
-    console.log(`[Playwright] ✅ HTML capturado via wrapper: ${Math.round(scrapingResult.html.length / 1000)}KB`);
-    
-    return await extractProductInfo(url, scrapingResult.html);
-    
-  } catch (error: any) {
-    console.error(`[Playwright] ❌ Erro no wrapper:`, error.message);
-    throw error;
-  }
-}
 
 async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
   try {
@@ -340,52 +266,14 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
 async function createFallbackProduct(url: string): Promise<ScrapedProduct> {
   console.log(`[Fallback] 🔄 Criando produto fallback para: ${url}`);
 
-  // Extrai informações básicas da URL
-  let store = 'Loja Online';
+  // Usa funções centralizadas
+  const store = extractStoreFromUrl(url);
+  const category = extractCategoryFromUrl(url);
   let productName = 'Produto';
-  let category = 'Outros';
 
   try {
     const urlObj = new URL(url);
-    const hostname = urlObj.hostname.replace('www.', '');
     const pathname = urlObj.pathname;
-
-    // Mapeia lojas conhecidas
-    const storeMap: Record<string, string> = {
-      'mercadolivre.com.br': 'Mercado Livre',
-      'amazon.com.br': 'Amazon Brasil',
-      'magazineluiza.com.br': 'Magazine Luiza',
-      'americanas.com.br': 'Americanas',
-      'submarino.com.br': 'Submarino',
-      'casasbahia.com.br': 'Casas Bahia',
-      'extra.com.br': 'Extra',
-      'shopee.com.br': 'Shopee',
-      'zara.com': 'Zara',
-      'nike.com.br': 'Nike Brasil',
-      'netshoes.com.br': 'Netshoes',
-      'kabum.com.br': 'KaBuM',
-      'pichau.com.br': 'Pichau',
-      'aliexpress.com': 'AliExpress',
-      'shoptime.com.br': 'Shoptime',
-      'shopee.com': 'Shopee',
-      'aliexpress.us': 'AliExpress',
-      'aliexpress.ru': 'AliExpress',
-      'pt.aliexpress.com': 'AliExpress',
-      'sephora.com.br': 'Sephora'
-    };
-
-    // Identifica a loja
-    for (const [domain, name] of Object.entries(storeMap)) {
-      if (hostname.includes(domain)) {
-        store = name;
-        break;
-      }
-    }
-
-    if (store === 'Loja Online') {
-      const domainParts = hostname.split('.');
-      store = domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1);
-    }
 
     // Tenta extrair nome do produto da URL
     const pathSegments = pathname.split('/').filter(segment => segment.length > 3);
@@ -410,31 +298,6 @@ async function createFallbackProduct(url: string): Promise<ScrapedProduct> {
           .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
           .join(' ')
           .substring(0, 80);
-      }
-    }
-
-    // Detecta categoria básica pela URL
-    const urlLower = url.toLowerCase();
-    const categoryMap: Record<string, string> = {
-      'celular': 'Eletrônicos',
-      'smartphone': 'Eletrônicos', 
-      'iphone': 'Eletrônicos',
-      'notebook': 'Eletrônicos',
-      'computador': 'Eletrônicos',
-      'tenis': 'Roupas e Acessórios',
-      'roupa': 'Roupas e Acessórios',
-      'camisa': 'Roupas e Acessórios',
-      'casa': 'Casa e Decoração',
-      'movel': 'Casa e Decoração',
-      'livro': 'Livros',
-      'jogo': 'Games',
-      'esporte': 'Esportes'
-    };
-
-    for (const [keyword, cat] of Object.entries(categoryMap)) {
-      if (urlLower.includes(keyword)) {
-        category = cat;
-        break;
       }
     }
 
@@ -522,36 +385,6 @@ function findProductInJsonLd(data: any): Partial<ScrapedProduct> | null {
   return null;
 }
 
-function extractStoreFromUrl(url: string): string {
-  try {
-    const hostname = new URL(url).hostname.replace('www.', '');
-    const storeMap: Record<string, string> = {
-      'mercadolivre.com.br': 'Mercado Livre',
-      'amazon.com.br': 'Amazon Brasil',
-      'magazineluiza.com.br': 'Magazine Luiza',
-      'americanas.com.br': 'Americanas',
-      'submarino.com.br': 'Submarino',
-      'casasbahia.com.br': 'Casas Bahia',
-      'extra.com.br': 'Extra',
-      'shopee.com.br': 'Shopee',
-      'zara.com': 'Zara',
-      'nike.com.br': 'Nike Brasil',
-      'netshoes.com.br': 'Netshoes',
-      'kabum.com.br': 'KaBuM',
-      'pichau.com.br': 'Pichau',
-      'aliexpress.com': 'AliExpress',
-      'shoptime.com.br': 'Shoptime'
-    };
-
-    for (const [domain, name] of Object.entries(storeMap)) {
-      if (hostname.includes(domain)) return name;
-    }
-
-    return hostname.split('.')[0].charAt(0).toUpperCase() + hostname.split('.')[0].slice(1);
-  } catch {
-    return 'Loja Online';
-  }
-}
 
 function extractProductFromJsonLd(productData: any): Partial<ScrapedProduct> | null {
   try {
