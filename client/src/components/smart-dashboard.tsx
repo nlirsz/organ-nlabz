@@ -822,7 +822,7 @@ export function SmartDashboard() {
                           size: 14,
                           weight: '600',
                         },
-                        color: '#374151',
+                        color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#374151',
                       },
                     },
                     tooltip: {
@@ -874,7 +874,7 @@ export function SmartDashboard() {
                           size: 13,
                           weight: '500',
                         },
-                        color: '#374151',
+                        color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#374151',
                         generateLabels: function(chart) {
                           const data = chart.data;
                           if (data.labels?.length && data.datasets.length) {
