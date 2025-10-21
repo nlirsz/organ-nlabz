@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { fetchAmazonProduct, searchAmazonProducts } from './amazon-api.js';
 import { fetchShopeeProduct, isShopeeUrl, addShopeeAffiliateParams } from './shopee-api.js';
+import { extractStoreFromUrl as getStoreFromUrl } from '../utils/store-mapping.js';
 
 export interface APIProductResult {
   name: string;
@@ -482,37 +483,6 @@ function guessCategory(text: string): string {
   return 'Outros';
 }
 
-// Helper para extrair nome da loja - MELHORADO
-function getStoreFromUrl(url: string): string {
-  try {
-    const hostname = new URL(url).hostname.replace('www.', '');
-    const storeMap: Record<string, string> = {
-      'mercadolivre.com.br': 'Mercado Livre',
-      'amazon.com.br': 'Amazon Brasil',
-      'magazineluiza.com.br': 'Magazine Luiza',
-      'americanas.com.br': 'Americanas',
-      'submarino.com.br': 'Submarino',
-      'casasbahia.com.br': 'Casas Bahia',
-      'extra.com.br': 'Extra',
-      'zara.com': 'Zara',
-      'nike.com.br': 'Nike Brasil',
-      'netshoes.com.br': 'Netshoes',
-      'dafiti.com.br': 'Dafiti',
-      'shopee.com.br': 'Shopee',
-      'aliexpress.com': 'AliExpress',
-      'kabum.com.br': 'KaBuM',
-      'pichau.com.br': 'Pichau'
-    };
-
-    for (const [domain, name] of Object.entries(storeMap)) {
-      if (hostname.includes(domain)) return name;
-    }
-
-    return hostname.split('.')[0].charAt(0).toUpperCase() + hostname.split('.')[0].slice(1);
-  } catch {
-    return 'Loja Online';
-  }
-}
 
 // Extrai termo de busca da URL - NOVA FUNÇÃO
 function extractSearchTermFromUrl(url: string): string {
