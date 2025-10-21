@@ -5,13 +5,13 @@ import { extractStoreFromUrl as getStoreFromUrl } from '../utils/store-mapping.j
 
 export interface APIProductResult {
   name: string;
-  price: number;
-  originalPrice?: number;
-  imageUrl: string;
+  price: number | null;
+  originalPrice?: number | null;
+  imageUrl: string | null;
   store: string;
-  description?: string;
-  category?: string;
-  brand?: string;
+  description?: string | null;
+  category?: string | null;
+  brand?: string | null;
   url: string;
 }
 
