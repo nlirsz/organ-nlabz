@@ -121,13 +121,13 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
                       "hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900",
                       isActive 
                         ? "bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/30" 
-                        : "bg-gray-100 dark:bg-gray-700 hover:bg-gradient-to-br hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/30 dark:hover:to-green-900/30"
+                        : "bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/30 dark:hover:to-green-900/30"
                     )}
                     data-testid={`nav-button-${item.id}`}
                     aria-label={`Navegar para ${item.id}`}
                     aria-current={isActive ? 'page' : undefined}
                   >
-                    <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-gray-700 dark:text-gray-200")} aria-hidden="true" />
+                    <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-gray-600 dark:text-gray-300")} aria-hidden="true" />
                   </button>
                 );
               })}
@@ -221,13 +221,13 @@ export function Sidebar({ activeTab, onTabChange, currentUser, onLogout, isDark,
                       "hover:scale-110 transform focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900",
                       isActive 
                         ? "bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/30" 
-                        : "bg-gray-100 dark:bg-gray-700 hover:bg-gradient-to-br hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/30 dark:hover:to-green-900/30 shadow-md"
+                        : "bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-emerald-100 hover:to-green-100 dark:hover:from-emerald-900/30 dark:hover:to-green-900/30 shadow-md"
                     )}
                     data-testid={`nav-button-mobile-${item.id}`}
                     aria-label={`Navegar para ${item.id}`}
                     aria-current={isActive ? 'page' : undefined}
                   >
-                    <Icon className={cn("w-6 h-6", isActive ? "text-white" : "text-gray-700 dark:text-gray-200")} aria-hidden="true" />
+                    <Icon className={cn("w-6 h-6", isActive ? "text-white" : "text-gray-600 dark:text-gray-300")} aria-hidden="true" />
                   </button>
                 );
               })}
