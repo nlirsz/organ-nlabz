@@ -25,7 +25,7 @@ export const generateTokenPair = (userId: string): TokenPair => {
   const accessToken = jwt.sign(
     payload,
     JWT_SECRET,
-    { expiresIn: '15m' } // Short-lived access token
+    { expiresIn: '1h' } // Access token válido por 1 hora
   );
   
   const refreshToken = jwt.sign(
