@@ -319,7 +319,16 @@ async function fetchProductDetails(productId: string): Promise<AliExpressProduct
       return null;
     }
 
-    const products = result.products;
+    // A API pode retornar { products: [...] } ou { product: [...] }
+    let products = result.products || result.product;
+    
+    // Se products é um objeto com array interno, extrai o array
+    if (products && typeof products === 'object' && !Array.isArray(products)) {
+      if (products.product && Array.isArray(products.product)) {
+        products = products.product;
+      }
+    }
+    
     if (!products || !Array.isArray(products) || products.length === 0) {
       console.log('[AliExpress API] ❌ Produto não encontrado ou array vazio');
       console.log('[AliExpress API] 🔍 products:', products);
@@ -488,7 +497,15 @@ export async function searchAliExpressProducts(searchTerm: string, maxResults: n
       return [];
     }
 
-    const products = result.products || [];
+    // A API pode retornar { products: [...] } ou { product: [...] }
+    let products = result.products || result.product || [];
+    
+    // Se products é um objeto com array interno, extrai o array
+    if (products && typeof products === 'object' && !Array.isArray(products)) {
+      if (products.product && Array.isArray(products.product)) {
+        products = products.product;
+      }
+    }
     
     if (!Array.isArray(products) || products.length === 0) {
       console.log('[AliExpress Search] ❌ Nenhum produto encontrado ou não é array');
