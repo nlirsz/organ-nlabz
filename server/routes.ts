@@ -475,6 +475,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
+  // Search products on AliExpress
+  app.post("/api/products/search-aliexpress", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { searchTerm } = req.body;
+
+      if (!searchTerm || typeof searchTerm !== 'string') {
+        return res.status(400).json({ error: "Termo de busca é obrigatório" });
+      }
+
+      console.log(`[API] 🔍 Buscando produtos AliExpress: "${searchTerm}"`);
+
+      const { searchAliExpressProducts } = await import('./services/aliexpress-api.js');
+      const results = await searchAliExpressProducts(searchTerm, 10);
+
+      if (!results || results.length === 0) {
+        return res.json([]);
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error("AliExpress search error:", error);
+      res.status(500).json({ error: "Falha ao buscar produtos na AliExpress" });
+    }
+  }));
+
   // Add product from URL
   app.post("/api/products/scrape", authenticateToken, rateLimitScraping, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {

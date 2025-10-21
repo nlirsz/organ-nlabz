@@ -261,7 +261,7 @@ export class AnyCrawlAPIWrapper {
         console.log(`[AnyCrawlWrapper] 📤 Enviando request para AnyCrawl`);
         console.log(`[AnyCrawlWrapper] 💰 ATENÇÃO: Esta operação consumirá créditos`);
 
-        const response = await axios.post('https://api.anycrawl.dev/crawl', {
+        const response = await axios.post('https://api.anycrawl.com/v1/crawl', {
           url: url,
           extract_metadata: options.extractMetadata !== false,
           screenshot: options.screenshot || false,

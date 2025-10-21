@@ -36,7 +36,10 @@ interface AddProdutosTabProps {
 export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
   const [isManualMode, setIsManualMode] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const [url, setUrl] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -93,6 +96,46 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
       toast({
         title: "Erro",
         description: error.message || "Falha ao adicionar produto",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const searchProductsMutation = useMutation({
+    mutationFn: async (searchTerm: string) => {
+      const response = await fetch("/api/products/search-aliexpress", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": authToken || ""
+        },
+        body: JSON.stringify({ searchTerm }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Falha ao buscar produtos");
+      }
+      return response.json();
+    },
+    onSuccess: (results) => {
+      setSearchResults(results);
+      if (results.length === 0) {
+        toast({
+          title: "Nenhum produto encontrado",
+          description: "Tente usar outros termos de busca",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Produtos encontrados!",
+          description: `${results.length} produto(s) encontrado(s)`,
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro na busca",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -481,6 +524,15 @@ export function AddProdutosTab({ onProductAdded }: AddProdutosTabProps) {
 
         {/* Alternative Options */}
         <div className="mt-6 pt-6 border-t border-gray-200/20 space-y-3">
+          <button
+            type="button"
+            onClick={() => setIsSearchMode(true)}
+            className="w-full neomorphic-button-primary flex items-center justify-center gap-2 icon-button py-3"
+          >
+            <Search className="w-5 h-5" />
+            Buscar na AliExpress
+          </button>
+
           <button
             type="button"
             onClick={() => setIsImageModalOpen(true)}

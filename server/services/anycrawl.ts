@@ -30,7 +30,7 @@ interface ScrapedProduct {
 
 class AnyCrawlService {
   private apiKey: string;
-  private baseUrl = 'https://api.anycrawl.dev';
+  private baseUrl = 'https://api.anycrawl.com/v1';
 
   constructor() {
     this.apiKey = process.env.ANYCRAWL_API_KEY || '';

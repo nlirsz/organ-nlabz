@@ -177,7 +177,8 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
       axiosConfig.headers['Cache-Control'] = 'no-cache';
       axiosConfig.headers['Pragma'] = 'no-cache';
       axiosConfig.timeout = 35000; // 35s para AliExpress (sites complexos)
-      axiosConfig.maxRedirects = 15; // Mais redirecionamentos
+      axiosConfig.maxRedirects = 25; // Mais redirecionamentos (AliExpress usa muitos)
+      axiosConfig.validateStatus = (status) => status < 500; // Aceita 3xx e 4xx
 
       // Múltiplas tentativas para AliExpress
       let lastError: any;
