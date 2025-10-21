@@ -58,9 +58,20 @@ export function EditProductModal({ product, isOpen, onClose, onProductUpdated }:
       const response = await apiRequest("PUT", `/api/products/${product.id}`, updates);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
+    onSuccess: async (updatedProduct) => {
+      // Invalida todas as queries relacionadas
+      await queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
+      
+      // Atualiza diretamente o cache com os novos dados
+      queryClient.setQueryData(["/api/products"], (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((p: any) => p.id === updatedProduct.id ? updatedProduct : p);
+      });
+      
+      // Força refresh dos dados
+      await queryClient.refetchQueries({ queryKey: ["/api/products"] });
+      
       onProductUpdated();
       onClose();
       toast({

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, Filter, SortAsc, Package, Edit, Check, Trash2, Star } from "lucide-react";
 import { CategoryFilter } from "@/components/category-filter";
@@ -27,7 +27,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
   const { toast } = useToast();
   const authToken = localStorage.getItem("authToken");
 
-  const { data: products = [], isLoading } = useQuery<SelectProduct[]>({
+  const { data: products = [], isLoading, refetch } = useQuery<SelectProduct[]>({
     queryKey: ["/api/products", refreshKey],
     enabled: !!authToken,
     staleTime: 30000, // 30 seconds
@@ -218,6 +218,13 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
       </div>
     );
   }
+
+  // Refined product update callback
+  const handleProductUpdated = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/products/stats"] });
+    await refetch();
+  }, [refetch, queryClient]);
 
   return (
     <div className="space-y-6">
@@ -444,10 +451,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
           product={editingProduct}
           isOpen={!!editingProduct}
           onClose={() => setEditingProduct(null)}
-          onProductUpdated={() => {
-            setEditingProduct(null);
-            queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-          }}
+          onProductUpdated={handleProductUpdated}
         />
       )}
 
