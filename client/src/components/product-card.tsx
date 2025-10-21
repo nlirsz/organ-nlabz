@@ -231,11 +231,11 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
             <div className="flex items-baseline gap-2 flex-wrap">
               {product.price ? (
                 <>
-                  <span className="text-lg md:text-xl font-bold text-emerald-600 dark:text-emerald-400" data-testid={`product-price-${product.id}`}>
+                  <span className="text-base sm:text-lg md:text-xl font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap" data-testid={`product-price-${product.id}`}>
                     {formatPrice(product.price)}
                   </span>
                   {product.originalPrice && product.originalPrice !== product.price && (
-                    <span className="text-sm text-gray-500 dark:text-gray-400 line-through" data-testid={`product-original-price-${product.id}`}>
+                    <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 line-through whitespace-nowrap" data-testid={`product-original-price-${product.id}`}>
                       {formatPrice(product.originalPrice)}
                     </span>
                   )}

@@ -387,6 +387,64 @@
     box-shadow: var(--shadow-glass-hover);
   }
 
+  /* Valores monetários responsivos */
+  .stats-card .text-2xl,
+  .stats-card .text-3xl {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  @media (max-width: 640px) {
+    .stats-card .text-2xl {
+      font-size: 1.25rem !important;
+    }
+    .stats-card .text-3xl {
+      font-size: 1.5rem !important;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 768px) {
+    .stats-card .text-2xl {
+      font-size: 1.5rem !important;
+    }
+    .stats-card .text-3xl {
+      font-size: 1.75rem !important;
+    }
+  }
+
+  /* Preços em cards de produtos responsivos */
+  .product-card .card-price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    .product-card .text-xl {
+      font-size: 1rem !important;
+    }
+    .product-card .text-lg {
+      font-size: 0.875rem !important;
+    }
+  }
+
+  /* Grid de produtos responsivo */
+  @media (max-width: 640px) {
+    .product-grid {
+      grid-template-columns: 1fr !important;
+      gap: 1rem;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .product-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 1.25rem;
+    }
+  }
+
   /* Product grid moderno */
   .product-grid {
     display: grid;

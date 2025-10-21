@@ -1,9 +1,15 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Package, ShoppingCart, DollarSign, Calendar } from "lucide-react";
 import type { SelectProduct } from "@shared/schema";
+
+// Helper function to format currency (assuming this exists elsewhere or needs to be defined)
+// For this example, let's define a simple version if it's not provided by context.
+const formatCurrency = (value: number | undefined): string => {
+  if (value === undefined) return "R$ -";
+  return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+};
 
 export function StatsCards() {
   const authToken = localStorage.getItem("authToken");
@@ -74,8 +80,8 @@ export function StatsCards() {
       {statsData.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <Card key={stat.title} className="neomorphic-card hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700" data-testid={`stat-card-${stat.title.toLowerCase().replace(/\s+/g, '-')}`}>
-            <CardContent className="p-6">
+          <Card key={stat.title} className={`neomorphic-card hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-4 sm:p-6 rounded-2xl`} data-testid={`stat-card-${stat.title.toLowerCase().replace(/\s+/g, '-')}`}>
+            <CardContent className="p-0"> {/* Removed padding from CardContent to apply to the outer div */}
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-xl ${stat.bgColor} dark:bg-gray-700 dark:bg-opacity-50`} data-testid={`stat-icon-${stat.title.toLowerCase().replace(/\s+/g, '-')}`}>
                   <Icon className={`h-6 w-6 ${stat.color} dark:text-gray-300`} aria-hidden="true" />
@@ -87,13 +93,13 @@ export function StatsCards() {
                   {index === 3 && "Estimativa"}
                 </Badge>
               </div>
-              
+
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400" data-testid={`stat-title-${stat.title.toLowerCase().replace(/\s+/g, '-')}`}>
                   {stat.title}
                 </p>
                 <div className="flex items-end gap-2">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100" data-testid={`stat-value-${stat.title.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 break-words" data-testid={`stat-value-${stat.title.toLowerCase().replace(/\s+/g, '-')}`}>
                     {stat.value}
                   </p>
                 </div>
