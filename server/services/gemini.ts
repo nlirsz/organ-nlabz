@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as cheerio from 'cheerio';
 import { extractJSONLD } from './scraper.js';
 import { geminiWrapper, createAPIError } from './api-wrapper.js';
+import { extractStoreFromUrl, extractCategoryFromUrl } from '../utils/store-mapping.js';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -932,68 +933,3 @@ function extractFallbackImage(html: string, baseUrl?: string): string | null {
   }
 }
 
-/**
- * Extrai nome da loja da URL
- */
-function extractStoreFromUrl(url: string): string {
-  try {
-    const hostname = new URL(url).hostname.replace('www.', '');
-    const storeMap: Record<string, string> = {
-      'mercadolivre.com.br': 'Mercado Livre',
-      'amazon.com.br': 'Amazon Brasil',
-      'magazineluiza.com.br': 'Magazine Luiza',
-      'americanas.com.br': 'Americanas',
-      'submarino.com.br': 'Submarino',
-      'casasbahia.com.br': 'Casas Bahia',
-      'extra.com.br': 'Extra',
-      'shopee.com.br': 'Shopee',
-      'zara.com': 'Zara',
-      'nike.com.br': 'Nike Brasil',
-      'netshoes.com.br': 'Netshoes',
-      'kabum.com.br': 'KaBuM',
-      'pichau.com.br': 'Pichau',
-      'shopee.com': 'Shopee'
-    };
-
-    for (const [domain, name] of Object.entries(storeMap)) {
-      if (hostname.includes(domain)) return name;
-    }
-
-    return hostname.split('.')[0].charAt(0).toUpperCase() + hostname.split('.')[0].slice(1);
-  } catch {
-    return 'Loja Online';
-  }
-}
-
-/**
- * Extrai categoria da URL
- */
-function extractCategoryFromUrl(url: string): string {
-  const categoryMap: Record<string, string> = {
-    'celular': 'Eletrônicos',
-    'smartphone': 'Eletrônicos',
-    'iphone': 'Eletrônicos',
-    'notebook': 'Eletrônicos',
-    'computador': 'Eletrônicos',
-    'tenis': 'Roupas e Acessórios',
-    'roupa': 'Roupas e Acessórios',
-    'camisa': 'Roupas e Acessórios',
-    'casa': 'Casa e Decoração',
-    'decoracao': 'Casa e Decoração',
-    'movel': 'Casa e Decoração',
-    'livro': 'Livros e Mídia',
-    'jogo': 'Games',
-    'game': 'Games',
-    'esporte': 'Esportes e Lazer',
-    'fitness': 'Esportes e Lazer'
-  };
-
-  const urlLower = url.toLowerCase();
-  for (const [keyword, category] of Object.entries(categoryMap)) {
-    if (urlLower.includes(keyword)) {
-      return category;
-    }
-  }
-
-  return 'Outros';
-}
