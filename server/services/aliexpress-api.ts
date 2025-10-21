@@ -371,9 +371,9 @@ async function fetchProductDetails(productId: string): Promise<AliExpressProduct
       originalPrice: finalOriginalPrice,
       imageUrl: productData.product_main_image_url || null,
       store: 'AliExpress',
-      description: `Produto AliExpress com avaliação ${productData.evaluate_score || 0}/5`,
-      category: productData.platform_product_type || 'Outros',
-      brand: null,
+      description: `Avaliação: ${productData.evaluate_rate || '0%'} | Vendas: ${productData.lastest_volume || 0} | Categoria: ${productData.second_level_category_name || 'Geral'}`,
+      category: productData.second_level_category_name || productData.platform_product_type || 'Outros',
+      brand: productData.shop_name || null,
       url: productData.product_url || ''
     };
 
@@ -555,9 +555,9 @@ export async function searchAliExpressProducts(searchTerm: string, maxResults: n
             originalPrice: finalOriginalPrice,
             imageUrl: product.product_main_image_url || null,
             store: 'AliExpress',
-            description: `Avaliação: ${product.evaluate_score || 0}/5 - Comissão: ${product.commission_rate || 0}%`,
-            category: product.platform_product_type || 'Outros',
-            brand: null,
+            description: `Avaliação: ${product.evaluate_rate || '0%'} | Vendas: ${product.lastest_volume || 0} | ${product.second_level_category_name || 'Produto'}`,
+            category: product.second_level_category_name || product.platform_product_type || 'Outros',
+            brand: product.shop_name || null,
             url: affiliateUrl
           });
         }

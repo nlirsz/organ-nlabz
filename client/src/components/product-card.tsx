@@ -110,8 +110,8 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
       issues.push("Preço não disponível");
     }
 
-    if (!product.imageUrl || 
-        product.imageUrl.includes('placeholder') || 
+    if (!product.imageUrl ||
+        product.imageUrl.includes('placeholder') ||
         product.imageUrl.includes('via.placeholder') ||
         product.imageUrl.includes('/photos///')) {
       issues.push("Imagem não disponível ou com problema");
@@ -190,8 +190,8 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
             loading="lazy"
           />
           {/* Alerta para problemas de imagem */}
-          {(!product.imageUrl || 
-            product.imageUrl.includes('placeholder') || 
+          {(!product.imageUrl ||
+            product.imageUrl.includes('placeholder') ||
             product.imageUrl.includes('via.placeholder') ||
             product.imageUrl.includes('/photos///')) && (
             <div className="absolute top-2 left-2 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
@@ -532,7 +532,7 @@ function ProductCardComponent({ product, onProductUpdated, onReScrape }: Product
                     {isPurchased ? (
                       <>
                         <RotateCcw className="w-4 h-4 inline mr-2" style={{ color: 'white' }} />
-                        <span style={{ color: 'white' }}>Marcar como não comprado</span>
+                        <span style={{ color: 'white' }}>Marcar como não comprador</span>
                       </>
                     ) : (
                       <>

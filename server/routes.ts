@@ -584,8 +584,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             if (apiProduct && 
                 apiProduct.name && 
-                apiProduct.name !== 'Produto AliExpress' && 
-                apiProduct.name.length > 3 &&
                 apiProduct.price && 
                 apiProduct.price > 0) {
 
