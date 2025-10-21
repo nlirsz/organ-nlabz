@@ -98,9 +98,9 @@ export async function apiRequest(
   method: string,
   url: string,
   body?: any,
-  options: { unauthorizedBehavior?: "returnNull" | "throw" } = {}
+  options: { unauthorizedBehavior?: "returnNull" | "throw"; isRetry?: boolean } = {}
 ): Promise<Response> {
-  const { unauthorizedBehavior = "throw" } = options;
+  const { unauthorizedBehavior = "throw", isRetry = false } = options;
 
   // Check if token is expiring soon and refresh proactively
   const currentToken = localStorage.getItem("authToken");
@@ -143,7 +143,7 @@ export async function apiRequest(
     try {
       await throwIfResNotOk(res, false);
       // If we get here, token was refreshed successfully - retry the request
-      return apiRequest(method, url, body, options);
+      return apiRequest(method, url, body, { ...options, isRetry: true });
     } catch (error) {
       throw error;
     }
