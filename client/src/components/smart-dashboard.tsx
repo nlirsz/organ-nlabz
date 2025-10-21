@@ -453,12 +453,12 @@ export function SmartDashboard() {
           glowColor="34, 197, 94"
           className="md:col-span-4"
         >
-          <Card className="relative overflow-hidden group border border-gray-200 bg-white h-full">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-green-500"></div>
+          <Card className="relative overflow-hidden group border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 h-full">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-green-500 dark:from-emerald-500 dark:to-green-600"></div>
             <CardContent className="p-6 relative h-full">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-emerald-50 rounded-xl">
-                  <DollarSign className="h-8 w-8 text-emerald-600" />
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl">
+                  <DollarSign className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">
                   Principal

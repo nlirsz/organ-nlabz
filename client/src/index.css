@@ -74,10 +74,10 @@
 /* === Tema Escuro Moderno === */
 .dark {
   --c-primary: #0a0a0a; /* Preto principal */
-  --c-secondary: #1a1a1a; /* Cinza escuro secundário */
+  --c-secondary: #1c1c1c; /* Cinza escuro secundário */
   --c-accent: rgba(255, 255, 255, 0.05); /* Branco translúcido */
-  --c-card: rgba(26, 26, 26, 0.95); /* Cards com fundo sólido */
-  --c-border: rgba(255, 255, 255, 0.1); /* Bordas visíveis */
+  --c-card: #1a1a1a; /* Cards com fundo cinza escuro */
+  --c-border: rgba(255, 255, 255, 0.12); /* Bordas sutis */
 
   --text-primary: #ffffff;
   --text-secondary: #e5e5e5;
@@ -630,61 +630,12 @@
     color: #e2e8f0 !important;
   }
 
-  /* Ícones com fundo escuro no dark mode */
-  .dark .stats-card .icon-container,
-  .dark .stats-card [class*="icon"],
-  .dark .stats-card svg {
-    background: #262626 !important;
-    color: #ffffff !important;
-    border-radius: 8px !important;
-  }
-
-  /* Fundos de ícones específicos no dark mode */
-  .dark .w-12.h-12,
-  .dark .w-10.h-10,
-  .dark .w-8.h-8 {
-    background: #262626 !important;
-    color: #ffffff !important;
-  }
-
-  /* Fundos brancos/claros removidos no dark mode */
+  /* Remover fundos e bordas forçados no dark mode */
   .dark .bg-white,
   .dark .bg-gray-50,
   .dark .bg-gray-100,
   .dark .bg-gray-200 {
-    background: #262626 !important;
-    color: #e5e5e5 !important;
-  }
-
-  /* Ícones específicos com fundos escuros */
-  .dark .rounded-lg,
-  .dark .rounded-md,
-  .dark .rounded-full,
-  .dark .rounded {
-    background-color: #1e293b !important;
-  }
-
-  /* Forçar fundos escuros para todos os elementos dentro dos cards de stats */
-  .dark .stats-card * {
-    background-color: transparent !important;
-  }
-
-  .dark .stats-card .flex.items-center.justify-center,
-  .dark .stats-card .rounded-full,
-  .dark .stats-card .rounded-lg,
-  .dark .stats-card [class*="bg-"],
-  .dark .stats-card div[class*="w-"][class*="h-"] {
-    background-color: #262626 !important;
-    color: #ffffff !important;
-  }
-
-  /* Especificamente para os botões/elementos circulares dos ícones */
-  .dark .stats-card .w-12.h-12.rounded-full,
-  .dark .stats-card .w-10.h-10.rounded-full,
-  .dark .stats-card .w-8.h-8.rounded-full {
-    background-color: #262626 !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: transparent !important;
   }
 
   /* Ajuste para elementos com bordas claras */
