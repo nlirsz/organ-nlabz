@@ -2,29 +2,16 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import * as schema from "@shared/schema";
 
-
-import dns from 'dns/promises';
-
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is required');
 }
 
-// Robustly handle IPv6 connection issues by resolving to IPv4 explicitly
-// AND using port 6543 for the connection pooler.
-const dbUrl = new URL(process.env.DATABASE_URL.replace(/\[|\]/g, ''));
-dbUrl.port = '6543'; // Force Supavisor pooler port
-
-try {
-  const { address } = await dns.lookup(dbUrl.hostname, { family: 4 });
-  console.log(`[DB] Resolved ${dbUrl.hostname} to ${address}`);
-  dbUrl.hostname = address;
-} catch (e) {
-  console.error('[DB] Failed to resolve hostname to IPv4:', e);
-  // Fallback to original hostname if resolution fails
-}
+// Clean the connection string (remove brackets if any)
+const connectionString = process.env.DATABASE_URL.replace(/\[|\]/g, '');
+console.log('[DB] Connecting to database...');
 
 const pool = new pg.Pool({
-  connectionString: dbUrl.toString(),
+  connectionString,
   ssl: { rejectUnauthorized: false },
 });
 
