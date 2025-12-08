@@ -25,9 +25,9 @@ const rateLimitScraping = async (req: any, res: any, next: any) => {
   try {
     const userAgent = req.headers['user-agent'] || 'unknown';
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
-    
+
     console.log(`[RateLimitMiddleware] Scraping request from ${ip} (${userAgent})`);
-    
+
     // Check if system is in emergency mode
     if (rateLimiter.isEmergencyActive()) {
       return res.status(503).json({
@@ -36,11 +36,11 @@ const rateLimitScraping = async (req: any, res: any, next: any) => {
         retryAfter: 300 // 5 minutes
       });
     }
-    
+
     // Get current stats
     const stats = rateLimiter.getStats() as Record<string, any>;
     const queueStatus = rateLimiter.getQueueStatus();
-    
+
     // Check if critical APIs are down
     const criticalApisDown = Object.values(stats).some((stat: any) => stat.circuitState === 'open');
     if (criticalApisDown) {
@@ -50,7 +50,7 @@ const rateLimitScraping = async (req: any, res: any, next: any) => {
         retryAfter: 60
       });
     }
-    
+
     // Check queue lengths
     const totalQueueLength = Object.values(queueStatus).reduce((sum: number, length: number) => sum + length, 0);
     if (totalQueueLength > 10) {
@@ -61,14 +61,14 @@ const rateLimitScraping = async (req: any, res: any, next: any) => {
         retryAfter: Math.min(totalQueueLength * 10, 300) // Max 5 minutes
       });
     }
-    
+
     // Add rate limit info to response headers
     res.set({
       'X-RateLimit-TotalCost': rateLimiter.getTotalCost().toFixed(4),
       'X-RateLimit-Queue-Length': totalQueueLength.toString(),
       'X-RateLimit-Emergency-Mode': rateLimiter.isEmergencyActive() ? 'true' : 'false'
     });
-    
+
     next();
   } catch (error) {
     console.error('[RateLimitMiddleware] Error:', error);
@@ -77,27 +77,27 @@ const rateLimitScraping = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  
+
   // Enhanced health check with rate limiting information
   app.get("/api/health", async (req, res) => {
     try {
       // Test storage connection
       const storageInstance = await getStorage();
       await storage.getUser(1);
-      
+
       // Determine storage type
       const isMemStorage = process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL;
       const storageType = isMemStorage ? 'MemStorage' : 'PostgreSQL';
-      
+
       // Get rate limiting statistics
       const rateLimitStats = rateLimiter.getStats() as Record<string, any>;
       const totalCost = rateLimiter.getTotalCost();
       const queueStatus = rateLimiter.getQueueStatus();
       const apiHealth = await APIWrapperFactory.healthCheck();
-      
+
       // Check if any APIs are in circuit breaker state
       const hasOpenCircuits = Object.values(rateLimitStats).some((stat: any) => stat.circuitState === 'open');
-      
+
       const healthData = {
         status: hasOpenCircuits ? "degraded" : "healthy",
         storage: storageType,
@@ -112,11 +112,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           emergencyMode: rateLimiter.isEmergencyActive() || false
         }
       };
-      
+
       res.status(hasOpenCircuits ? 503 : 200).json(healthData);
     } catch (error: any) {
-      res.status(503).json({ 
-        status: "unhealthy", 
+      res.status(503).json({
+        status: "unhealthy",
         storage: "unknown",
         database: "disconnected",
         error: error.message,
@@ -133,16 +133,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next();
     } catch (error: any) {
       const isMemStorage = process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL;
-      
+
       // If we're using MemStorage in development, this shouldn't fail
       if (isMemStorage) {
         console.warn('⚠️ Storage test failed unexpectedly in MemStorage mode:', error.message);
         // Continue anyway in MemStorage mode
         return next();
       }
-      
+
       console.error("Database connection failed:", error.message);
-      
+
       if (error.message?.includes('endpoint has been disabled')) {
         return res.status(503).json({
           message: "Banco de dados temporariamente indisponível. O endpoint Neon precisa ser habilitado.",
@@ -154,10 +154,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ]
         });
       }
-      
+
       return res.status(503).json({
         message: "Serviço temporariamente indisponível. Problemas de conexão com banco de dados.",
-        error: "DATABASE_CONNECTION_FAILED"
+        error: "DATABASE_CONNECTION_FAILED",
+        details: error.message // Exposed for debugging
       });
     }
   };
@@ -341,19 +342,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/anycrawl/credits', authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const credits = await anyCrawlService.checkCredits();
-      
+
       if (credits === null) {
-        return res.status(503).json({ 
+        return res.status(503).json({
           error: 'AnyCrawl não disponível',
-          available: false 
+          available: false
         });
       }
 
-      res.json({ 
+      res.json({
         remaining_credits: credits,
         available: anyCrawlService.isAvailable()
       });
-      
+
     } catch (error) {
       console.error('[API] Erro ao verificar créditos AnyCrawl:', error);
       res.status(500).json({ error: 'Erro interno do servidor' });
@@ -389,12 +390,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { extractProductFromImage, cropProductImage } = await import('./services/vision-extractor.js');
-      
+
       console.log(`[API] 📸 Extraindo produto de imagem para usuário ${req.user.userId}`);
-      
+
       // Extrai dados do produto
       const productInfo = await extractProductFromImage(imageData, mimeType || 'image/png');
-      
+
       // Tenta fazer crop da imagem do produto
       const croppedImage = await cropProductImage(imageData, mimeType || 'image/png');
 
@@ -411,8 +412,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error: any) {
       console.error("[API] ❌ Erro ao extrair produto de imagem:", error);
-      res.status(500).json({ 
-        error: error.message || "Falha ao processar imagem" 
+      res.status(500).json({
+        error: error.message || "Falha ao processar imagem"
       });
     }
   }));
@@ -524,12 +525,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[API] 🛍️ Shopee detectada - tentando API catálogo primeiro`);
             const catalogProduct = await fetchShopeeProduct(finalUrl);
 
-            if (catalogProduct && 
-                catalogProduct.name !== 'Produto Shopee' && 
-                catalogProduct.name && 
-                catalogProduct.name.length > 3 &&
-                !catalogProduct.name.includes('|') &&
-                catalogProduct.price && catalogProduct.price > 0) {
+            if (catalogProduct &&
+              catalogProduct.name !== 'Produto Shopee' &&
+              catalogProduct.name &&
+              catalogProduct.name.length > 3 &&
+              !catalogProduct.name.includes('|') &&
+              catalogProduct.price && catalogProduct.price > 0) {
 
               console.log(`[API] ✅ Produto VÁLIDO encontrado via API Shopee: ${catalogProduct.name}`);
 
@@ -582,10 +583,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[API] 🛒 AliExpress detectada - tentando API primeiro`);
             const apiProduct = await fetchAliExpressProduct(url);
 
-            if (apiProduct && 
-                apiProduct.name && 
-                apiProduct.price && 
-                apiProduct.price > 0) {
+            if (apiProduct &&
+              apiProduct.name &&
+              apiProduct.price &&
+              apiProduct.price > 0) {
 
               console.log(`[API] ✅ Produto VÁLIDO encontrado via API AliExpress: ${apiProduct.name}`);
 
@@ -630,7 +631,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             }
 
-            console.log(`[API] 🔄 API AliExpress falhou - usando scraping como fallback`);            
+            console.log(`[API] 🔄 API AliExpress falhou - usando scraping como fallback`);
           }
         } catch (apiError: any) {
           console.error(`[API] Erro na API AliExpress:`, apiError.message);
@@ -642,14 +643,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[API] 🔍 Tentando outras APIs disponíveis...`);
         const { fetchProductFromAPIs } = await import('./services/ecommerce-apis.js');
         const apiResults = await fetchProductFromAPIs(finalUrl);
-        
+
         if (apiResults && apiResults.length > 0) {
           const bestProduct = apiResults[0]; // Usa o primeiro resultado (melhor qualidade)
-          
-          if (bestProduct.name && 
-              bestProduct.name.length > 3 && 
-              bestProduct.price && 
-              bestProduct.price > 0) {
+
+          if (bestProduct.name &&
+            bestProduct.name.length > 3 &&
+            bestProduct.price &&
+            bestProduct.price > 0) {
 
             console.log(`[API] ✅ Produto encontrado via outras APIs: ${bestProduct.name}`);
 
@@ -739,11 +740,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Determina se o scraping foi bem-sucedido
-      const isGenericProduct = scrapedProduct.name === `Produto de ${scrapedProduct.store}` || 
-                              scrapedProduct.name === 'Produto encontrado';
+      const isGenericProduct = scrapedProduct.name === `Produto de ${scrapedProduct.store}` ||
+        scrapedProduct.name === 'Produto encontrado';
       const hasPrice = scrapedProduct.price && scrapedProduct.price > 0;
-      const hasValidImage = scrapedProduct.imageUrl && 
-                           !scrapedProduct.imageUrl.includes('placeholder');
+      const hasValidImage = scrapedProduct.imageUrl &&
+        !scrapedProduct.imageUrl.includes('placeholder');
 
       const scrapingSuccess = !isGenericProduct && hasPrice && hasValidImage;
       const needsManualInput = !hasPrice || isGenericProduct;
@@ -753,8 +754,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...product,
         scrapingSuccess,
         needsManualInput,
-        extractionMethod: isGenericProduct ? 'fallback' : 
-                         hasPrice ? 'structured' : 'partial',
+        extractionMethod: isGenericProduct ? 'fallback' :
+          hasPrice ? 'structured' : 'partial',
         quality: {
           hasName: !isGenericProduct,
           hasPrice: hasPrice,
@@ -765,7 +766,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Scraping error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to scrape and add product",
         details: (error as any).message,
         canRetryWithManual: true,
@@ -779,7 +780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { url, name, price, originalPrice, imageUrl, store, description, category, brand } = req.body;
 
-       let finalUrl = url;
+      let finalUrl = url;
       // Aplica partner tag da Shopee se necessário
       if (url.includes('shopee.com.br')) {
         try {
@@ -869,7 +870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Converte price e originalPrice para números, ou null se vazios
       const updateData: any = { ...req.body };
-      
+
       // Converte price: null se vazio, número se válido, ou remove se inválido
       if (updateData.price !== undefined) {
         if (updateData.price === '' || updateData.price === null) {
@@ -883,7 +884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       // Converte originalPrice: null se vazio, número se válido, ou remove se inválido
       if (updateData.originalPrice !== undefined) {
         if (updateData.originalPrice === '' || updateData.originalPrice === null) {
@@ -940,10 +941,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: `${updatedCount} produtos atualizados com partner tag`,
-        updatedCount 
+        updatedCount
       });
     } catch (error) {
       console.error("Fix Amazon URLs error:", error);
@@ -968,7 +969,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingProduct = await storage.getProduct(productId, userId);
       if (!existingProduct) {
         console.log(`[DELETE Product] Product ${productId} not found or not owned by user ${userId}`);
-        return res.status(404).json({ 
+        return res.status(404).json({
           error: "Product not found or access denied",
           productId: productId,
           userId: userId
@@ -982,7 +983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!success) {
         console.error(`[DELETE Product] Failed to delete product ${productId} - storage.deleteProduct returned false`);
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "Failed to delete product from database",
           productId: productId,
           userId: userId
@@ -990,7 +991,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`[DELETE Product] ✅ Successfully deleted product ${productId} (${existingProduct.name}) for user ${userId}`);
-      
+
       // Verify deletion by checking if product still exists
       const verifyDeletion = await storage.getProduct(productId, userId);
       if (verifyDeletion) {
@@ -999,16 +1000,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`[DELETE Product] ✅ Deletion verified - product ${productId} no longer exists`);
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: "Product deleted successfully",
         productId: productId,
         productName: existingProduct.name
       });
     } catch (error) {
       console.error(`[DELETE Product] Exception during deletion:`, error);
-      res.status(500).json({ 
-        error: "Failed to delete product", 
+      res.status(500).json({
+        error: "Failed to delete product",
         details: (error as any).message || String(error),
         stack: process.env.NODE_ENV === 'development' ? (error as any).stack : undefined
       });
@@ -1037,8 +1038,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const scrapedProduct = await scrapeProductFromUrl(existingProduct.url);
 
       if (!scrapedProduct || !scrapedProduct.name) {
-        return res.status(400).json({ 
-          error: "Failed to re-scrape product. URL may be invalid or inaccessible." 
+        return res.status(400).json({
+          error: "Failed to re-scrape product. URL may be invalid or inaccessible."
         });
       }
 
@@ -1064,9 +1065,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error(`[RE-SCRAPE] Error re-scraping product:`, error);
-      res.status(500).json({ 
-        error: "Failed to re-scrape product", 
-        details: (error as any).message 
+      res.status(500).json({
+        error: "Failed to re-scrape product",
+        details: (error as any).message
       });
     }
   }));
@@ -1209,8 +1210,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-   // Delete payment by product ID
-   app.delete("/api/payments/product/:productId", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
+  // Delete payment by product ID
+  app.delete("/api/payments/product/:productId", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = parseInt(req.user.userId);
       const productId = parseInt(req.params.productId);
@@ -1220,9 +1221,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const success = await storage.deletePaymentByProductId(productId, userId);
 
       if (success) {
-          res.json({ message: "Payment deleted successfully" });
+        res.json({ message: "Payment deleted successfully" });
       } else {
-          res.status(404).json({ error: "Payment not found or could not be deleted" });
+        res.status(404).json({ error: "Payment not found or could not be deleted" });
       }
     } catch (error) {
       console.error('Erro ao excluir pagamento:', error);
@@ -1311,13 +1312,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.all("/api", (req, res) => {
     if (req.method === 'HEAD' || req.method === 'GET') {
       // Lightweight health check response for infrastructure
-      res.status(200).json({ 
+      res.status(200).json({
         status: "healthy",
         service: "api",
         timestamp: new Date().toISOString()
       });
     } else {
-      res.status(405).json({ 
+      res.status(405).json({
         error: "Method not allowed",
         allowed: ["GET", "HEAD"]
       });
@@ -1327,7 +1328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API route not found handler - prevents HTML responses for API calls
   app.use("/api/*", (req, res) => {
     console.error(`[API] Route not found: ${req.method} ${req.path}`);
-    res.status(404).json({ 
+    res.status(404).json({
       error: "API endpoint not found",
       path: req.path,
       method: req.method
