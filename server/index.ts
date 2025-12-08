@@ -18,24 +18,24 @@ function shouldLogResponse(path: string): boolean {
 
 function filterSensitiveData(data: any): any {
   if (!data || typeof data !== 'object') return data;
-  
+
   const sensitiveFields = ['token', 'password', 'jwt', 'secret', 'key', 'authorization'];
   const filtered = { ...data };
-  
+
   // Filter sensitive fields
   for (const field of sensitiveFields) {
     if (filtered[field]) {
       filtered[field] = '[FILTERED]';
     }
   }
-  
+
   // Recursively filter nested objects
   for (const key in filtered) {
     if (typeof filtered[key] === 'object' && filtered[key] !== null) {
       filtered[key] = filterSensitiveData(filtered[key]);
     }
   }
-  
+
   return filtered;
 }
 
@@ -56,16 +56,16 @@ app.use((req, res, next) => {
       // Skip logging for frequent health checks to reduce log pollution
       if (path === "/api" && req.method === "HEAD") {
         // Only log health checks occasionally (every 30th request) to confirm they're working
-        if (!global.healthCheckCount) global.healthCheckCount = 0;
-        global.healthCheckCount++;
-        if (global.healthCheckCount % 30 === 0) {
-          log(`[Health Check] HEAD /api 200 (logged every 30 requests, count: ${global.healthCheckCount})`);
+        if (!(global as any).healthCheckCount) (global as any).healthCheckCount = 0;
+        (global as any).healthCheckCount++;
+        if ((global as any).healthCheckCount % 30 === 0) {
+          log(`[Health Check] HEAD /api 200 (logged every 30 requests, count: ${(global as any).healthCheckCount})`);
         }
         return; // Skip detailed logging for HEAD /api
       }
 
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      
+
       // Filter sensitive data from API response logs
       if (capturedJsonResponse && shouldLogResponse(path)) {
         const filteredResponse = filterSensitiveData(capturedJsonResponse);
@@ -83,84 +83,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Initialize storage with fallback support
-async function initializeStorage(): Promise<boolean> {
-  try {
-    log('🔄 Initializing storage system...');
-    
-    // Test storage initialization using the new dynamic system
-    const storage = await getStorage();
-    
-    // Test storage with a simple operation
-    await storage.getUser(1);
-    
-    log('✅ Storage system initialized successfully');
-    return true;
-  } catch (error: any) {
-    log(`❌ Storage initialization failed: ${error.message}`);
-    return false;
-  }
-}
 
 (async () => {
   // Inicializar aplicação
   console.log("🚀 Iniciando aplicação...");
-  
-  // Initialize storage with fallback support (no DATABASE_URL required in development)
-  log('🔄 Initializing storage system with fallback support...');
-  const storageInitialized = await initializeStorage();
-  
-  if (!storageInitialized) {
-    if (process.env.NODE_ENV === 'production') {
-      log('❌ Falha crítica na inicialização do storage em produção');
-      log('🔧 Possíveis soluções:');
-      log('  1. Habilite o endpoint Neon no dashboard');
-      log('  2. Verifique DATABASE_URL no painel de Deployments'); 
-      log('  3. Aguarde alguns minutos para o banco "acordar"');
-      
-      // Em produção, continua em modo degradado
-      log('⚠️  Iniciando em modo degradado - funcionalidade limitada');
-      
-      // Adiciona rota especial para erro de banco
-      app.get('*', (req, res) => {
-        if (req.path.startsWith('/api/')) {
-          return res.status(503).json({
-            error: 'STORAGE_UNAVAILABLE',
-            message: 'Sistema de armazenamento temporariamente indisponível',
-            suggestions: [
-              'Habilite o endpoint Neon no dashboard',
-              'Verifique a configuração DATABASE_URL',
-              'Aguarde alguns minutos e recarregue a página'
-            ]
-          });
-        }
-        // Para outras rotas, envia página de manutenção
-        res.status(503).send(`
-          <html><body style="font-family:Arial,sans-serif;text-align:center;padding:50px;">
-            <h1>⚠️ Serviço Temporariamente Indisponível</h1>
-            <p>O sistema de armazenamento está temporariamente indisponível.</p>
-            <p>Possíveis soluções:</p>
-            <ul style="text-align:left;display:inline-block;">
-              <li>Habilite o endpoint Neon no dashboard</li>
-              <li>Verifique a configuração DATABASE_URL</li>
-              <li>Aguarde alguns minutos e recarregue a página</li>
-            </ul>
-            <button onclick="location.reload()" style="padding:10px 20px;margin-top:20px;">Tentar Novamente</button>
-          </body></html>
-        `);
-      });
-      
-      // Pula inicialização normal em caso de erro de storage
-      const server = createServer(app);
-      server.listen({ port: 5000, host: "0.0.0.0" }, () => {
-        log(`⚠️  Servidor rodando em modo degradado na porta 5000`);
-      });
-      return;
-    } else {
-      log('❌ Falha crítica na inicialização do storage em desenvolvimento');
-      process.exit(1);
-    }
-  }
+
 
   const server = await registerRoutes(app);
 
