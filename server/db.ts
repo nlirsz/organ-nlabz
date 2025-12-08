@@ -3,17 +3,28 @@ import pg from 'pg';
 import * as schema from "@shared/schema";
 
 
+import dns from 'dns/promises';
+
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is required');
 }
 
-// Parse URL and force port 6543 (Supavisor Connection Pooler) to support IPv4
-// and avoid direct connection IPv6 timeouts.
-const connectionUrl = new URL(process.env.DATABASE_URL.replace(/\[|\]/g, ''));
-connectionUrl.port = '6543';
+// Robustly handle IPv6 connection issues by resolving to IPv4 explicitly
+// AND using port 6543 for the connection pooler.
+const dbUrl = new URL(process.env.DATABASE_URL.replace(/\[|\]/g, ''));
+dbUrl.port = '6543'; // Force Supavisor pooler port
+
+try {
+  const { address } = await dns.lookup(dbUrl.hostname, { family: 4 });
+  console.log(`[DB] Resolved ${dbUrl.hostname} to ${address}`);
+  dbUrl.hostname = address;
+} catch (e) {
+  console.error('[DB] Failed to resolve hostname to IPv4:', e);
+  // Fallback to original hostname if resolution fails
+}
 
 const pool = new pg.Pool({
-  connectionString: connectionUrl.toString(),
+  connectionString: dbUrl.toString(),
   ssl: { rejectUnauthorized: false },
 });
 
