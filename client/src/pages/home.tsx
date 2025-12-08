@@ -78,7 +78,7 @@ export default function Home() {
       // Força bypass do cache
       const timestamp = Date.now();
       const response = await fetch(`/api/products?_t=${timestamp}`, {
-        headers: { 
+        headers: {
           "x-auth-token": authToken || "",
           "Cache-Control": "no-cache"
         }
@@ -110,8 +110,17 @@ export default function Home() {
 
   return (
     <SidebarProvider>
-      <div className={`min-h-screen transition-all duration-300 ${isDark ? 'dark' : ''}`} style={{ backgroundColor: 'var(--c-primary)' }}>
-        <div className="flex">
+      <div className={`min-h-screen transition-all duration-500 ${isDark ? 'dark' : ''} bg-background text-foreground relative overflow-hidden`}>
+        {/* Premium Background Effects - SaaS Style */}
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[100px] animate-pulse" />
+          <div className="absolute top-[20%] right-[-10%] w-[30%] h-[30%] rounded-full bg-accent/10 blur-[100px] animate-pulse delay-700" />
+          <div className="absolute bottom-[-10%] left-[20%] w-[35%] h-[35%] rounded-full bg-secondary/10 blur-[100px] animate-pulse delay-1000" />
+          {/* Grid Pattern Overlay */}
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
+        </div>
+
+        <div className="flex relative z-10">
           {/* Sidebar */}
           <Sidebar
             activeTab={activeTab}
@@ -123,15 +132,43 @@ export default function Home() {
           />
 
           {/* Main Content */}
-          <main className="flex-1 min-h-screen md:ml-20 main-content-mobile">
-            <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-              {/* Tab Content */}
-              <div className="fade-in">
+          <main className="flex-1 min-h-screen md:ml-20 main-content-mobile transition-all duration-300">
+            <div className="max-w-[1600px] mx-auto px-6 py-10 space-y-10">
+              {/* Hero Section - SaaS Landing Style */}
+              <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12 fade-in">
+                <div className="space-y-2">
+                  <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium mb-2">
+                    <span className="relative flex h-2 w-2 mr-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                    </span>
+                    Sistema Operacional
+                  </div>
+                  <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-foreground">
+                    Olá, <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-secondary">{currentUser?.username}</span>
+                  </h1>
+                  <p className="text-muted-foreground text-xl font-light max-w-2xl leading-relaxed">
+                    Bem-vindo ao seu painel de controle financeiro inteligente.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="glass-card px-6 py-3 flex flex-col items-end">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Data de Hoje</span>
+                    <span className="text-lg font-medium text-foreground">
+                      {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tab Content with Transitions */}
+              <div className="fade-in duration-700">
                 {activeTab === "dashboard" && (
                   <DashboardTab refreshKey={refreshKey} />
                 )}
                 {activeTab === "produtos" && (
-                  <ProdutosTab 
+                  <ProdutosTab
                     refreshKey={refreshKey}
                   />
                 )}

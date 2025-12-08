@@ -7,7 +7,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 
-export function AuthForm() {
+interface AuthFormProps {
+  onAuthSuccess: (token: string, userId: string, username: string) => void;
+}
+
+export function AuthForm({ onAuthSuccess }: AuthFormProps) {
   const { login } = useAuth();
   const [loginData, setLoginData] = useState({ username: "", password: "" });
   const [registerData, setRegisterData] = useState({ username: "", password: "", confirmPassword: "" });
@@ -52,6 +56,7 @@ export function AuthForm() {
         });
         setSuccess("Login realizado com sucesso!");
         login(data.accessToken, data.refreshToken, data.userId, data.username);
+        onAuthSuccess(data.accessToken, data.userId, data.username);
       } else {
         console.error("Login: Erro no login:", data.message);
         setError(data.message || "Erro no login");
@@ -95,6 +100,7 @@ export function AuthForm() {
         setRegisterData({ username: "", password: "", confirmPassword: "" });
         // Auto-login after successful registration
         login(data.accessToken, data.refreshToken, data.userId, data.username);
+        onAuthSuccess(data.accessToken, data.userId, data.username);
       } else {
         setError(data.error || "Erro ao criar usuário");
       }
