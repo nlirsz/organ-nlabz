@@ -380,6 +380,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
+  // Alias route for /api/products/stats/:userId (uses auth token instead of param)
+  app.get("/api/products/stats/:userId", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = parseInt(req.user.userId);
+      const stats = await storage.getProductStats(userId);
+      res.set({
+        'Cache-Control': 'private, max-age=60',
+        'ETag': `"stats-${userId}-${Date.now()}"`
+      });
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      res.status(500).json({ error: "Failed to fetch product stats" });
+    }
+  }));
+
   // Extract product info from uploaded image (screenshot)
   app.post("/api/products/extract-from-image", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -1233,6 +1249,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Finance routes
   app.get("/api/finances", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = parseInt(req.user.userId);
+      const finances = await storage.getFinances(userId);
+      res.json(finances);
+    } catch (error) {
+      console.error("Error fetching finances:", error);
+      res.status(500).json({ error: "Failed to fetch finances" });
+    }
+  }));
+
+  // Alias route for /api/finance/:userId (singular, uses auth token instead of param)
+  app.get("/api/finance/:userId", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = parseInt(req.user.userId);
       const finances = await storage.getFinances(userId);
