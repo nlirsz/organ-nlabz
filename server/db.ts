@@ -1,29 +1,26 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import * as schema from "@shared/schema";
-import dns from 'dns/promises';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
+import * as schema from "@shared/schema";
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is required');
 }
 
-// Robustly handle IPv6 connection issues by resolving to IPv4 explicitly
-const dbUrl = new URL(process.env.DATABASE_URL.replace(/\[|\]/g, ''));
-try {
-  const { address } = await dns.lookup(dbUrl.hostname, { family: 4 });
-  console.log(`[DB] Resolved ${dbUrl.hostname} to ${address}`);
-  dbUrl.hostname = address;
-} catch (e) {
-  console.error('[DB] Failed to resolve hostname to IPv4:', e);
-  // Fallback to original hostname if resolution fails
-}
+// Parse URL and force port 6543 (Supavisor Connection Pooler) to support IPv4
+// and avoid direct connection IPv6 timeouts.
+const connectionUrl = new URL(process.env.DATABASE_URL.replace(/\[|\]/g, ''));
+connectionUrl.port = '6543';
 
 const pool = new pg.Pool({
-  connectionString: dbUrl.toString(),
+  connectionString: connectionUrl.toString(),
   ssl: { rejectUnauthorized: false },
 });
 
-export const db = drizzle(pool, { schema });
+// Disable prepare for compatibility with connection poolers
+export const db = drizzle(pool, { schema, logger: true });
 
 // Helper to retry database operations
 export async function executeWithRetry<T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> {
