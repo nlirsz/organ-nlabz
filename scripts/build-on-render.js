@@ -1,4 +1,4 @@
-const { execSync } = require('child_process');
+import { execSync } from 'child_process';
 
 if (process.env.RENDER) {
     console.log('Detected Render environment. Running build...');
