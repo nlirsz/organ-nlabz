@@ -130,16 +130,60 @@ export default function LandingPage() {
           </div>
 
           {/* Hero Image / Dashboard Preview */}
-          <div className="relative max-w-6xl mx-auto animate-in fade-in zoom-in-50 duration-1000 delay-500">
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur-lg opacity-20"></div>
-            <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#0a0a0a] shadow-2xl">
-              <img
-                src="/assets/organ png2.png"
-                alt="Dashboard Preview"
-                className="w-full h-auto opacity-90"
-              />
+          <div className="relative max-w-5xl mx-auto animate-in fade-in zoom-in-50 duration-1000 delay-500 mt-16">
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl blur-lg opacity-20"></div>
+
+            {/* CSS Mock Dashboard */}
+            <div className="relative rounded-xl overflow-hidden border border-white/10 bg-[#0a0a0a] shadow-2xl aspect-[16/9] flex flex-col">
+              {/* Mock Header */}
+              <div className="h-12 border-b border-white/5 bg-white/5 flex items-center px-4 gap-2">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
+                </div>
+                <div className="ml-4 h-6 w-64 bg-white/5 rounded-md"></div>
+              </div>
+
+              {/* Mock Content */}
+              <div className="flex-1 p-6 grid grid-cols-3 gap-6">
+                {/* Sidebar */}
+                <div className="hidden md:block col-span-1 space-y-4">
+                  <div className="h-8 w-full bg-blue-500/20 rounded-lg animate-pulse"></div>
+                  <div className="h-4 w-3/4 bg-white/5 rounded animate-pulse delay-100"></div>
+                  <div className="h-4 w-1/2 bg-white/5 rounded animate-pulse delay-200"></div>
+                  <div className="h-4 w-2/3 bg-white/5 rounded animate-pulse delay-300"></div>
+                </div>
+
+                {/* Main Area */}
+                <div className="col-span-3 md:col-span-2 space-y-6">
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="h-24 rounded-xl bg-white/5 border border-white/5 p-4">
+                      <div className="h-4 w-8 bg-blue-500/50 rounded mb-2"></div>
+                      <div className="h-8 w-16 bg-white/10 rounded"></div>
+                    </div>
+                    <div className="h-24 rounded-xl bg-white/5 border border-white/5 p-4">
+                      <div className="h-4 w-8 bg-indigo-500/50 rounded mb-2"></div>
+                      <div className="h-8 w-16 bg-white/10 rounded"></div>
+                    </div>
+                    <div className="h-24 rounded-xl bg-white/5 border border-white/5 p-4">
+                      <div className="h-4 w-8 bg-cyan-500/50 rounded mb-2"></div>
+                      <div className="h-8 w-16 bg-white/10 rounded"></div>
+                    </div>
+                  </div>
+
+                  {/* Chart Area */}
+                  <div className="h-48 rounded-xl bg-white/5 border border-white/5 p-4 flex items-end gap-2">
+                    {[40, 70, 45, 90, 60, 80, 50, 75, 60, 95].map((h, i) => (
+                      <div key={i} className="flex-1 bg-gradient-to-t from-blue-600/20 to-blue-500/50 rounded-t-sm" style={{ height: `${h}%` }}></div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               {/* Overlay Gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-transparent to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-transparent to-transparent pointer-events-none"></div>
             </div>
           </div>
         </div>
