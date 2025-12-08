@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { ShoppingCart, Sparkles, BarChart3, Zap, Users, Shield, Star, ArrowRight, Check, TrendingUp, Package, CreditCard } from "lucide-react";
+import { ShoppingCart, Sparkles, BarChart3, Zap, Users, Shield, Star, ArrowRight, Check, TrendingUp, Package, CreditCard, Smartphone, Globe, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Button as MovingBorderButton } from "@/components/ui/moving-border";
 import { RippleGrid } from "@/components/ui/ripple-grid";
@@ -44,9 +44,9 @@ const TiltedCard = ({ children, className = "", ...props }: any) => {
 // Floating Animation Component
 const FloatingElement = ({ children, delay = 0, className = "" }: any) => {
   return (
-    <div 
+    <div
       className={`animate-bounce ${className}`}
-      style={{ 
+      style={{
         animationDelay: `${delay}s`,
         animationDuration: '3s',
         animationIterationCount: 'infinite'
@@ -60,9 +60,9 @@ const FloatingElement = ({ children, delay = 0, className = "" }: any) => {
 // Pulse Animation Component
 const PulseElement = ({ children, delay = 0, className = "" }: any) => {
   return (
-    <div 
+    <div
       className={`animate-pulse ${className}`}
-      style={{ 
+      style={{
         animationDelay: `${delay}s`,
         animationDuration: '2s',
         animationIterationCount: 'infinite'
@@ -90,370 +90,252 @@ const AnimatedBorder = ({ children, className = "" }: any) => {
 };
 
 export default function LandingPage() {
-  const features = [
-    {
-      icon: <Sparkles className="w-8 h-8 text-emerald-400" />,
-      title: "Adicione produtos com 1 clique",
-      description: "Apenas cole a URL e nossa IA extrai automaticamente nome, preço, imagens e categoria usando Gemini AI.",
-      gradient: "from-emerald-500 to-green-600"
-    },
-    {
-      icon: <BarChart3 className="w-8 h-8 text-green-400" />,
-      title: "Controle total dos seus gastos",
-      description: "Acompanhe seus gastos com análises detalhadas por categoria, loja e período. Visualize seu histórico de compras.",
-      gradient: "from-green-500 to-emerald-600"
-    },
-    {
-      icon: <ShoppingCart className="w-8 h-8 text-emerald-400" />,
-      title: "Listas que se organizam sozinhas",
-      description: "Organize produtos por categoria automaticamente, marque como comprados, e tenha controle total da sua lista.",
-      gradient: "from-emerald-500 to-green-600"
-    },
-    {
-      icon: <CreditCard className="w-8 h-8 text-green-400" />,
-      title: "Nunca perca um pagamento",
-      description: "Configure pagamentos parcelados e acompanhe suas prestações com notificações inteligentes de vencimento.",
-      gradient: "from-green-500 to-emerald-600"
-    },
-    {
-      icon: <Users className="w-8 h-8 text-emerald-400" />,
-      title: "Listas compartilhadas com a família",
-      description: "Cada usuário tem sua lista pessoal e pode compartilhar com familiares de forma segura e organizada.",
-      gradient: "from-emerald-500 to-green-600"
-    },
-    {
-      icon: <Shield className="w-8 h-8 text-green-400" />,
-      title: "Interface pensada para você",
-      description: "Design moderno e intuitivo com tema escuro/claro, criado para tornar suas compras mais simples e agradáveis.",
-      gradient: "from-green-500 to-emerald-600"
-    }
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-900 relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <FloatingElement delay={0} className="absolute top-20 left-10 opacity-30">
-          <div className="w-64 h-64 bg-gradient-to-r from-emerald-500/30 to-green-500/30 rounded-full blur-3xl"></div>
-        </FloatingElement>
-        <FloatingElement delay={1} className="absolute top-40 right-20 opacity-25">
-          <div className="w-48 h-48 bg-gradient-to-r from-green-500/25 to-emerald-500/25 rounded-full blur-3xl"></div>
-        </FloatingElement>
-        <FloatingElement delay={2} className="absolute bottom-40 left-1/4 opacity-35">
-          <div className="w-80 h-80 bg-gradient-to-r from-emerald-500/35 to-green-600/35 rounded-full blur-3xl"></div>
-        </FloatingElement>
-        <PulseElement delay={0.5} className="absolute top-1/2 right-10 opacity-20">
-          <div className="w-40 h-40 bg-gradient-to-r from-gray-500/20 to-slate-500/20 rounded-full blur-2xl"></div>
-        </PulseElement>
-        <FloatingElement delay={3} className="absolute bottom-20 right-1/3 opacity-25">
-          <div className="w-56 h-56 bg-gradient-to-r from-green-500/25 to-emerald-500/25 rounded-full blur-3xl"></div>
-        </FloatingElement>
+    <div className="min-h-screen bg-[#020617] text-white relative overflow-hidden selection:bg-emerald-500/30">
+      {/* Background Gradients */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-500/5 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-green-500/5 blur-[120px]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
       </div>
 
       {/* Hero Section */}
-      <section className="relative z-10 py-20 px-4">
-        <RippleGrid className="z-0" />
-        <div className="max-w-7xl mx-auto text-center relative z-20">
-          <div className="flex flex-col items-center justify-center mb-12">
-            <div className="mb-8 relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-green-400/20 blur-2xl rounded-full"></div>
-              <img 
-                src="/assets/organ png2.png" 
-                alt="orgaN" 
-                className="h-32 md:h-40 w-auto relative z-10 drop-shadow-2xl"
-              />
-            </div>
-            <div className="w-32 h-1 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full opacity-60"></div>
+      <section className="relative z-10 pt-32 pb-20 px-6">
+        <RippleGrid className="opacity-30" />
+        <div className="max-w-[1400px] mx-auto text-center relative z-20">
+
+          {/* Badge */}
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <span className="relative flex h-2 w-2 mr-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            Nova Versão 2.0 Disponível
           </div>
 
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-8 leading-tight">
-            Sua lista de compras gerenciada por <span className="bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">IA</span>.
-            <br />
-            Apenas cole o link.
+          {/* Main Title */}
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8 leading-[1.1] animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            Sua vida financeira <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400">
+              organizada por IA
+            </span>
           </h1>
-          <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
-            Controle seus gastos e organize tudo em um só lugar. Comece a usar de graça.
+
+          {/* Subtitle */}
+          <p className="text-xl md:text-2xl text-slate-400 mb-12 max-w-3xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-200">
+            Abandone as planilhas manuais. Apenas cole o link do produto e deixe nossa inteligência artificial organizar tudo para você.
           </p>
 
-          <div className="flex justify-center mb-16">
-            <TiltedCard>
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-12 py-5 text-xl rounded-2xl shadow-2xl border border-emerald-400/30 font-bold"
-                onClick={() => window.location.href = '/auth'}
-              >
-                Começar Gratuitamente Agora
-                <ArrowRight className="ml-3 w-6 h-6" />
-              </Button>
-            </TiltedCard>
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20 animate-in fade-in slide-in-from-bottom-16 duration-1000 delay-300">
+            <Button
+              size="lg"
+              className="h-14 px-8 text-lg rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_40px_-10px_rgba(16,185,129,0.5)] transition-all hover:scale-105"
+              onClick={() => window.location.href = '/auth'}
+            >
+              Começar Gratuitamente
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-14 px-8 text-lg rounded-full border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white transition-all"
+            >
+              Ver Demonstração
+            </Button>
           </div>
 
-          {/* Feature Highlights */}
-          <div className="max-w-4xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <TiltedCard className="group">
-                <div className="text-center p-8 bg-gradient-to-br from-gray-900/30 to-slate-900/30 rounded-2xl backdrop-blur-lg border border-emerald-400/20 group-hover:border-emerald-400/40 transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Sparkles className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Adicione produtos com 1 clique</h3>
-                  <p className="text-gray-300 text-sm">Cole uma URL e nossa IA extrai automaticamente todas as informações do produto</p>
-                </div>
-              </TiltedCard>
-              <TiltedCard className="group">
-                <div className="text-center p-8 bg-gradient-to-br from-gray-900/30 to-slate-900/30 rounded-2xl backdrop-blur-lg border border-green-400/20 group-hover:border-green-400/40 transition-all duration-300">
-                  <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <BarChart3 className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Controle total dos seus gastos</h3>
-                  <p className="text-gray-300 text-sm">Dashboard completo para acompanhar seus gastos e parcelamentos</p>
-                </div>
-              </TiltedCard>
+          {/* Hero Image / Dashboard Preview */}
+          <div className="relative max-w-6xl mx-auto animate-in fade-in zoom-in-50 duration-1000 delay-500">
+            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-green-500 rounded-2xl blur opacity-20"></div>
+            <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950/50 backdrop-blur-xl shadow-2xl">
+              <img
+                src="/assets/organ png2.png"
+                alt="Dashboard Preview"
+                className="w-full h-auto opacity-90"
+              />
+              {/* Overlay Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent"></div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="relative z-10 py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">
-              Tudo que você precisa para <span className="bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">simplificar suas compras</span>
+      {/* Bento Grid Features Section */}
+      <section className="relative z-10 py-32 px-6 bg-slate-950/50">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Recursos que <span className="text-emerald-400">transformam</span> sua rotina
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Recursos pensados para sua organização e economia pessoal
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+              Tecnologia de ponta para simplificar suas finanças e compras.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <TiltedCard key={index} className="h-full group">
-                <div className="bg-gradient-to-br from-slate-800/80 to-gray-900/80 backdrop-blur-sm p-8 h-full rounded-2xl border border-gray-700/50 group-hover:border-emerald-400/30 transition-all duration-300 shadow-2xl">
-                  <FloatingElement delay={index * 0.2}>
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center mb-6 shadow-lg`}>
-                      {feature.icon}
-                    </div>
-                  </FloatingElement>
-                  <h3 className="text-xl font-bold text-white mb-4">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-300 flex-grow leading-relaxed">
-                    {feature.description}
-                  </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 auto-rows-[300px]">
+            {/* Feature 1: IA Extraction - Large (2x2) */}
+            <div className="md:col-span-2 md:row-span-2 rounded-3xl bg-slate-900/50 border border-slate-800 p-8 relative overflow-hidden group hover:border-emerald-500/50 transition-colors">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+              <div className="relative z-10 h-full flex flex-col">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-6 text-emerald-400">
+                  <Sparkles className="w-6 h-6" />
                 </div>
-              </TiltedCard>
-            ))}
+                <h3 className="text-3xl font-bold mb-4">Extração via IA</h3>
+                <p className="text-slate-400 text-lg mb-8 max-w-md">
+                  Nossa tecnologia Gemini AI analisa links de qualquer loja e extrai automaticamente nome, preço e imagem.
+                </p>
+                <div className="mt-auto rounded-xl bg-slate-950 border border-slate-800 p-4 transform group-hover:scale-105 transition-transform duration-500">
+                  <div className="flex items-center gap-3 text-sm text-slate-300">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    Processando link da Amazon...
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 2: Analytics - Tall (1x2) */}
+            <div className="md:col-span-1 md:row-span-2 rounded-3xl bg-slate-900/50 border border-slate-800 p-8 relative overflow-hidden group hover:border-green-500/50 transition-colors">
+              <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-green-500/10 to-transparent"></div>
+              <div className="relative z-10 h-full flex flex-col">
+                <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mb-6 text-green-400">
+                  <BarChart3 className="w-6 h-6" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4">Analytics</h3>
+                <p className="text-slate-400 mb-6">
+                  Gráficos detalhados de gastos por categoria e mês.
+                </p>
+                <div className="mt-auto flex items-end gap-2 h-32">
+                  {[40, 70, 50, 90, 60].map((h, i) => (
+                    <div key={i} className="w-full bg-green-500/20 rounded-t-sm hover:bg-green-500/40 transition-colors" style={{ height: `${h}%` }}></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 3: Security - Small (1x1) */}
+            <div className="md:col-span-1 md:row-span-1 rounded-3xl bg-slate-900/50 border border-slate-800 p-8 relative overflow-hidden group hover:border-teal-500/50 transition-colors">
+              <div className="w-12 h-12 rounded-xl bg-teal-500/10 flex items-center justify-center mb-6 text-teal-400">
+                <Shield className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Segurança Total</h3>
+              <p className="text-slate-400 text-sm">
+                Seus dados criptografados e protegidos.
+              </p>
+            </div>
+
+            {/* Feature 4: Mobile - Small (1x1) */}
+            <div className="md:col-span-1 md:row-span-1 rounded-3xl bg-slate-900/50 border border-slate-800 p-8 relative overflow-hidden group hover:border-emerald-500/50 transition-colors">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-6 text-emerald-400">
+                <Smartphone className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Mobile First</h3>
+              <p className="text-slate-400 text-sm">
+                Acesse de qualquer lugar, a qualquer hora.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section className="relative z-10 py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">
-              Escolha seu <span className="bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">plano</span>
+      <section className="relative z-10 py-32 px-6">
+        <div className="max-w-[1200px] mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Planos simples e <span className="text-emerald-400">transparentes</span>
             </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Comece gratuitamente e evolua conforme suas necessidades. Sem compromisso, sem pegadinhas.
-            </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 max-w-5xl mx-auto">
-            {/* Plano Gratuito - Principal com borda em movimento */}
-            <TiltedCard className="group">
-              <AnimatedBorder className="relative">
-                <div className="bg-gradient-to-br from-slate-800/95 to-gray-900/95 backdrop-blur-sm p-6 md:p-8 min-h-[550px] md:min-h-[600px] flex flex-col rounded-3xl border border-emerald-400/50 shadow-2xl">
-                  <div className="absolute -top-4 md:-top-6 left-1/2 transform -translate-x-1/2 z-20">
-                    <span className="bg-gradient-to-r from-emerald-600 to-green-600 text-white px-6 md:px-8 py-2 md:py-3 rounded-full text-xs md:text-sm font-bold shadow-2xl border border-emerald-400/30">
-                      🔥 Recomendado
-                    </span>
-                  </div>
-
-                  <div className="text-center mb-6 md:mb-8 mt-6 md:mt-8">
-                    <div className="inline-flex items-center justify-center w-16 md:w-20 h-16 md:h-20 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mb-4 md:mb-6 shadow-xl">
-                      <Package className="w-8 md:w-10 h-8 md:h-10 text-white" />
-                    </div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-2 md:mb-3">Gratuito</h3>
-                    <div className="mb-4 md:mb-6">
-                      <span className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent drop-shadow-lg">
-                        R$ 0
-                      </span>
-                      <span className="text-gray-400 text-lg md:text-xl">/mês</span>
-                    </div>
-                    <p className="text-gray-300 text-sm md:text-base leading-relaxed px-2">
-                      Perfeito para começar e experimentar todas as funcionalidades básicas
-                    </p>
-                  </div>
-
-                  <ul className="space-y-3 md:space-y-4 mb-6 md:mb-10 flex-grow px-2">
-                    {[
-                      "Até 100 produtos ativos*",
-                      "IA Gemini para extração",
-                      "Dashboard financeiro básico",
-                      "Controle de parcelamentos",
-                      "1 usuário",
-                      "Suporte por email"
-                    ].map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-start text-sm md:text-base">
-                        <Check className="w-4 md:w-5 h-4 md:h-5 text-emerald-400 mr-3 md:mr-4 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-300 leading-relaxed">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className="mt-auto px-2">
-                    <Button 
-                      className="w-full rounded-2xl py-3 md:py-4 bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-600 hover:from-emerald-700 hover:via-green-700 hover:to-emerald-700 text-white text-base md:text-lg shadow-2xl transition-all duration-300 font-bold border border-emerald-400/30"
-                      onClick={() => window.location.href = '/auth'}
-                    >
-                      Começar Gratuitamente
-                    </Button>
-                    <p className="text-xs text-gray-400 text-center mt-2 md:mt-3 leading-relaxed">
-                      *Produtos não comprados em suas listas
-                    </p>
-                  </div>
-                </div>
-              </AnimatedBorder>
-            </TiltedCard>
-
-            {/* Plano orgaN MAX - Com cadeado e blur */}
-            <TiltedCard className="group">
-              <div className="relative bg-gradient-to-br from-slate-800/60 to-gray-900/60 backdrop-blur-xl p-6 md:p-8 min-h-[550px] md:min-h-[600px] flex flex-col rounded-3xl border border-gray-600/30 shadow-2xl overflow-hidden">
-                {/* Overlay de blur e cadeado */}
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 to-gray-900/95 backdrop-blur-lg rounded-3xl z-10 flex flex-col items-center justify-center">
-                  <div className="text-center px-4 md:px-8">
-                    <div className="inline-flex items-center justify-center w-20 md:w-24 h-20 md:h-24 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-4 md:mb-6 shadow-2xl">
-                      <Shield className="w-10 md:w-12 h-10 md:h-12 text-white" />
-                    </div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-3 md:mb-4">orgaN MAX</h3>
-                    <p className="text-gray-300 text-sm md:text-base mb-4 md:mb-6 leading-relaxed">
-                      Em desenvolvimento: Relatórios avançados de gastos e integração com assistentes de voz.
-                    </p>
-                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/20">
-                      <p className="text-white text-base md:text-lg mb-3 md:mb-4 font-bold">
-                        🚀 Em Breve!
-                      </p>
-                      <p className="text-gray-300 text-xs md:text-sm leading-relaxed">
-                        Funcionalidades avançadas que vão revolucionar ainda mais sua experiência de compras.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Conteúdo original (blur de fundo) */}
-                <div className="text-center mb-8 blur-lg opacity-40">
-                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mb-6">
-                    <TrendingUp className="w-10 h-10 text-white" />
-                  </div>
-                  <h3 className="text-3xl font-bold text-white mb-3">orgaN MAX</h3>
-                  <div className="mb-6">
-                    <span className="text-5xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-                      R$ 29,90
-                    </span>
-                    <span className="text-gray-400 text-xl">/mês</span>
-                  </div>
-                  <p className="text-gray-300 text-base">
-                    Para usuários que querem aproveitar todo o potencial da plataforma
-                  </p>
-                </div>
-
-                <ul className="space-y-4 mb-10 flex-grow blur-lg opacity-40">
-                  {[
-                    "Produtos ilimitados",
-                    "IA Gemini avançada",
-                    "Dashboard completo com analytics",
-                    "Parcelamento inteligente",
-                    "Histórico de preços",
-                    "Notificações personalizadas",
-                    "Múltiplos usuários (até 10)",
-                    "Suporte prioritário 24/7",
-                    "Relatórios avançados",
-                    "Integração com APIs"
-                  ].map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center text-base">
-                      <Check className="w-5 h-5 text-amber-400 mr-4 flex-shrink-0" />
-                      <span className="text-gray-300">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="blur-lg opacity-40 mt-auto">
-                  <Button className="w-full rounded-2xl py-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-lg shadow-2xl transition-all duration-300 font-bold">
-                    Começar Teste Grátis
-                  </Button>
-                  <p className="text-xs text-gray-400 text-center mt-3">
-                    14 dias grátis, cancele quando quiser
-                  </p>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Free Plan */}
+            <div className="rounded-3xl bg-slate-900/50 border border-slate-800 p-10 flex flex-col hover:border-emerald-500/30 transition-colors relative group">
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <span className="bg-slate-800 text-slate-300 px-4 py-1 rounded-full text-sm font-medium border border-slate-700">
+                  Para começar
+                </span>
               </div>
-            </TiltedCard>
-          </div>
+              <h3 className="text-2xl font-bold mb-2">Gratuito</h3>
+              <div className="flex items-baseline gap-1 mb-8">
+                <span className="text-4xl font-bold">R$ 0</span>
+                <span className="text-slate-400">/mês</span>
+              </div>
+              <ul className="space-y-4 mb-10 flex-1">
+                {[
+                  "Até 100 produtos ativos",
+                  "IA Gemini para extração",
+                  "Dashboard financeiro básico",
+                  "1 usuário"
+                ].map((feature, i) => (
+                  <li key={i} className="flex items-center gap-3 text-slate-300">
+                    <Check className="w-5 h-5 text-emerald-500" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                className="w-full h-12 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium transition-all"
+                onClick={() => window.location.href = '/auth'}
+              >
+                Criar Conta Grátis
+              </Button>
+            </div>
 
-          {/* Features Comparison */}
-          <div className="mt-16 text-center">
-            <p className="text-gray-400 mb-4">
-              🔒 Todos os planos incluem: Segurança SSL, Backup automático, Atualizações gratuitas
-            </p>
-            <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-500">
-              <span className="flex items-center">
-                <Shield className="w-4 h-4 mr-2 text-emerald-400" />
-                Dados 100% seguros
-              </span>
-              <span className="flex items-center">
-                <Zap className="w-4 h-4 mr-2 text-emerald-400" />
-                Performance otimizada
-              </span>
-              <span className="flex items-center">
-                <Star className="w-4 h-4 mr-2 text-emerald-400" />
-                Sem pegadinhas
-              </span>
+            {/* Pro Plan */}
+            <div className="rounded-3xl bg-gradient-to-b from-emerald-950/30 to-slate-900/50 border border-emerald-500/30 p-10 flex flex-col relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-green-500"></div>
+              <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Star className="w-24 h-24 text-emerald-500" />
+              </div>
+
+              <h3 className="text-2xl font-bold mb-2 text-emerald-400">orgaN MAX</h3>
+              <div className="flex items-baseline gap-1 mb-8">
+                <span className="text-4xl font-bold">R$ 29,90</span>
+                <span className="text-slate-400">/mês</span>
+              </div>
+              <ul className="space-y-4 mb-10 flex-1">
+                {[
+                  "Produtos ilimitados",
+                  "IA Gemini Avançada",
+                  "Analytics Completo",
+                  "Múltiplos usuários",
+                  "Suporte Prioritário"
+                ].map((feature, i) => (
+                  <li key={i} className="flex items-center gap-3 text-white">
+                    <div className="p-1 rounded-full bg-emerald-500/20 text-emerald-400">
+                      <Check className="w-3 h-3" />
+                    </div>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium shadow-lg shadow-emerald-500/20 transition-all"
+              >
+                Testar 14 dias Grátis
+              </Button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="relative z-10 py-16 md:py-20 px-4">
-        <TiltedCard className="max-w-4xl mx-auto">
-          <div className="text-center bg-gradient-to-r from-gray-900/80 to-slate-900/80 backdrop-blur-sm p-8 md:p-12 rounded-3xl border border-emerald-400/30 shadow-2xl">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 md:mb-6 leading-tight">
-              Pronto para revolucionar suas compras?
-            </h2>
-            <p className="text-lg md:text-xl text-gray-300 mb-6 md:mb-8 leading-relaxed">
-              Junte-se a milhares de usuários que já transformaram sua experiência de compras
-            </p>
-            <PulseElement>
-              <Button 
-                size="lg" 
-                className="bg-white text-gray-900 hover:bg-gray-100 px-8 md:px-10 py-3 md:py-4 text-base md:text-lg font-bold rounded-2xl shadow-lg w-full md:w-auto"
-                onClick={() => window.location.href = '/auth'}
-              >
-                Começar Gratuitamente Agora
-                <ArrowRight className="ml-2 w-4 md:w-5 h-4 md:h-5" />
-              </Button>
-            </PulseElement>
-          </div>
-        </TiltedCard>
-      </section>
-
       {/* Footer */}
-      <footer className="relative z-10 py-12 px-4 bg-slate-900/50 backdrop-blur-sm border-t border-gray-700/50">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="flex items-center justify-center mb-6">
-            <img 
-              src="/assets/organ png2.png" 
-              alt="orgaN" 
-              className="h-12 w-auto opacity-80"
-            />
+      <footer className="py-12 border-t border-slate-800 bg-slate-950">
+        <div className="max-w-[1400px] mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+              <Package className="w-5 h-5" />
+            </div>
+            <span className="font-bold text-lg">orgaN</span>
           </div>
-          <p className="text-gray-400 mb-4">
-            A lista de compras mais inteligente e organizada do Brasil
-          </p>
-          <p className="text-gray-500 text-sm">
-            © 2025 orgaN. Todos os direitos reservados.
-          </p>
+          <div className="flex gap-8 text-sm text-slate-400">
+            <a href="#" className="hover:text-emerald-400 transition-colors">Termos</a>
+            <a href="#" className="hover:text-emerald-400 transition-colors">Privacidade</a>
+            <a href="#" className="hover:text-emerald-400 transition-colors">Contato</a>
+          </div>
+          <div className="text-sm text-slate-500">
+            © 2025 orgaN nlabz.
+          </div>
         </div>
       </footer>
     </div>
