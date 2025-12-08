@@ -7,7 +7,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL?.replace(/\[|\]/g, ''),
 });
 
 export const db = drizzle(pool, { schema });
