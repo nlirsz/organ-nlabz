@@ -1,5 +1,19 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
+import dns from "dns";
+
+// Force IPv4 for all DNS lookups to avoid IPv6 connection issues
+// This fixes the "connect ETIMEDOUT ...:838:6e0b..." error seen in logs
+const originalLookup = dns.lookup;
+(dns as any).lookup = (hostname: string, options: any, callback: any) => {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  options = options || {};
+  options.family = 4; // Force IPv4
+  return originalLookup(hostname, options, callback);
+};
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { getStorage } from "./storage";
