@@ -1,17 +1,24 @@
 {
   "buildCommand": "npm ci && npm run build:netlify",
+  "outputDirectory": "dist/public",
   "env": {
     "NODE_ENV": "production"
   },
   "functions": {
     "api/index.ts": {
-      "runtime": "nodejs20.x"
+      "runtime": "nodejs20.x",
+      "memory": 3008,
+      "maxDuration": 60
     }
   },
   "routes": [
     {
       "src": "/api/(.*)",
       "dest": "/api/index.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
