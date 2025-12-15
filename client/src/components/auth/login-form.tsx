@@ -31,8 +31,9 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
 
     try {
       console.log("Login: Tentando fazer login com:", loginData.username);
+      const apiBase = import.meta.env.VITE_API_URL || "";
 
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(`${apiBase}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -82,7 +83,9 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
     }
 
     try {
-      const response = await fetch("/api/auth/register", {
+      const apiBase = import.meta.env.VITE_API_URL || "";
+
+      const response = await fetch(`${apiBase}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
