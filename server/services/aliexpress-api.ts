@@ -17,7 +17,7 @@ interface AliExpressProductResult {
 // Configurações da AliExpress API
 const ALI_APP_KEY = process.env.ALI_APP_KEY;
 const ALI_APP_SECRET = process.env.ALI_APP_SECRET;
-const ALI_TRACK_ID = 'organapp'; // Seu track ID para comissões
+const ALI_TRACK_ID = process.env.ALI_TRACK_ID || undefined; // Track ID para comissões (defina via env)
 const ALI_API_GATEWAY = 'https://api-sg.aliexpress.com/sync';
 
 // Função para gerar assinatura da AliExpress seguindo documentação oficial
