@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm ci && npm run build:netlify",
-  "outputDirectory": "dist/public",
+  "outputDirectory": "dist",
   "env": {
     "NODE_ENV": "production"
   },
