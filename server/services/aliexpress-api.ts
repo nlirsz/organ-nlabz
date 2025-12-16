@@ -25,10 +25,10 @@ function generateAliExpressSignature(params: Record<string, any>, secret: string
   // Remove o parâmetro 'sign' se existir
   const filteredParams = { ...params };
   delete filteredParams.sign;
-  
+
   // Ordena os parâmetros alfabeticamente
   const sortedKeys = Object.keys(filteredParams).sort();
-  
+
   // Cria string de parâmetros no formato key+value
   let paramString = '';
   for (const key of sortedKeys) {
@@ -36,10 +36,10 @@ function generateAliExpressSignature(params: Record<string, any>, secret: string
       paramString += key + filteredParams[key];
     }
   }
-  
+
   // Adiciona secret no início e fim conforme documentação
   const stringToSign = secret + paramString + secret;
-  
+
   // Gera hash MD5 em uppercase
   return crypto.createHash('md5').update(stringToSign, 'utf8').digest('hex').toUpperCase();
 }
@@ -48,18 +48,18 @@ function generateAliExpressSignature(params: Record<string, any>, secret: string
 export function isAliExpressUrl(url: string): boolean {
   const aliexpressDomains = [
     'aliexpress.com',
-    'aliexpress.us', 
+    'aliexpress.us',
     'aliexpress.ru',
     'pt.aliexpress.com',
     'es.aliexpress.com',
     'fr.aliexpress.com'
   ];
-  
+
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname.toLowerCase();
-    
-    return aliexpressDomains.some(domain => 
+
+    return aliexpressDomains.some(domain =>
       hostname === domain || hostname.endsWith('.' + domain)
     );
   } catch {
@@ -71,7 +71,7 @@ export function isAliExpressUrl(url: string): boolean {
 export function extractAliExpressProductId(url: string): string | null {
   try {
     console.log(`[AliExpress] Extraindo Product ID de: ${url}`);
-    
+
     // Padrões mais específicos para AliExpress
     const patterns = [
       /\/item\/(\d+)\.html/i,
@@ -93,12 +93,12 @@ export function extractAliExpressProductId(url: string): string | null {
     // Tenta extrair da query string e pathname
     try {
       const urlObj = new URL(url);
-      
+
       // Verifica query parameters
-      const productId = urlObj.searchParams.get('productId') || 
-                       urlObj.searchParams.get('item_id') ||
-                       urlObj.searchParams.get('id');
-      
+      const productId = urlObj.searchParams.get('productId') ||
+        urlObj.searchParams.get('item_id') ||
+        urlObj.searchParams.get('id');
+
       if (productId) {
         console.log(`[AliExpress] Product ID encontrado nos params: ${productId}`);
         return productId;
@@ -131,19 +131,20 @@ export function addAliExpressAffiliateParams(url: string): string {
 
   try {
     const urlObj = new URL(url);
-    
+
     // Remove parâmetros de tracking existentes
     const trackingParams = ['aff_trace_key', 'aff_platform', 'aff_short_key', 'terminal_id'];
     trackingParams.forEach(param => urlObj.searchParams.delete(param));
-    
+
     // Adiciona nossos parâmetros de afiliado
-    urlObj.searchParams.set('aff_trace_key', ALI_TRACK_ID);
-    urlObj.searchParams.set('aff_platform', 'link-c-tool');
-    urlObj.searchParams.set('terminal_id', ALI_TRACK_ID);
-    
+    if (ALI_TRACK_ID) {
+      urlObj.searchParams.set('aff_trace_key', ALI_TRACK_ID);
+      urlObj.searchParams.set('terminal_id', ALI_TRACK_ID);
+    }
+
     console.log(`[AliExpress] URL convertida para afiliado: ${url} → ${urlObj.toString()}`);
     return urlObj.toString();
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AliExpress] Erro ao adicionar parâmetros de afiliado:', error);
     return url;
   }
@@ -158,7 +159,7 @@ async function getAliExpressToken(): Promise<string | null> {
 
   try {
     const timestamp = Date.now().toString();
-    
+
     const params = {
       app_key: ALI_APP_KEY,
       method: 'auth.token.security.create',
@@ -172,7 +173,7 @@ async function getAliExpressToken(): Promise<string | null> {
     (params as any)['sign'] = signature;
 
     console.log('[AliExpress Auth] Obtendo token de autenticação...');
-    
+
     const response = await axios.get(ALI_API_GATEWAY, {
       params,
       timeout: 10000,
@@ -192,7 +193,7 @@ async function getAliExpressToken(): Promise<string | null> {
     console.error('[AliExpress Auth] ❌ Erro ao obter token:', response.data);
     return null;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AliExpress Auth] Erro na requisição de token:', error);
     return null;
   }
@@ -205,7 +206,7 @@ export async function fetchAliExpressProduct(url: string): Promise<AliExpressPro
   console.log('[AliExpress API] ALI_APP_SECRET disponível:', !!ALI_APP_SECRET);
   console.log('[AliExpress API] ALI_APP_KEY length:', ALI_APP_KEY?.length || 0);
   console.log('[AliExpress API] ALI_APP_SECRET length:', ALI_APP_SECRET?.length || 0);
-  
+
   if (!ALI_APP_KEY || !ALI_APP_SECRET) {
     console.log('[AliExpress API] ❌ Credenciais não configuradas. Verifique ALI_APP_KEY e ALI_APP_SECRET nos Secrets.');
     console.log('[AliExpress API] process.env keys:', Object.keys(process.env).filter(k => k.includes('ALI')));
@@ -214,7 +215,7 @@ export async function fetchAliExpressProduct(url: string): Promise<AliExpressPro
 
   try {
     console.log(`[AliExpress API] 🛒 Buscando produto: ${url}`);
-    
+
     const productId = extractAliExpressProductId(url);
     if (!productId) {
       console.log('[AliExpress API] ❌ Product ID não encontrado na URL');
@@ -228,7 +229,7 @@ export async function fetchAliExpressProduct(url: string): Promise<AliExpressPro
     if (productDetails) {
       // Converte para URL de afiliado
       const affiliateUrl = addAliExpressAffiliateParams(url);
-      
+
       return {
         ...productDetails,
         url: affiliateUrl
@@ -239,7 +240,7 @@ export async function fetchAliExpressProduct(url: string): Promise<AliExpressPro
     console.log('[AliExpress API] 🔄 Tentando busca alternativa por termos...');
     return await searchProductByUrlTerms(url);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AliExpress API] Erro ao buscar produto:', error);
     return null;
   }
@@ -249,7 +250,7 @@ export async function fetchAliExpressProduct(url: string): Promise<AliExpressPro
 async function fetchProductDetails(productId: string): Promise<AliExpressProductResult | null> {
   try {
     const timestamp = Date.now().toString();
-    
+
     // Usando método correto conforme documentação
     const params = {
       app_key: ALI_APP_KEY,
@@ -262,7 +263,7 @@ async function fetchProductDetails(productId: string): Promise<AliExpressProduct
       fields: 'product_id,product_title,product_url,current_price,original_price,product_main_image_url,evaluate_score,sale_price,discount,shop_url,platform_product_type',
       target_currency: 'BRL',
       target_language: 'PT',
-      tracking_id: ALI_TRACK_ID
+      tracking_id: ALI_TRACK_ID || ''
     };
 
     if (!ALI_APP_SECRET) {
@@ -273,7 +274,7 @@ async function fetchProductDetails(productId: string): Promise<AliExpressProduct
     (params as any)['sign'] = signature;
 
     console.log(`[AliExpress API] 🌐 Buscando detalhes do produto ID: ${productId}`);
-    
+
     const response = await axios.get(ALI_API_GATEWAY, {
       params,
       timeout: 15000,
@@ -321,14 +322,14 @@ async function fetchProductDetails(productId: string): Promise<AliExpressProduct
 
     // A API pode retornar { products: [...] } ou { product: [...] }
     let products = result.products || result.product;
-    
+
     // Se products é um objeto com array interno, extrai o array
     if (products && typeof products === 'object' && !Array.isArray(products)) {
       if (products.product && Array.isArray(products.product)) {
         products = products.product;
       }
     }
-    
+
     if (!products || !Array.isArray(products) || products.length === 0) {
       console.log('[AliExpress API] ❌ Produto não encontrado ou array vazio');
       console.log('[AliExpress API] 🔍 products:', products);
@@ -431,9 +432,9 @@ export async function searchAliExpressProducts(searchTerm: string, maxResults: n
 
   try {
     console.log(`[AliExpress Search] 🔍 Buscando: ${searchTerm}`);
-    
+
     const timestamp = Date.now().toString();
-    
+
     // Usando método correto da documentação
     const params = {
       app_key: ALI_APP_KEY,
@@ -446,7 +447,7 @@ export async function searchAliExpressProducts(searchTerm: string, maxResults: n
       fields: 'product_id,product_title,product_url,current_price,original_price,product_main_image_url,evaluate_score,commission_rate,sale_price,discount,shop_url,platform_product_type',
       target_currency: 'BRL',
       target_language: 'PT',
-      tracking_id: ALI_TRACK_ID,
+      tracking_id: ALI_TRACK_ID || '',
       page_size: Math.min(maxResults, 50).toString(), // Máximo 50 conforme documentação
       page_no: '1',
       sort: 'SALE_PRICE_ASC'
@@ -499,14 +500,14 @@ export async function searchAliExpressProducts(searchTerm: string, maxResults: n
 
     // A API pode retornar { products: [...] } ou { product: [...] }
     let products = result.products || result.product || [];
-    
+
     // Se products é um objeto com array interno, extrai o array
     if (products && typeof products === 'object' && !Array.isArray(products)) {
       if (products.product && Array.isArray(products.product)) {
         products = products.product;
       }
     }
-    
+
     if (!Array.isArray(products) || products.length === 0) {
       console.log('[AliExpress Search] ❌ Nenhum produto encontrado ou não é array');
       console.log('[AliExpress Search] 🔍 products:', products);
@@ -548,7 +549,7 @@ export async function searchAliExpressProducts(searchTerm: string, maxResults: n
         // Só inclui produtos com preço válido
         if (finalPrice && finalPrice > 0) {
           const affiliateUrl = addAliExpressAffiliateParams(product.product_url || '');
-          
+
           results.push({
             name: product.product_title || 'Produto AliExpress',
             price: finalPrice,
@@ -561,7 +562,7 @@ export async function searchAliExpressProducts(searchTerm: string, maxResults: n
             url: affiliateUrl
           });
         }
-      } catch (productError) {
+      } catch (productError: any) {
         console.warn('[AliExpress Search] Erro ao processar produto:', productError);
         continue;
       }

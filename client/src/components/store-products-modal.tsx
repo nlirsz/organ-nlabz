@@ -8,12 +8,12 @@ import { Store, ShoppingCart, Calendar, Tag } from 'lucide-react';
 interface Product {
   id: number;
   name: string;
-  price: string;
-  category: string;
-  store: string;
-  imageUrl?: string;
-  isPurchased: boolean;
-  createdAt: string;
+  price: string | null;
+  category: string | null;
+  store: string | null;
+  imageUrl?: string | null;
+  isPurchased: boolean | null;
+  createdAt: string | Date | null;
 }
 
 interface StoreProductsModalProps {
@@ -24,15 +24,16 @@ interface StoreProductsModalProps {
 }
 
 export function StoreProductsModal({ isOpen, onClose, store, products }: StoreProductsModalProps) {
-  const storeProducts = products.filter(product => 
+  const storeProducts = products.filter(product =>
     product.store?.toLowerCase() === store.toLowerCase() && product.isPurchased
   );
 
-  const totalSpent = storeProducts.reduce((sum, product) => 
-    sum + (parseFloat(product.price) || 0), 0
+  const totalSpent = storeProducts.reduce((sum, product) =>
+    sum + (product.price ? parseFloat(product.price) : 0), 0
   );
 
-  const formatPrice = (price: string | number) => {
+  const formatPrice = (price: string | number | null) => {
+    if (price === null) return 'R$ 0,00';
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -40,10 +41,11 @@ export function StoreProductsModal({ isOpen, onClose, store, products }: StorePr
     }).format(numPrice || 0);
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors = {
+  const getCategoryColor = (category: string | null) => {
+    if (!category) return '#9ca3af';
+    const colors: Record<string, string> = {
       'Eletronicos': '#3b82f6',
-      'Roupas': '#10b981', 
+      'Roupas': '#10b981',
       'Casa': '#f59e0b',
       'Livros': '#8b5cf6',
       'Games': '#ef4444',
@@ -88,17 +90,17 @@ export function StoreProductsModal({ isOpen, onClose, store, products }: StorePr
                       }}
                     />
                   )}
-                  
+
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-1">
                       {product.name}
                     </h3>
-                    
+
                     <div className="flex items-center gap-2 mb-2">
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className="text-xs"
-                        style={{ 
+                        style={{
                           borderColor: getCategoryColor(product.category),
                           color: getCategoryColor(product.category)
                         }}
@@ -123,7 +125,7 @@ export function StoreProductsModal({ isOpen, onClose, store, products }: StorePr
                       <div className="text-right">
                         <div className="flex items-center gap-1 text-xs text-gray-500">
                           <Calendar className="w-3 h-3" />
-                          {new Date(product.createdAt).toLocaleDateString('pt-BR')}
+                          {product.createdAt ? new Date(product.createdAt).toLocaleDateString('pt-BR') : 'Data desconhecida'}
                         </div>
                       </div>
                     </div>

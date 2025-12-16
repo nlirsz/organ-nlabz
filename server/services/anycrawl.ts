@@ -49,11 +49,11 @@ class AnyCrawlService {
 
   private async testConnectivity() {
     const axios = (await import('axios')).default;
-    
+
     for (const baseUrl of this.baseUrls) {
       try {
         console.log(`[AnyCrawl] 🔍 Testando conectividade com: ${baseUrl}`);
-        await axios.get(`${baseUrl}/health`, { 
+        await axios.get(`${baseUrl}/health`, {
           timeout: 5000,
           validateStatus: () => true // Aceita qualquer status
         });
@@ -64,7 +64,7 @@ class AnyCrawlService {
         console.log(`[AnyCrawl] ❌ Falha em ${baseUrl}: ${error.message}`);
       }
     }
-    
+
     console.warn('[AnyCrawl] ⚠️ Nenhum endpoint AnyCrawl acessível');
   }
 
@@ -82,7 +82,7 @@ class AnyCrawlService {
       console.log(`[AnyCrawl] 🚀 Iniciando scraping premium para: ${url}`);
       console.log(`[AnyCrawl] 💰 IMPORTANTE: Esta operação consumirá créditos AnyCrawl`);
 
-      const response = await axios.post(`${this.baseUrl}/crawl`, {
+      const response = await axios.post(`${this.workingUrl!}/crawl`, {
         url: url,
         extract_metadata: true,
         screenshot: false, // Economiza créditos
@@ -97,7 +97,7 @@ class AnyCrawlService {
       });
 
       const result: AnyCrawlResponse = response.data;
-      
+
       if (!result.success) {
         console.error('[AnyCrawl] ❌ Falha no scraping:', result.error);
         console.error('[AnyCrawl] 💸 Créditos consumidos mesmo com falha');
@@ -106,7 +106,7 @@ class AnyCrawlService {
 
       console.log(`[AnyCrawl] ✅ Scraping concluído`);
       console.log(`[AnyCrawl] 💰 Créditos usados: ${result.credits_used || 'N/A'}`);
-      console.log(`[AnyCrawl] 📊 Status: ${result.status || 'N/A'}`);
+      console.log(`[AnyCrawl] 📊 Status: ${result.success ? 'Success' : 'Failed'}`);
 
       // Extrai dados do metadata primeiro
       if (result.data.metadata) {
@@ -132,15 +132,15 @@ class AnyCrawlService {
       console.log('[AnyCrawl] ⚠️ Nenhum produto válido extraído');
       return null;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('[AnyCrawl] ❌ Erro na requisição:', error.message);
-      
+
       if (error.response?.status === 402) {
         console.error('[AnyCrawl] 💳 Créditos insuficientes');
       } else if (error.response?.status === 401) {
         console.error('[AnyCrawl] 🔐 API Key inválida');
       }
-      
+
       return null;
     }
   }
@@ -173,7 +173,7 @@ class AnyCrawlService {
         brand: null
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('[AnyCrawl] ❌ Erro ao extrair metadata:', error.message);
       return null;
     }
@@ -182,7 +182,7 @@ class AnyCrawlService {
   private identifyStore(url: string): string {
     try {
       const hostname = new URL(url).hostname.replace('www.', '');
-      
+
       const storeMap: Record<string, string> = {
         'mercadolivre.com.br': 'Mercado Livre',
         'amazon.com.br': 'Amazon Brasil',
@@ -215,14 +215,14 @@ class AnyCrawlService {
     if (!this.isAvailable()) return null;
 
     try {
-      const response = await axios.get(`${this.baseUrl}/credits`, {
+      const response = await axios.get(`${this.workingUrl!}/credits`, {
         headers: {
           'Authorization': `Bearer ${this.apiKey}`
         }
       });
 
       return response.data.remaining_credits || 0;
-    } catch (error) {
+    } catch (error: any) {
       console.error('[AnyCrawl] ❌ Erro ao verificar créditos:', error.message);
       return null;
     }

@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Middleware para hash da senha antes de salvar
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) {
         return next();
     }
@@ -33,13 +33,13 @@ userSchema.pre('save', async function(next) {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
         next();
-    } catch (error) {
+    } catch (error: any) {
         next(error);
     }
 });
 
 // Método para comparar a senha fornecida com a senha hashed
-userSchema.methods.comparePassword = async function(candidatePassword: string) {
+userSchema.methods.comparePassword = async function (candidatePassword: string) {
     return bcrypt.compare(candidatePassword, this.password);
 };
 

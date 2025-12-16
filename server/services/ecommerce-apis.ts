@@ -103,8 +103,8 @@ async function fetchFromMercadoLivreAPI(productId: string): Promise<APIProductRe
 
     // Normaliza preço
     const price = typeof data.price === 'number' ? data.price : parseFloat(data.price) || 0;
-    const originalPrice = data.original_price && typeof data.original_price === 'number' 
-      ? data.original_price 
+    const originalPrice = data.original_price && typeof data.original_price === 'number'
+      ? data.original_price
       : (data.original_price ? parseFloat(data.original_price) : undefined);
 
     // Busca descrição se disponível
@@ -280,8 +280,8 @@ async function fetchFromGoogleShopping(urlOrQuery: string): Promise<APIProductRe
       // Se der erro 400, tenta busca simplificada
       if (response.status === 400) {
         console.log(`[Google API] Tentando busca simplificada...`);
-        const simpleQuery = urlOrQuery.startsWith('http') ? 
-          extractSearchTermFromUrl(urlOrQuery) : 
+        const simpleQuery = urlOrQuery.startsWith('http') ?
+          extractSearchTermFromUrl(urlOrQuery) :
           urlOrQuery.substring(0, 50); // Limita tamanho da query
 
         if (simpleQuery && simpleQuery.length > 3) {
@@ -335,13 +335,13 @@ function parseGoogleResults(data: any): APIProductResult[] {
     }
 
     // Extrai preço mais inteligentemente
-    const price = extractPriceFromSnippet(item.snippet) || 
-                 extractPriceFromMetatags(item.pagemap?.metatags?.[0]) || 
-                 0;
+    const price = extractPriceFromSnippet(item.snippet) ||
+      extractPriceFromMetatags(item.pagemap?.metatags?.[0]) ||
+      0;
 
     // Extrai marca
-    const brand = extractBrandFromSnippet(item.snippet) || 
-                 extractBrandFromMetatags(item.pagemap?.metatags?.[0]);
+    const brand = extractBrandFromSnippet(item.snippet) ||
+      extractBrandFromMetatags(item.pagemap?.metatags?.[0]);
 
     const storeName = getStoreFromUrl(itemUrl);
 
@@ -497,8 +497,8 @@ function extractSearchTermFromUrl(url: string): string {
 
     // Remove palavras não descritivas
     const stopWords = ['produto', 'item', 'p', 'products', 'pd', 'buy', 'shop'];
-    const descriptiveSegments = segments.filter(s => 
-      !stopWords.includes(s.toLowerCase()) && 
+    const descriptiveSegments = segments.filter(s =>
+      !stopWords.includes(s.toLowerCase()) &&
       !/^\d+$/.test(s) // Remove números puros
     );
 
@@ -584,69 +584,7 @@ export async function tryAPIFirst(url: string): Promise<APIProductResult | null>
   console.log(`[API First] 🌐 Não é Shopee - usando scraping tradicional`);
   return null;
 
-  // Primeiro tenta extrair ID específico da plataforma
-  const productInfo = extractProductId(url);
 
-  if (productInfo) {
-    console.log(`[API First] ID encontrado: ${productInfo.platform} - ${productInfo.id}`);
-
-    switch (productInfo.platform) {
-      case 'mercadolivre':
-        try {
-          const result = await fetchFromMercadoLivreAPI(productInfo.id);
-          if (result && (result.price > 0 || result.name !== 'Produto Mercado Livre')) {
-            console.log(`[API First] ✅ Mercado Livre API sucesso: ${result.name}`);
-            return result;
-          }
-        } catch (error) {
-          console.log(`[API First] Mercado Livre API falhou:`, error);
-        }
-        break;
-
-      case 'shopee':
-        try {
-          const result = await fetchShopeeProduct(url);
-          if (result) {
-            console.log(`[API First] ✅ Shopee processado: ${result.name}`);
-            return result;
-          }
-        } catch (error) {
-          console.log(`[API First] Shopee processing falhou:`, error);
-        }
-        break;
-
-      case 'amazon':
-        try {
-          const result = await fetchAmazonProduct(url);
-          if (result) {
-            console.log(`[API First] ✅ Amazon processado: ${result.name}`);
-            return result;
-          }
-        } catch (error) {
-          console.log(`[API First] Amazon processing falhou:`, error);
-        }
-        break;
-    }
-  }
-
-  // Fallback: tenta Google Shopping para qualquer URL
-  try {
-    console.log(`[API First] Tentando Google Shopping API como fallback`);
-    const googleResults = await fetchFromGoogleShopping(url);
-
-    if (googleResults && googleResults.length > 0) {
-      const bestResult = googleResults[0];
-      if (bestResult && (bestResult.price > 0 || bestResult.name !== 'Produto encontrado')) {
-        console.log(`[API First] ✅ Google Shopping sucesso: ${bestResult.name}`);
-        return bestResult;
-      }
-    }
-  } catch (error) {
-    console.log(`[API First] Google Shopping falhou:`, error);
-  }
-
-  console.log(`[API First] Todas as APIs falharam para: ${url}`);
-  return null;
 }
 
 // Importa função correta da API AliExpress
@@ -673,7 +611,7 @@ async function fetchAliExpressProduct(url: string): Promise<APIProductResult | n
       brand: result.brand,
       url: result.url
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('[AliExpress API] Erro na busca:', error.message);
     return null;
   }
@@ -718,12 +656,12 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
       console.log(`[API First] 🛒 AliExpress detectada - tentando API`);
       try {
         const aliResult = await fetchAliExpressProduct(url);
-        if (aliResult && 
-            aliResult.name && 
-            aliResult.name !== 'Produto AliExpress' && 
-            aliResult.name.length > 3 &&
-            aliResult.price && 
-            aliResult.price > 0) {
+        if (aliResult &&
+          aliResult.name &&
+          aliResult.name !== 'Produto AliExpress' &&
+          aliResult.name.length > 3 &&
+          aliResult.price &&
+          aliResult.price > 0) {
 
           console.log(`[API First] ✅ AliExpress API encontrou produto VÁLIDO: ${aliResult.name} - $${aliResult.price}`);
           results.push({
@@ -762,14 +700,15 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
       console.log(`[API First] Tentando Google Shopping como prioridade...`);
       const googleResults = await fetchFromGoogleShopping(url);
       if (googleResults && googleResults.length > 0) {
-        const validResults = googleResults.filter(r => r.price > 0 || r.name !== 'Produto encontrado');
+        const validResults = googleResults.filter(r => (r.price && r.price > 0) || r.name !== 'Produto encontrado');
         if (validResults.length > 0) {
           console.log(`[API First] ✅ Google Shopping encontrou ${validResults.length} produtos válidos`);
           results.push(...validResults.slice(0, 3));
         }
-      }      } catch (error) {
-        console.error('[API First] Erro no Google Shopping:', error);
       }
+    } catch (error) {
+      console.error('[API First] Erro no Google Shopping:', error);
+    }
 
     // PRIORIDADE 3: Mercado Livre como complemento
     const searchTerm = extractSearchTermFromUrl(url);
@@ -788,8 +727,8 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
       }
     }
 
-     // PRIORIDADE 4: Amazon como complemento
-     if (searchTerm && searchTerm.length >= 3 && url.includes('amazon.com')) {
+    // PRIORIDADE 4: Amazon como complemento
+    if (searchTerm && searchTerm.length >= 3 && url.includes('amazon.com')) {
       try {
         const amazonResults = await searchAmazonProducts(searchTerm);
         if (amazonResults && amazonResults.length > 0) {
@@ -813,4 +752,4 @@ export async function fetchProductFromAPIs(url: string): Promise<APIProductResul
   }
 }
 
-export { fetchFromGoogleShopping, APIProductResult };
+export { fetchFromGoogleShopping };

@@ -4,10 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { 
-  ShoppingCart, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  ShoppingCart,
+  DollarSign,
+  TrendingUp,
   Package,
   Star,
   Target,
@@ -241,11 +241,11 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
   }, {} as StoreStats);
 
   const topCategories = Object.entries(categoryStats)
-    .sort(([,a], [,b]) => b.total - a.total)
+    .sort(([, a], [, b]) => b.total - a.total)
     .slice(0, 5);
 
   const topStores = Object.entries(storeStats)
-    .sort(([,a], [,b]) => b.total - a.total)
+    .sort(([, a], [, b]) => b.total - a.total)
     .slice(0, 5);
 
   const averageSpent = totalProducts > 0 ? totalSpent / totalProducts : 0;
@@ -439,12 +439,11 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                 <div key={category} className="group">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        index === 0 ? 'bg-blue-500' : 
-                        index === 1 ? 'bg-green-500' : 
-                        index === 2 ? 'bg-purple-500' : 
-                        index === 3 ? 'bg-orange-500' : 'bg-red-500'
-                      }`}></div>
+                      <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-blue-500' :
+                          index === 1 ? 'bg-green-500' :
+                            index === 2 ? 'bg-purple-500' :
+                              index === 3 ? 'bg-orange-500' : 'bg-red-500'
+                        }`}></div>
                       <span className="font-medium">{category}</span>
                       <Badge variant="outline">{stats.count} itens</Badge>
                     </div>
@@ -465,8 +464,8 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                       </Button>
                     </div>
                   </div>
-                  <Progress 
-                    value={(stats.total / totalSpent) * 100} 
+                  <Progress
+                    value={(stats.total / totalSpent) * 100}
                     className="h-2"
                   />
                 </div>
@@ -488,12 +487,11 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                 <div key={store} className="group">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        index === 0 ? 'bg-green-500' : 
-                        index === 1 ? 'bg-blue-500' : 
-                        index === 2 ? 'bg-purple-500' : 
-                        index === 3 ? 'bg-orange-500' : 'bg-red-500'
-                      }`}></div>
+                      <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-green-500' :
+                          index === 1 ? 'bg-blue-500' :
+                            index === 2 ? 'bg-purple-500' :
+                              index === 3 ? 'bg-orange-500' : 'bg-red-500'
+                        }`}></div>
                       <span className="font-medium">{store}</span>
                       <Badge variant="outline">{stats.count} itens</Badge>
                     </div>
@@ -514,8 +512,8 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                       </Button>
                     </div>
                   </div>
-                  <Progress 
-                    value={(stats.total / totalSpent) * 100} 
+                  <Progress
+                    value={(stats.total / totalSpent) * 100}
                     className="h-2"
                   />
                 </div>
@@ -567,8 +565,8 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                       <div className="p-4 h-full flex flex-col">
                         <div className="flex items-start gap-4">
                           {product.imageUrl && (
-                            <img 
-                              src={product.imageUrl} 
+                            <img
+                              src={product.imageUrl}
                               alt={product.name}
                               className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer"
                               onClick={() => handleViewProduct(product)}
@@ -578,7 +576,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-semibold text-base leading-tight mb-2 line-clamp-2 cursor-pointer hover:text-green-300 text-white"
-                                    onClick={() => handleViewProduct(product)}>
+                                  onClick={() => handleViewProduct(product)}>
                                   {product.name}
                                 </h4>
                                 <div className="flex items-center gap-2 flex-wrap">
@@ -598,7 +596,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                             <div className="pt-3 border-t border-white/10 space-y-3">
                               <div className="flex items-center justify-center text-xs text-gray-400">
                                 <Calendar className="w-3 h-3 mr-1" />
-                                Comprado em {new Date(product.createdAt).toLocaleDateString('pt-BR')}
+                                Comprado em {product.createdAt ? new Date(product.createdAt).toLocaleDateString('pt-BR') : 'Data desconhecida'}
                               </div>
                               <div className="flex items-center justify-center gap-2 px-2">
                                 <Button
@@ -662,8 +660,8 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                       <div className="p-4 h-full flex flex-col">
                         <div className="flex items-start gap-4">
                           {product.imageUrl && (
-                            <img 
-                              src={product.imageUrl} 
+                            <img
+                              src={product.imageUrl}
                               alt={product.name}
                               className="w-20 h-20 object-cover rounded-lg flex-shrink-0 cursor-pointer"
                               onClick={() => handleViewProduct(product)}
@@ -673,7 +671,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-semibold text-base leading-tight mb-2 line-clamp-2 cursor-pointer hover:text-green-300 text-white"
-                                    onClick={() => handleViewProduct(product)}>
+                                  onClick={() => handleViewProduct(product)}>
                                   {product.name}
                                 </h4>
                                 <div className="flex items-center gap-2 flex-wrap">
@@ -693,7 +691,7 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                             <div className="pt-3 border-t border-white/10 space-y-3">
                               <div className="flex items-center justify-center text-xs text-gray-400">
                                 <Calendar className="w-3 h-3 mr-1" />
-                                Comprado em {new Date(product.createdAt).toLocaleDateString('pt-BR')}
+                                Comprado em {product.createdAt ? new Date(product.createdAt).toLocaleDateString('pt-BR') : 'Data desconhecida'}
                               </div>
                               <div className="flex items-center justify-center gap-2 px-2">
                                 <Button
@@ -805,8 +803,8 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
               {/* Imagem do produto */}
               {selectedProduct.imageUrl && (
                 <div className="flex justify-center">
-                  <img 
-                    src={selectedProduct.imageUrl} 
+                  <img
+                    src={selectedProduct.imageUrl}
                     alt={selectedProduct.name}
                     className="max-w-full max-h-64 object-contain rounded-lg"
                   />
@@ -841,10 +839,10 @@ export function HistoricoTab({ refreshKey }: HistoricoTabProps) {
                   <h3 className="font-semibold text-gray-700 mb-2">Prioridade</h3>
                   <Badge variant={
                     selectedProduct.priority === 'high' ? 'destructive' :
-                    selectedProduct.priority === 'medium' ? 'default' : 'secondary'
+                      selectedProduct.priority === 'medium' ? 'default' : 'secondary'
                   }>
                     {selectedProduct.priority === 'high' ? 'Alta' :
-                     selectedProduct.priority === 'medium' ? 'Média' : 'Baixa'}
+                      selectedProduct.priority === 'medium' ? 'Média' : 'Baixa'}
                   </Badge>
                 </div>
               </div>

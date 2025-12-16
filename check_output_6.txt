@@ -1,0 +1,21 @@
+
+> rest-express@1.0.0 check
+> tsc
+
+client/src/components/anycrawl-status.tsx(71,13): error TS2367: This comparison appears to be unintentional because the types 'AnyCrawlStatus' and 'string' have no overlap.
+client/src/components/anycrawl-status.tsx(72,13): error TS2367: This comparison appears to be unintentional because the types 'AnyCrawlStatus' and 'string' have no overlap.
+client/src/components/anycrawl-status.tsx(76,16): error TS2367: This comparison appears to be unintentional because the types 'AnyCrawlStatus' and 'string' have no overlap.
+client/src/components/anycrawl-status.tsx(77,16): error TS2367: This comparison appears to be unintentional because the types 'AnyCrawlStatus' and 'string' have no overlap.
+client/src/components/anycrawl-status.tsx(80,16): error TS2367: This comparison appears to be unintentional because the types 'AnyCrawlStatus' and 'string' have no overlap.
+client/src/components/anycrawl-status.tsx(81,16): error TS2367: This comparison appears to be unintentional because the types 'AnyCrawlStatus' and 'string' have no overlap.
+client/src/components/anycrawl-status.tsx(83,14): error TS2367: This comparison appears to be unintentional because the types 'AnyCrawlStatus' and 'string' have no overlap.
+client/src/components/favorites-system.tsx(6,10): error TS2724: '"@shared/schema"' has no exported member named 'Product'. Did you mean 'products'?
+client/src/components/favorites-system.tsx(40,58): error TS2802: Type 'Set<number>' can only be iterated through when using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher.
+client/src/components/favorites-system.tsx(54,58): error TS2802: Type 'Set<number>' can only be iterated through when using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher.
+client/src/components/favorites-system.tsx(242,58): error TS2802: Type 'Set<number>' can only be iterated through when using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher.
+client/src/components/shopping-list.tsx(7,15): error TS2724: '"@shared/schema"' has no exported member named 'Product'. Did you mean 'products'?
+client/src/components/smart-dashboard.tsx(789,27): error TS2322: Type '"500"' is not assignable to type 'number | "bold" | "normal" | "lighter" | "bolder" | ((ctx: ScriptableScaleContext, options: AnyObject) => number | "bold" | "normal" | "lighter" | "bolder" | null | undefined) | null | undefined'.
+client/src/components/smart-dashboard.tsx(797,25): error TS2353: Object literal may only specify known properties, and 'drawBorder' does not exist in type '_DeepPartialObject<Partial<GridLineOptions>>'.
+client/src/components/smart-dashboard.tsx(806,27): error TS2322: Type '"500"' is not assignable to type 'number | "bold" | "normal" | "lighter" | "bolder" | ((ctx: ScriptableScaleContext, options: AnyObject) => number | "bold" | "normal" | "lighter" | "bolder" | null | undefined) | null | undefined'.
+client/src/components/smart-dashboard.tsx(823,27): error TS2322: Type '"600"' is not assignable to type 'number | "bold" | "normal" | "lighter" | "bolder" | ((ctx: ScriptableChartContext, options: AnyObject) => number | "bold" | "normal" | "lighter" | "bolder" | null | undefined) | null | undefined'.
+client/src/components/smart-dashboard.tsx(875,27): error TS2322: Type '"500"' is not assignable to type 'number | "bold" | "normal" | "lighter" | "bolder" | ((ctx: ScriptableChartContext, options: AnyObject) => number | "bold" | "normal" | "lighter" | "bolder" | null | undefined) | null | undefined'.

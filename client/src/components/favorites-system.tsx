@@ -3,10 +3,10 @@ import { Heart, Star, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Product } from '@shared/schema';
+import { SelectProduct } from '@shared/schema';
 
 interface FavoritesSystemProps {
-  products: Product[];
+  products: SelectProduct[];
   onFavoriteToggle: (productId: number) => void;
 }
 
@@ -18,7 +18,7 @@ export function FavoritesSystem({ products, onFavoriteToggle }: FavoritesSystemP
     // Carrega favoritos do localStorage
     const savedFavorites = localStorage.getItem('favorites');
     const savedWatchlist = localStorage.getItem('watchlist');
-    
+
     if (savedFavorites) {
       setFavorites(new Set(JSON.parse(savedFavorites)));
     }
@@ -29,13 +29,13 @@ export function FavoritesSystem({ products, onFavoriteToggle }: FavoritesSystemP
 
   const toggleFavorite = (productId: number) => {
     const newFavorites = new Set(favorites);
-    
+
     if (newFavorites.has(productId)) {
       newFavorites.delete(productId);
     } else {
       newFavorites.add(productId);
     }
-    
+
     setFavorites(newFavorites);
     localStorage.setItem('favorites', JSON.stringify([...newFavorites]));
     onFavoriteToggle(productId);
@@ -43,22 +43,22 @@ export function FavoritesSystem({ products, onFavoriteToggle }: FavoritesSystemP
 
   const toggleWatchlist = (productId: number) => {
     const newWatchlist = new Set(watchlist);
-    
+
     if (newWatchlist.has(productId)) {
       newWatchlist.delete(productId);
     } else {
       newWatchlist.add(productId);
     }
-    
+
     setWatchlist(newWatchlist);
     localStorage.setItem('watchlist', JSON.stringify([...newWatchlist]));
   };
 
-  const getFavoriteProducts = () => {
+  const getFavoriteSelectProducts = () => {
     return products.filter(product => favorites.has(product.id));
   };
 
-  const getWatchlistProducts = () => {
+  const getWatchlistSelectProducts = () => {
     return products.filter(product => watchlist.has(product.id));
   };
 
@@ -112,11 +112,11 @@ export function FavoritesSystem({ products, onFavoriteToggle }: FavoritesSystemP
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {getFavoriteProducts().map(product => (
+              {getFavoriteSelectProducts().map(product => (
                 <div key={product.id} className="border rounded-lg p-4 space-y-2">
                   {product.imageUrl && (
-                    <img 
-                      src={product.imageUrl} 
+                    <img
+                      src={product.imageUrl}
                       alt={product.name}
                       className="w-full h-32 object-cover rounded"
                     />
@@ -143,11 +143,10 @@ export function FavoritesSystem({ products, onFavoriteToggle }: FavoritesSystemP
                         onClick={() => toggleWatchlist(product.id)}
                         className="h-8 w-8 p-0"
                       >
-                        <Bookmark className={`h-4 w-4 ${
-                          watchlist.has(product.id) 
-                            ? 'fill-blue-500 text-blue-500' 
+                        <Bookmark className={`h-4 w-4 ${watchlist.has(product.id)
+                            ? 'fill-blue-500 text-blue-500'
                             : 'text-gray-400'
-                        }`} />
+                          }`} />
                       </Button>
                     </div>
                   </div>
@@ -169,12 +168,12 @@ export function FavoritesSystem({ products, onFavoriteToggle }: FavoritesSystemP
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {getWatchlistProducts().map(product => (
+              {getWatchlistSelectProducts().map(product => (
                 <div key={product.id} className="flex items-center justify-between p-2 border rounded">
                   <div className="flex items-center gap-3">
                     {product.imageUrl && (
-                      <img 
-                        src={product.imageUrl} 
+                      <img
+                        src={product.imageUrl}
                         alt={product.name}
                         className="w-10 h-10 object-cover rounded"
                       />
@@ -193,11 +192,10 @@ export function FavoritesSystem({ products, onFavoriteToggle }: FavoritesSystemP
                       onClick={() => toggleFavorite(product.id)}
                       className="h-8 w-8 p-0"
                     >
-                      <Heart className={`h-4 w-4 ${
-                        favorites.has(product.id) 
-                          ? 'fill-red-500 text-red-500' 
+                      <Heart className={`h-4 w-4 ${favorites.has(product.id)
+                          ? 'fill-red-500 text-red-500'
                           : 'text-gray-400'
-                      }`} />
+                        }`} />
                     </Button>
                     <Button
                       variant="ghost"
@@ -231,13 +229,13 @@ export function useFavorites() {
 
   const toggleFavorite = (productId: number) => {
     const newFavorites = new Set(favorites);
-    
+
     if (newFavorites.has(productId)) {
       newFavorites.delete(productId);
     } else {
       newFavorites.add(productId);
     }
-    
+
     setFavorites(newFavorites);
     localStorage.setItem('favorites', JSON.stringify([...newFavorites]));
   };

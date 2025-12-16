@@ -22,10 +22,12 @@ interface SearchFilters {
 interface AdvancedSearchProps {
   onSearch: (filters: SearchFilters) => void;
   onReset: () => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function AdvancedSearch({ onSearch, onReset }: AdvancedSearchProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function AdvancedSearch({ onSearch, onReset, isOpen, onClose }: AdvancedSearchProps) {
+  // const [isOpen, setIsOpen] = useState(false); // Controlled by parent
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
     category: '',
@@ -110,7 +112,7 @@ export function AdvancedSearch({ onSearch, onReset }: AdvancedSearchProps) {
         </div>
         <Button
           variant="outline"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={isOpen ? onClose : () => { }}
           className="flex items-center gap-2"
         >
           <Filter className="h-4 w-4" />
@@ -129,8 +131,8 @@ export function AdvancedSearch({ onSearch, onReset }: AdvancedSearchProps) {
           {filters.query && (
             <Badge variant="secondary" className="flex items-center gap-1">
               Busca: "{filters.query}"
-              <X 
-                className="h-3 w-3 cursor-pointer" 
+              <X
+                className="h-3 w-3 cursor-pointer"
                 onClick={() => handleFilterChange('query', '')}
               />
             </Badge>
@@ -138,8 +140,8 @@ export function AdvancedSearch({ onSearch, onReset }: AdvancedSearchProps) {
           {filters.category && (
             <Badge variant="secondary" className="flex items-center gap-1">
               Categoria: {filters.category}
-              <X 
-                className="h-3 w-3 cursor-pointer" 
+              <X
+                className="h-3 w-3 cursor-pointer"
                 onClick={() => handleFilterChange('category', '')}
               />
             </Badge>
@@ -147,8 +149,8 @@ export function AdvancedSearch({ onSearch, onReset }: AdvancedSearchProps) {
           {filters.store && (
             <Badge variant="secondary" className="flex items-center gap-1">
               Loja: {filters.store}
-              <X 
-                className="h-3 w-3 cursor-pointer" 
+              <X
+                className="h-3 w-3 cursor-pointer"
                 onClick={() => handleFilterChange('store', '')}
               />
             </Badge>
@@ -156,8 +158,8 @@ export function AdvancedSearch({ onSearch, onReset }: AdvancedSearchProps) {
           {(filters.minPrice > 0 || filters.maxPrice < 10000) && (
             <Badge variant="secondary" className="flex items-center gap-1">
               Preço: R$ {filters.minPrice} - R$ {filters.maxPrice}
-              <X 
-                className="h-3 w-3 cursor-pointer" 
+              <X
+                className="h-3 w-3 cursor-pointer"
                 onClick={() => {
                   handleFilterChange('minPrice', 0);
                   handleFilterChange('maxPrice', 10000);
@@ -168,8 +170,8 @@ export function AdvancedSearch({ onSearch, onReset }: AdvancedSearchProps) {
           {filters.onlyPurchased && (
             <Badge variant="secondary" className="flex items-center gap-1">
               Apenas comprados
-              <X 
-                className="h-3 w-3 cursor-pointer" 
+              <X
+                className="h-3 w-3 cursor-pointer"
                 onClick={() => handleFilterChange('onlyPurchased', false)}
               />
             </Badge>
@@ -177,8 +179,8 @@ export function AdvancedSearch({ onSearch, onReset }: AdvancedSearchProps) {
           {filters.onlyUnpurchased && (
             <Badge variant="secondary" className="flex items-center gap-1">
               Apenas não comprados
-              <X 
-                className="h-3 w-3 cursor-pointer" 
+              <X
+                className="h-3 w-3 cursor-pointer"
                 onClick={() => handleFilterChange('onlyUnpurchased', false)}
               />
             </Badge>

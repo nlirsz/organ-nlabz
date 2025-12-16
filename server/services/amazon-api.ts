@@ -25,20 +25,20 @@ const AMAZON_SERVICE = 'ProductAdvertisingAPI';
 // Função para gerar assinatura AWS4
 function createSignature(method: string, uri: string, queryParams: string, headers: any, payload: string, timestamp: string): string {
   const dateStamp = timestamp.substring(0, 8);
-  
+
   // Criar canonical request
   const canonicalHeaders = Object.keys(headers)
     .sort()
     .map(key => `${key.toLowerCase()}:${headers[key]}`)
     .join('\n') + '\n';
-    
+
   const signedHeaders = Object.keys(headers)
     .sort()
     .map(key => key.toLowerCase())
     .join(';');
-    
+
   const payloadHash = crypto.createHash('sha256').update(payload).digest('hex');
-  
+
   const canonicalRequest = [
     method,
     uri,
@@ -47,7 +47,7 @@ function createSignature(method: string, uri: string, queryParams: string, heade
     signedHeaders,
     payloadHash
   ].join('\n');
-  
+
   // Criar string to sign
   const algorithm = 'AWS4-HMAC-SHA256';
   const credentialScope = `${dateStamp}/${AMAZON_REGION}/${AMAZON_SERVICE}/aws4_request`;
@@ -57,15 +57,15 @@ function createSignature(method: string, uri: string, queryParams: string, heade
     credentialScope,
     crypto.createHash('sha256').update(canonicalRequest).digest('hex')
   ].join('\n');
-  
+
   // Calcular assinatura
   const kDate = crypto.createHmac('sha256', `AWS4${AMAZON_SECRET_KEY}`).update(dateStamp).digest();
   const kRegion = crypto.createHmac('sha256', kDate).update(AMAZON_REGION).digest();
   const kService = crypto.createHmac('sha256', kRegion).update(AMAZON_SERVICE).digest();
   const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest();
-  
+
   const signature = crypto.createHmac('sha256', kSigning).update(stringToSign).digest('hex');
-  
+
   return `${algorithm} Credential=${AMAZON_ACCESS_KEY}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 }
 
@@ -104,13 +104,13 @@ export function addPartnerTagToAmazonUrl(url: string, asin: string): string {
 
   try {
     const urlObj = new URL(url);
-    
+
     // Remove tag existente se houver
     urlObj.searchParams.delete('tag');
-    
+
     // Adiciona nosso partner tag
     urlObj.searchParams.set('tag', AMAZON_PARTNER_TAG);
-    
+
     return urlObj.toString();
   } catch (error) {
     // Se der erro no parse da URL, cria URL limpa com nosso tag
@@ -134,7 +134,7 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
     }
 
     console.log(`[Amazon API] Sem credenciais da API, criando produto básico com partner tag: ${AMAZON_PARTNER_TAG}`);
-    
+
     return {
       name: 'Produto Amazon',
       price: null,
@@ -169,7 +169,7 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
       Marketplace: 'www.amazon.com.br'
     });
 
-    const headers = {
+    const headers: any = {
       'Content-Type': 'application/json; charset=utf-8',
       'Host': AMAZON_HOST,
       'X-Amz-Date': timestamp,
@@ -190,13 +190,13 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
     }
 
     const item = response.data.ItemsResult.Items[0];
-    
+
     // Extrai informações do produto
     const name = item.ItemInfo?.Title?.DisplayValue || 'Produto Amazon';
-    
+
     let price: number | null = null;
     let originalPrice: number | null = null;
-    
+
     if (item.Offers?.Listings && item.Offers.Listings.length > 0) {
       const listing = item.Offers.Listings[0];
       if (listing.Price?.Amount) {
@@ -209,11 +209,11 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
     }
 
     const imageUrl = item.Images?.Primary?.Large?.URL || null;
-    
+
     const brand = item.ItemInfo?.ByLineInfo?.Brand?.DisplayValue || null;
-    
+
     const category = item.ItemInfo?.Classifications?.ProductGroup?.DisplayValue || 'Outros';
-    
+
     const features = item.ItemInfo?.Features?.DisplayValues || [];
     const description = features.length > 0 ? features.slice(0, 3).join('. ') : null;
 
@@ -232,9 +232,9 @@ export async function fetchAmazonProduct(url: string): Promise<AmazonProductResu
     console.log(`[Amazon API] ✅ Produto encontrado: ${name} - R$ ${price}`);
     return result;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Amazon API] Erro ao buscar produto:', error.message);
-    
+
     return {
       name: 'Produto Amazon',
       price: null,
@@ -275,7 +275,7 @@ export async function searchAmazonProducts(searchTerm: string, maxResults: numbe
       ItemCount: Math.min(maxResults, 10)
     });
 
-    const headers = {
+    const headers: any = {
       'Content-Type': 'application/json; charset=utf-8',
       'Host': AMAZON_HOST,
       'X-Amz-Date': timestamp,
@@ -299,7 +299,7 @@ export async function searchAmazonProducts(searchTerm: string, maxResults: numbe
 
     for (const item of response.data.SearchResult.Items.slice(0, maxResults)) {
       const name = item.ItemInfo?.Title?.DisplayValue || 'Produto Amazon';
-      
+
       let price: number | null = null;
       if (item.Offers?.Listings && item.Offers.Listings.length > 0) {
         const listing = item.Offers.Listings[0];
@@ -330,7 +330,7 @@ export async function searchAmazonProducts(searchTerm: string, maxResults: numbe
     console.log(`[Amazon Search] ${results.length} produtos encontrados`);
     return results;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Amazon Search] Erro na busca:', error.message);
     return [];
   }

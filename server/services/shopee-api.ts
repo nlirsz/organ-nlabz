@@ -54,10 +54,10 @@ export function extractShopeeProductId(url: string): string | null {
 export function cleanShopeeUrl(url: string): string {
   try {
     const urlObj = new URL(url);
-    
+
     // Remove todos os parâmetros de consulta existentes
     urlObj.search = '';
-    
+
     return urlObj.toString();
   } catch (error) {
     console.error('[Shopee] Erro ao limpar URL:', error);
@@ -76,19 +76,19 @@ export function addShopeeAffiliateParams(url: string): string {
     // Primeiro limpa a URL
     const cleanUrl = cleanShopeeUrl(url);
     const urlObj = new URL(cleanUrl);
-    
+
     // Adiciona os parâmetros de afiliado
     urlObj.searchParams.set('af_click_lookback', '7d');
     urlObj.searchParams.set('af_viewthrough_lookback', '1d');
     urlObj.searchParams.set('pid', 'af_app_invites');
     urlObj.searchParams.set('c', SHOPEE_SUB_ID);
     urlObj.searchParams.set('af_siteid', SHOPEE_AFFILIATE_ID);
-    
+
     const affiliateUrl = urlObj.toString();
-    
+
     console.log(`[Shopee] URL convertida para afiliado: ${url} → ${affiliateUrl}`);
     return affiliateUrl;
-    
+
   } catch (error) {
     console.error('[Shopee] Erro ao adicionar parâmetros de afiliado:', error);
     return url;
@@ -124,7 +124,7 @@ export async function fetchShopeeProduct(url: string): Promise<ShopeeProductResu
 
   try {
     console.log(`[Shopee] Buscando produto ID: ${productId} no catálogo`);
-    
+
     // Busca no catálogo primeiro
     const catalogProduct = await searchProductInCatalog(productId, url);
     if (catalogProduct) {
@@ -152,11 +152,11 @@ async function searchProductInCatalog(productId: string, originalUrl: string): P
 
     // Extrai shop_id e item_id do productId
     const [shopId, itemId] = productId.split('.');
-    
+
     console.log(`[Shopee Catalog] Procurando shop_id: ${shopId}, item_id: ${itemId}`);
 
     // BUSCA EXATA PRIORITÁRIA: shop_id E item_id devem coincidir
-    let product = catalog.find((p: any) => 
+    let product = catalog.find((p: any) =>
       p.shop_id?.toString() === shopId && p.item_id?.toString() === itemId
     );
 
@@ -164,7 +164,7 @@ async function searchProductInCatalog(productId: string, originalUrl: string): P
       console.log(`[Shopee Catalog] ✅ Busca exata encontrada: ${product.name}`);
     } else {
       console.log(`[Shopee Catalog] ❌ Busca exata falhou - produto não encontrado no catálogo`);
-      
+
       // Log para debug: mostra alguns produtos do catálogo para comparação
       const sampleProducts = catalog.slice(0, 5);
       console.log('[Shopee Catalog] Exemplos do catálogo:', sampleProducts.map(p => ({
@@ -172,7 +172,7 @@ async function searchProductInCatalog(productId: string, originalUrl: string): P
         item_id: p.item_id,
         name: p.name?.substring(0, 50)
       })));
-      
+
       return null; // Não faz busca alternativa que pode dar erro
     }
 
@@ -183,7 +183,7 @@ async function searchProductInCatalog(productId: string, originalUrl: string): P
     }
 
     // Validação de preço
-    const price = parseFloat(product.price);
+    const price = product.price;
     if (!price || price <= 0) {
       console.log(`[Shopee Catalog] ⚠️ Produto encontrado mas com preço inválido: ${product.price}`);
       return null;
@@ -193,11 +193,11 @@ async function searchProductInCatalog(productId: string, originalUrl: string): P
 
     // Converte para o formato padrão
     const affiliateUrl = addShopeeAffiliateParams(originalUrl);
-    
+
     return {
       name: product.name.trim(),
       price: price,
-      originalPrice: product.original_price ? parseFloat(product.original_price) : null,
+      originalPrice: product.original_price || null,
       imageUrl: product.image_url || null,
       store: 'Shopee',
       description: product.description?.trim() || `${product.name} - Produto da Shopee`,
@@ -217,16 +217,16 @@ function extractKeywordsFromUrl(url: string): string[] {
   try {
     const urlObj = new URL(url);
     const pathname = urlObj.pathname;
-    
+
     // Remove parâmetros comuns e extrai palavras significativas
-    const segments = pathname.split('/').filter(segment => 
-      segment.length > 3 && 
+    const segments = pathname.split('/').filter(segment =>
+      segment.length > 3 &&
       !segment.match(/^(i\.|shopee|br|product)$/i) &&
       !segment.match(/^\d+$/) // Remove números puros
     );
 
     const keywords: string[] = [];
-    
+
     for (const segment of segments) {
       // Quebra por hífens e underscores
       const words = segment.split(/[-_]/).filter(word => word.length > 2);
@@ -243,7 +243,7 @@ function extractKeywordsFromUrl(url: string): string[] {
 // Função para baixar e processar o catálogo da Shopee
 export async function fetchFromShopeeCatalog(): Promise<ShopeeCatalogProduct[]> {
   const SHOPEE_CATALOG_URL = 'https://affiliate.shopee.com.br/api/v1/datafeed/download?id=YWJjZGVmZ2hpamtsbW5vcPNcbnfdFhhQkoz1FtnUm6DtED25ejObtofpYLqHBC0h';
-  
+
   try {
     // Verifica cache primeiro
     const now = Date.now();
@@ -253,7 +253,7 @@ export async function fetchFromShopeeCatalog(): Promise<ShopeeCatalogProduct[]> 
     }
 
     console.log('[Shopee Catalog] 📥 Baixando catálogo da Shopee...');
-    
+
     const response = await fetch(SHOPEE_CATALOG_URL, {
       method: 'GET',
       headers: {
@@ -262,7 +262,6 @@ export async function fetchFromShopeeCatalog(): Promise<ShopeeCatalogProduct[]> 
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive'
       },
-      timeout: 30000
     });
 
     if (!response.ok) {
@@ -275,7 +274,7 @@ export async function fetchFromShopeeCatalog(): Promise<ShopeeCatalogProduct[]> 
 
     // Processa o CSV
     const products = parseShopeeCsv(csvData);
-    
+
     if (products.length > 0) {
       shopeeCatalogCache = products;
       catalogCacheTime = now;
@@ -288,13 +287,13 @@ export async function fetchFromShopeeCatalog(): Promise<ShopeeCatalogProduct[]> 
 
   } catch (error) {
     console.error('[Shopee Catalog] ❌ Erro ao baixar catálogo:', error);
-    
+
     // Se tem cache antigo, usa ele
     if (shopeeCatalogCache.length > 0) {
       console.log(`[Shopee Catalog] 🔄 Usando cache antigo (${shopeeCatalogCache.length} produtos)`);
       return shopeeCatalogCache;
     }
-    
+
     return [];
   }
 }
@@ -334,7 +333,7 @@ function parseShopeeCsv(csvData: string): ShopeeCatalogProduct[] {
     for (let i = 1; i < lines.length; i++) {
       try {
         const values = parseCsvLine(lines[i]);
-        
+
         if (values.length < headers.length) {
           continue; // Pula linhas incompletas
         }
@@ -353,14 +352,14 @@ function parseShopeeCsv(csvData: string): ShopeeCatalogProduct[] {
         };
 
         // Validação mais rigorosa
-        const isValidProduct = product.item_id && 
-                              product.item_id.length > 5 && 
-                              product.name && 
-                              product.name.length > 3 && 
-                              product.price > 0 &&
-                              !product.name.includes('|') && // Remove produtos com nomes estranhos
-                              !product.name.match(/^\d+$/) && // Remove produtos que são só números
-                              product.name.length < 200; // Remove nomes muito longos
+        const isValidProduct = product.item_id &&
+          product.item_id.length > 5 &&
+          product.name &&
+          product.name.length > 3 &&
+          product.price > 0 &&
+          !product.name.includes('|') && // Remove produtos com nomes estranhos
+          !product.name.match(/^\d+$/) && // Remove produtos que são só números
+          product.name.length < 200; // Remove nomes muito longos
 
         if (isValidProduct) {
           products.push(product);
@@ -407,10 +406,10 @@ function parseCsvLine(line: string): string[] {
   const values: string[] = [];
   let current = '';
   let inQuotes = false;
-  
+
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
-    
+
     if (char === '"') {
       inQuotes = !inQuotes;
     } else if (char === ',' && !inQuotes) {
@@ -420,7 +419,7 @@ function parseCsvLine(line: string): string[] {
       current += char;
     }
   }
-  
+
   values.push(current); // Adiciona último valor
   return values;
 }

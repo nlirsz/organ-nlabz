@@ -8,12 +8,12 @@ import { ShoppingCart, Store, Calendar } from 'lucide-react';
 interface Product {
   id: number;
   name: string;
-  price: string;
-  category: string;
-  store: string;
-  imageUrl?: string;
-  isPurchased: boolean;
-  createdAt: string;
+  price: string | null;
+  category: string | null;
+  store: string | null;
+  imageUrl?: string | null;
+  isPurchased: boolean | null;
+  createdAt: string | Date | null;
 }
 
 interface CategoryProductsModalProps {
@@ -24,15 +24,16 @@ interface CategoryProductsModalProps {
 }
 
 export function CategoryProductsModal({ isOpen, onClose, category, products }: CategoryProductsModalProps) {
-  const categoryProducts = products.filter(product => 
+  const categoryProducts = products.filter(product =>
     product.category?.toLowerCase() === category.toLowerCase() && product.isPurchased
   );
 
-  const totalSpent = categoryProducts.reduce((sum, product) => 
-    sum + (parseFloat(product.price) || 0), 0
+  const totalSpent = categoryProducts.reduce((sum, product) =>
+    sum + (product.price ? parseFloat(product.price) : 0), 0
   );
 
-  const formatPrice = (price: string | number) => {
+  const formatPrice = (price: string | number | null) => {
+    if (price === null) return 'R$ 0,00';
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -74,12 +75,12 @@ export function CategoryProductsModal({ isOpen, onClose, category, products }: C
                       }}
                     />
                   )}
-                  
+
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-1">
                       {product.name}
                     </h3>
-                    
+
                     <div className="flex items-center gap-2 mb-2">
                       <Badge variant="outline" className="text-xs">
                         {product.category}
@@ -96,7 +97,7 @@ export function CategoryProductsModal({ isOpen, onClose, category, products }: C
                         <p className="text-lg font-bold text-green-600">
                           {formatPrice(product.price)}
                         </p>
-                        
+
                         {product.store && (
                           <div className="flex items-center gap-1 text-xs text-gray-600">
                             <Store className="w-3 h-3" />
@@ -108,7 +109,7 @@ export function CategoryProductsModal({ isOpen, onClose, category, products }: C
                       <div className="text-right">
                         <div className="flex items-center gap-1 text-xs text-gray-500">
                           <Calendar className="w-3 h-3" />
-                          {new Date(product.createdAt).toLocaleDateString('pt-BR')}
+                          {product.createdAt ? new Date(product.createdAt).toLocaleDateString('pt-BR') : 'Data desconhecida'}
                         </div>
                       </div>
                     </div>

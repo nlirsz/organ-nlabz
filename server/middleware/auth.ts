@@ -21,19 +21,19 @@ export interface TokenPair {
 
 export const generateTokenPair = (userId: string): TokenPair => {
   const payload = { userId };
-  
+
   const accessToken = jwt.sign(
     payload,
     JWT_SECRET,
     { expiresIn: '1h' } // Access token válido por 1 hora
   );
-  
+
   const refreshToken = jwt.sign(
     payload,
     REFRESH_SECRET,
     { expiresIn: '7d' } // Long-lived refresh token
   );
-  
+
   return { accessToken, refreshToken };
 };
 
@@ -67,7 +67,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
     const userId = decoded.userId;
-    
+
     if (!userId) {
       return res.status(401).json({ msg: 'Estrutura de token inválida.' });
     }
@@ -84,7 +84,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     }
 
     // Attach user info to request
-    req.user = {
+    (req as any).user = {
       userId: user.id.toString(),
       _id: user.id.toString(),
       username: user.username
@@ -98,20 +98,20 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     }
 
     if (err.name === 'TokenExpiredError') {
-      res.status(401).json({ 
-        msg: 'Token expirado.', 
+      res.status(401).json({
+        msg: 'Token expirado.',
         error: 'TOKEN_EXPIRED',
-        details: 'Faça login novamente.' 
+        details: 'Faça login novamente.'
       });
     } else if (err.name === 'JsonWebTokenError') {
-      res.status(401).json({ 
-        msg: 'Token inválido.', 
-        error: 'INVALID_TOKEN' 
+      res.status(401).json({
+        msg: 'Token inválido.',
+        error: 'INVALID_TOKEN'
       });
     } else {
-      res.status(401).json({ 
-        msg: 'Token não é válido.', 
-        error: 'AUTH_ERROR' 
+      res.status(401).json({
+        msg: 'Token não é válido.',
+        error: 'AUTH_ERROR'
       });
     }
   }

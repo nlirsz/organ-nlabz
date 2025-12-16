@@ -33,7 +33,7 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
     processedUrl = addShopeeAffiliateParams(url);
     console.log(`[Scraper] 🛍️ URL da Shopee convertida para afiliado: ${url} → ${processedUrl}`);
   }
-  
+
   // VERIFICAÇÃO ESPECÍFICA: Se for AliExpress, converte URL para afiliado
   if (isAliExpressUrl(url)) {
     processedUrl = addAliExpressAffiliateParams(url);
@@ -46,22 +46,22 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
   try {
     console.log(`[Scraper] 🌐 TENTATIVA 1: HTTP direto + Cheerio`);
     const httpResult = await scrapeWithHttp(processedUrl);
-    
+
     // Valida se obteve dados reais (nome específico E pelo menos preço OU imagem válida)
-    const hasValidName = httpResult?.name && 
-                        httpResult.name !== 'Produto encontrado' && 
-                        httpResult.name !== `Produto de ${httpResult.store}` &&
-                        httpResult.name.length >= 3; // Aceita nomes curtos como "PS5", "SSD"
-    
+    const hasValidName = httpResult?.name &&
+      httpResult.name !== 'Produto encontrado' &&
+      httpResult.name !== `Produto de ${httpResult.store}` &&
+      httpResult.name.length >= 3; // Aceita nomes curtos como "PS5", "SSD"
+
     const hasPrice = httpResult?.price && httpResult.price > 0;
-    
+
     // Valida imagem: aceita URLs absolutas, protocol-relative (//cdn.example.com) e relativas
-    const hasValidImage = httpResult?.imageUrl && 
-                         !httpResult.imageUrl.includes('placeholder') &&
-                         (httpResult.imageUrl.startsWith('http') || 
-                          httpResult.imageUrl.startsWith('//') ||
-                          httpResult.imageUrl.startsWith('/'));
-    
+    const hasValidImage = httpResult?.imageUrl &&
+      !httpResult.imageUrl.includes('placeholder') &&
+      (httpResult.imageUrl.startsWith('http') ||
+        httpResult.imageUrl.startsWith('//') ||
+        httpResult.imageUrl.startsWith('/'));
+
     // Considera sucesso se tem nome válido E (preço OU imagem)
     if (httpResult && hasValidName && (hasPrice || hasValidImage)) {
       console.log(`[Scraper] ✅ HTTP SUCESSO: "${httpResult.name}" - Preço: ${hasPrice ? 'R$ ' + httpResult.price : 'N/A'}, Imagem: ${hasValidImage ? 'OK' : 'N/A'}`);
@@ -83,19 +83,19 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
 
   // ESTRATÉGIA 3: AnyCrawl Premium (SEMPRE usado quando HTTP falha)
   const isAnyCrawlAvailable = anyCrawlService.isAvailable();
-  
+
   if (httpFailed) {
     if (!isAnyCrawlAvailable) {
       console.log(`[Scraper] ⚠️ AnyCrawl não disponível (API Key: ${process.env.ANYCRAWL_API_KEY ? 'OK' : 'AUSENTE'}, Conectividade: FALHOU)`);
       console.log(`[Scraper] 💡 Verifique: 1) API Key nos Secrets, 2) Conectividade de rede do Replit`);
     }
   }
-  
+
   if (isAnyCrawlAvailable && httpFailed) {
     try {
       console.log(`[Scraper] 💎 TENTATIVA 2: AnyCrawl Premium (HTTP falhou - usando fallback)`);
       console.log(`[Scraper] 💰 AVISO: Esta operação consumirá créditos AnyCrawl`);
-      
+
       // USA O WRAPPER COM RATE LIMITING
       const anyCrawlResult = await anyCrawlWrapper.scrapeUrl(processedUrl, {
         extractMetadata: true,
@@ -104,11 +104,11 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
         timeout: 30000,
         priority: 'normal'
       });
-      
+
       if (anyCrawlResult && anyCrawlResult.success) {
         // Extrai informações do resultado do AnyCrawl
         let productResult: ScrapedProduct;
-        
+
         if (anyCrawlResult.data.metadata) {
           // Usa metadata primeiro
           const metadata = anyCrawlResult.data.metadata;
@@ -127,7 +127,7 @@ export async function scrapeProductFromUrl(url: string): Promise<ScrapedProduct>
         } else {
           throw new Error('AnyCrawl não retornou dados úteis');
         }
-        
+
         if (productResult && productResult.name !== `Produto de ${productResult.store}`) {
           console.log(`[Scraper] ✅ ANYCRAWL SUCESSO: "${productResult.name}"`);
           return productResult;
@@ -185,21 +185,21 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
       axiosConfig.headers['Pragma'] = 'no-cache';
       axiosConfig.timeout = 35000; // 35s para AliExpress (sites complexos)
       axiosConfig.maxRedirects = 25; // Mais redirecionamentos (AliExpress usa muitos)
-      axiosConfig.validateStatus = (status) => status < 500; // Aceita 3xx e 4xx
+      axiosConfig.validateStatus = (status: number) => status < 500; // Aceita 3xx e 4xx
 
       // Múltiplas tentativas para AliExpress
       let lastError: any;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           console.log(`[HTTP] 🛒 Tentativa ${attempt}/3 para AliExpress`);
-          
+
           axiosConfig.headers['User-Agent'] = userAgents[attempt - 1];
-          
+
           const response = await axios.get(url, axiosConfig);
           const html = response.data;
-          
+
           console.log(`[HTTP] ✅ HTML recebido na tentativa ${attempt}: ${Math.round(html.length / 1000)}KB`);
-          
+
           // Verifica se o HTML contém dados de produto real
           if (html.length > 5000 && (html.includes('product') || html.includes('item') || html.includes('runParams'))) {
             console.log(`[HTTP] 🛒 HTML válido detectado na tentativa ${attempt}`);
@@ -209,7 +209,7 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
             await new Promise(resolve => setTimeout(resolve, 2000 * attempt)); // Delay progressivo
             continue;
           }
-          
+
         } catch (error: any) {
           lastError = error;
           console.warn(`[HTTP] 🛒 Tentativa ${attempt} falhou:`, error.message);
@@ -218,7 +218,7 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
           }
         }
       }
-      
+
       if (lastError) throw lastError;
     }
 
@@ -227,15 +227,15 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         console.log(`[HTTP] 🌐 Tentativa ${attempt}/2 para ${new URL(url).hostname}`);
-        
+
         // Rotaciona user agent
         axiosConfig.headers['User-Agent'] = userAgents[attempt - 1];
-        
+
         const response = await axios.get(url, axiosConfig);
         const html = response.data;
-        
+
         console.log(`[HTTP] ✅ HTML recebido na tentativa ${attempt}: ${Math.round(html.length / 1000)}KB`);
-        
+
         // Verifica se HTML tem conteúdo mínimo
         if (html.length > 1000) {
           return await extractProductInfo(url, html);
@@ -245,7 +245,7 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
             await new Promise(resolve => setTimeout(resolve, 3000));
           }
         }
-        
+
       } catch (error: any) {
         lastError = error;
         console.warn(`[HTTP] ⚠️ Tentativa ${attempt} falhou:`, error.message);
@@ -254,7 +254,7 @@ async function scrapeWithHttp(url: string): Promise<ScrapedProduct> {
         }
       }
     }
-    
+
     if (lastError) throw lastError;
     throw new Error('Falha em todas as tentativas de requisição HTTP');
 

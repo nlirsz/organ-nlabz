@@ -67,20 +67,18 @@ export function AnyCrawlStatus() {
       </CardHeader>
       <CardContent className="pt-4">
         <div className="flex items-center space-x-3">
-          <div className={`w-3 h-3 rounded-full ${
-            status === 'available' ? 'bg-green-500' : 
-            status === 'unavailable' ? 'bg-red-500' : 'bg-yellow-500'
-          }`} />
+          <div className={`w-3 h-3 rounded-full ${status?.available ? 'bg-green-500' : 'bg-red-500'
+            }`} />
           <div className="flex-1">
             <p className="text-sm font-medium">
-              {status === 'available' ? 'AnyCrawl Ativo' :
-               status === 'unavailable' ? 'AnyCrawl Indisponível' : 'Verificando...'}
+              {status?.available ? 'AnyCrawl Ativo' : 'AnyCrawl Indisponível'}
             </p>
             <p className="text-xs text-muted-foreground">
-              {status === 'available' ? 'Usado automaticamente apenas para sites difíceis (economiza créditos)' :
-               status === 'unavailable' ? 'API Key não configurada nos Secrets' : 'Aguardando verificação...'}
+              {status?.available
+                ? `Créditos restantes: ${status.remaining_credits}`
+                : 'API Key não configurada'}
             </p>
-            {status === 'available' && (
+            {status?.available && (
               <p className="text-xs text-orange-600 mt-1">
                 💡 Sites como Mercado Livre e Amazon usarão AnyCrawl apenas se APIs e scraping normal falharem
               </p>

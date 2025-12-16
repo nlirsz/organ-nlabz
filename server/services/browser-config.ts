@@ -25,7 +25,7 @@ export const REPLIT_BROWSER_CONFIG = {
       '--max_old_space_size=4096'
     ]
   },
-  
+
   // Headers otimizados para requisições HTTP
   httpHeaders: {
     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -54,7 +54,7 @@ export function checkPlaywrightAvailability(): boolean {
   try {
     require('playwright');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.warn('[Browser] Playwright não disponível:', error.message);
     return false;
   }

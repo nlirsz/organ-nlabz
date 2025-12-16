@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { MagicBento } from '@/components/ui/magic-bento';
-import { 
-  ShoppingCart, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  ShoppingCart,
+  DollarSign,
+  TrendingUp,
   Package,
   Calendar,
   CreditCard,
@@ -130,22 +130,22 @@ export function SmartDashboard() {
       try {
         const [productsRes, statsRes, financesRes, installmentsRes] = await Promise.all([
           fetch("/api/products", {
-            headers: { 
+            headers: {
               "x-auth-token": authToken
             }
           }),
           fetch(`/api/products/stats/${userId}`, {
-            headers: { 
+            headers: {
               "x-auth-token": authToken
             }
           }),
           fetch("/api/finances", {
-            headers: { 
+            headers: {
               "x-auth-token": authToken
             }
           }),
           fetch("/api/installments", {
-            headers: { 
+            headers: {
               "x-auth-token": authToken
             }
           })
@@ -229,7 +229,7 @@ export function SmartDashboard() {
 
   // Produtos adicionados no mês atual
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const currentMonthProducts = products.filter(p => 
+  const currentMonthProducts = products.filter(p =>
     p.createdAt && p.createdAt.startsWith(currentMonth)
   );
   const currentMonthValue = currentMonthProducts.reduce((sum, p) => sum + parseFloat(p.price || '0'), 0);
@@ -285,9 +285,9 @@ export function SmartDashboard() {
   }, {});
 
   const topCategoryByItems = Object.entries(categoryStats)
-    .sort(([,a], [,b]) => b.total - a.total)[0];
+    .sort(([, a], [, b]) => b.total - a.total)[0];
   const topCategoryByPurchased = Object.entries(categoryStats)
-    .sort(([,a], [,b]) => b.purchased - a.purchased)[0];
+    .sort(([, a], [, b]) => b.purchased - a.purchased)[0];
 
   // Lojas
   const storeStats = products.reduce((acc: Record<string, {
@@ -351,7 +351,7 @@ export function SmartDashboard() {
         borderColor: 'rgba(34, 197, 94, 1)',
         backgroundColor: (context: any) => {
           const chart = context.chart;
-          const {ctx, chartArea} = chart;
+          const { ctx, chartArea } = chart;
           if (!chartArea) return null;
           const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           gradient.addColorStop(0, 'rgba(34, 197, 94, 0.05)');
@@ -374,7 +374,7 @@ export function SmartDashboard() {
         borderColor: 'rgba(239, 68, 68, 1)',
         backgroundColor: (context: any) => {
           const chart = context.chart;
-          const {ctx, chartArea} = chart;
+          const { ctx, chartArea } = chart;
           if (!chartArea) return null;
           const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           gradient.addColorStop(0, 'rgba(239, 68, 68, 0.05)');
@@ -397,7 +397,7 @@ export function SmartDashboard() {
         borderColor: 'rgba(59, 130, 246, 1)',
         backgroundColor: (context: any) => {
           const chart = context.chart;
-          const {ctx, chartArea} = chart;
+          const { ctx, chartArea } = chart;
           if (!chartArea) return null;
           const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
           gradient.addColorStop(0, 'rgba(59, 130, 246, 0.05)');
@@ -529,9 +529,9 @@ export function SmartDashboard() {
                 <p className="text-sm font-medium text-gray-600">Produtos Comprados</p>
                 <p className="text-2xl font-bold text-gray-900">{purchasedProducts.length}</p>
                 <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div 
-                    className="bg-gradient-to-r from-green-400 to-emerald-500 h-1.5 rounded-full transition-all duration-1000" 
-                    style={{width: `${(purchasedProducts.length / products.length) * 100}%`}}
+                  <div
+                    className="bg-gradient-to-r from-green-400 to-emerald-500 h-1.5 rounded-full transition-all duration-1000"
+                    style={{ width: `${(purchasedProducts.length / products.length) * 100}%` }}
                   ></div>
                 </div>
               </div>
@@ -765,7 +765,7 @@ export function SmartDashboard() {
           </CardHeader>
           <CardContent>
             <div className="h-80">
-              <Line 
+              <Line
                 data={financeChartData}
                 options={{
                   responsive: true,
@@ -786,7 +786,7 @@ export function SmartDashboard() {
                         color: '#6B7280',
                         font: {
                           size: 12,
-                          weight: '500',
+                          weight: 'bold',
                         },
                       },
                     },
@@ -794,7 +794,6 @@ export function SmartDashboard() {
                       beginAtZero: true,
                       grid: {
                         color: '#F3F4F6',
-                        drawBorder: false,
                       },
                       border: {
                         display: false,
@@ -803,9 +802,9 @@ export function SmartDashboard() {
                         color: '#6B7280',
                         font: {
                           size: 12,
-                          weight: '500',
+                          weight: 'bold',
                         },
-                        callback: function(value) {
+                        callback: function (value) {
                           return formatCurrency(Number(value));
                         }
                       }
@@ -820,7 +819,7 @@ export function SmartDashboard() {
                         padding: 20,
                         font: {
                           size: 14,
-                          weight: '600',
+                          weight: 'bold',
                         },
                         color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#374151',
                       },
@@ -857,7 +856,7 @@ export function SmartDashboard() {
           </CardHeader>
           <CardContent>
             <div className="h-80">
-              <Doughnut 
+              <Doughnut
                 data={categoryChartData}
                 options={{
                   responsive: true,
@@ -872,10 +871,10 @@ export function SmartDashboard() {
                         padding: 15,
                         font: {
                           size: 13,
-                          weight: '500',
+                          weight: 'bold',
                         },
                         color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#374151',
-                        generateLabels: function(chart) {
+                        generateLabels: function (chart) {
                           const data = chart.data;
                           if (data.labels?.length && data.datasets.length) {
                             return data.labels.map((label, i) => ({
@@ -902,7 +901,7 @@ export function SmartDashboard() {
                       displayColors: true,
                       usePointStyle: true,
                       callbacks: {
-                        label: function(context) {
+                        label: function (context) {
                           const value = context.parsed;
                           const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
                           const percentage = ((value / total) * 100).toFixed(1);
@@ -937,7 +936,7 @@ export function SmartDashboard() {
           <CardContent>
             <div className="space-y-4">
               {Object.entries(categoryStats)
-                .sort(([,a], [,b]) => b.purchasedValue - a.purchasedValue)
+                .sort(([, a], [, b]) => b.purchasedValue - a.purchasedValue)
                 .map(([category, data]) => (
                   <div key={category} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
                     <div className="flex justify-between items-start mb-2">
@@ -978,7 +977,7 @@ export function SmartDashboard() {
           <CardContent>
             <div className="space-y-4">
               {Object.entries(storeStats)
-                .sort(([,a], [,b]) => b.purchasedValue - a.purchasedValue)
+                .sort(([, a], [, b]) => b.purchasedValue - a.purchasedValue)
                 .map(([store, data]) => (
                   <div key={store} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
                     <div className="flex justify-between items-start mb-2">

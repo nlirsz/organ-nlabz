@@ -1,7 +1,6 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { geminiWrapper } from './api-wrapper.js';
-import Anthropic from '@anthropic-ai/sdk';
+
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -23,7 +22,7 @@ export async function extractProductFromImage(
   imageBase64: string,
   mimeType: string = 'image/png'
 ): Promise<VisionProductResult> {
-  
+
   if (!GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY não configurada");
   }
@@ -64,7 +63,7 @@ IMPORTANTE: Responda APENAS com o JSON, sem markdown ou texto adicional.
 
   try {
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ 
+    const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash-latest",
       generationConfig: {
         temperature: 0.1,
@@ -80,7 +79,7 @@ IMPORTANTE: Responda APENAS com o JSON, sem markdown ou texto adicional.
     };
 
     console.log(`[Vision] 🤖 Enviando para Gemini Vision...`);
-    
+
     const result = await model.generateContent([prompt, imagePart]);
     const response = result.response;
     const text = response.text();
@@ -101,8 +100,8 @@ IMPORTANTE: Responda APENAS com o JSON, sem markdown ou texto adicional.
     let price: number | null = null;
     if (productData.price !== null && productData.price !== undefined) {
       const priceStr = String(productData.price).replace(/[^\d.,]/g, '');
-      const normalized = priceStr.includes(',') 
-        ? priceStr.replace(/\./g, '').replace(',', '.') 
+      const normalized = priceStr.includes(',')
+        ? priceStr.replace(/\./g, '').replace(',', '.')
         : priceStr;
       const priceNum = parseFloat(normalized);
       if (!isNaN(priceNum) && priceNum >= 1 && priceNum < 1000000) {
@@ -147,7 +146,7 @@ export async function cropProductImage(
   imageBase64: string,
   mimeType: string = 'image/png'
 ): Promise<string> {
-  
+
   console.log(`[Vision Crop] ✂️ Tentando crop automático...`);
 
   const prompt = `
@@ -172,7 +171,7 @@ APENAS JSON, sem texto adicional.
 
   try {
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ 
+    const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash-latest",
       generationConfig: {
         temperature: 0.1,
@@ -189,7 +188,7 @@ APENAS JSON, sem texto adicional.
 
     const result = await model.generateContent([prompt, imagePart]);
     const text = result.response.text().trim();
-    
+
     let cleanText = text.replace(/```json\n?/, '').replace(/\n?```$/, '');
     const cropData = JSON.parse(cleanText);
 

@@ -262,7 +262,7 @@ export class RateLimitService extends EventEmitter {
       // Executa com timeout
       const result = await Promise.race([
         fn(...args),
-        new Promise<never>((_, reject) => 
+        new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error(`Timeout após ${config.timeoutMs}ms`)), config.timeoutMs)
         )
       ]);
@@ -318,7 +318,7 @@ export class RateLimitService extends EventEmitter {
       if (shouldRetry) {
         const backoffDelay = this.calculateBackoffDelay(retryCount);
         console.log(`[RateLimit] 🔄 ${apiName}: Retry em ${backoffDelay}ms (tentativa ${retryCount + 1})`);
-        
+
         await new Promise(resolve => setTimeout(resolve, backoffDelay));
         return this.executeWithRetry(apiName, fn, args, retryCount + 1);
       }
@@ -381,7 +381,7 @@ export class RateLimitService extends EventEmitter {
     ];
 
     const errorMessage = error.message?.toLowerCase() || '';
-    const isNonRetriable = nonRetriableErrors.some(errorType => 
+    const isNonRetriable = nonRetriableErrors.some(errorType =>
       errorMessage.includes(errorType)
     );
 
@@ -403,7 +403,7 @@ export class RateLimitService extends EventEmitter {
       '504'
     ];
 
-    return retriableErrors.some(errorType => 
+    return retriableErrors.some(errorType =>
       errorMessage.includes(errorType)
     );
   }
@@ -413,7 +413,7 @@ export class RateLimitService extends EventEmitter {
     const baseDelay = 1000; // 1 segundo
     const maxDelay = 16000; // 16 segundos
     const delay = Math.min(baseDelay * Math.pow(2, retryCount), maxDelay);
-    
+
     // Adiciona jitter para evitar thundering herd
     const jitter = Math.random() * 0.3 * delay;
     return Math.floor(delay + jitter);
@@ -428,9 +428,9 @@ export class RateLimitService extends EventEmitter {
     }
 
     // Verifica se pode processar próximo request
-    const canProceed = this.checkRateLimits(apiName) && 
-                      stats.currentConcurrent < this.configs.get(apiName)!.maxConcurrent &&
-                      stats.circuitState !== 'open';
+    const canProceed = this.checkRateLimits(apiName) &&
+      stats.currentConcurrent < this.configs.get(apiName)!.maxConcurrent &&
+      stats.circuitState !== 'open';
 
     if (!canProceed) {
       return;
@@ -447,11 +447,11 @@ export class RateLimitService extends EventEmitter {
       // Reconstrói a função original (isso é uma simplificação)
       // Na implementação real, você precisa passar a função original
       console.log(`[RateLimit] 📥 ${apiName}: Processando request da queue`);
-      
+
       // Aqui você executaria a função original com os argumentos salvos
       // Como isso é complexo de implementar genericamente, 
       // vamos usar um sistema de callbacks registrados por API
-      
+
     } catch (error) {
       nextRequest.reject(error);
     }
@@ -460,12 +460,12 @@ export class RateLimitService extends EventEmitter {
   private startCleanupIntervals(): void {
     // Limpa estatísticas antigas a cada 5 minutos
     setInterval(() => {
-      for (const [apiName, requestTimes] of this.requestTimes.entries()) {
+      this.requestTimes.forEach((requestTimes, apiName) => {
         const oneHourAgo = Date.now() - 3600000;
         const recentTimes = requestTimes.filter(time => time > oneHourAgo);
         requestTimes.length = 0;
         requestTimes.push(...recentTimes);
-      }
+      });
     }, 300000); // 5 minutos
 
     // Log de estatísticas a cada 10 minutos
@@ -481,7 +481,7 @@ export class RateLimitService extends EventEmitter {
         .reduce((sum, stat) => sum + stat.totalCost, 0);
 
       const maxDailyCost = parseFloat(process.env.MAX_DAILY_COST || '10'); // $10 por dia
-      
+
       if (totalCost > maxDailyCost) {
         console.error(`[RateLimit] 🚨 EMERGÊNCIA: Custo total excedeu $${maxDailyCost} hoje ($${totalCost.toFixed(2)})`);
         this.emergencyStop = true;
@@ -493,12 +493,12 @@ export class RateLimitService extends EventEmitter {
   /**
    * MÉTODOS PÚBLICOS PARA MONITORAMENTO
    */
-  
+
   getStats(apiName?: string): APIStats | Record<string, APIStats> {
     if (apiName) {
       return this.stats.get(apiName) || {} as APIStats;
     }
-    
+
     const allStats: Record<string, APIStats> = {};
     for (const [name, stats] of this.stats.entries()) {
       allStats[name] = { ...stats };
@@ -538,12 +538,12 @@ export class RateLimitService extends EventEmitter {
 
   private logStats(): void {
     console.log('\n[RateLimit] 📊 === RELATÓRIO DE ESTATÍSTICAS ===');
-    
+
     for (const [apiName, stats] of this.stats.entries()) {
-      const successRate = stats.totalRequests > 0 
+      const successRate = stats.totalRequests > 0
         ? ((stats.successfulRequests / stats.totalRequests) * 100).toFixed(1)
         : '0';
-        
+
       console.log(`
 ${apiName.toUpperCase()}:
   📈 Requests: ${stats.totalRequests} (${stats.successfulRequests} ok, ${stats.failedRequests} fail)
@@ -555,7 +555,7 @@ ${apiName.toUpperCase()}:
   🔌 Circuit: ${stats.circuitState}
       `);
     }
-    
+
     console.log(`💰 CUSTO TOTAL DO DIA: $${this.getTotalCost().toFixed(4)}`);
     console.log('=======================================\n');
   }

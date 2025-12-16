@@ -1,5 +1,7 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+type UnauthorizedBehavior = "returnNull" | "throw";
+
 // Global 401 handler function
 let onUnauthorizedCallback: (() => void) | null = null;
 
@@ -157,61 +159,61 @@ export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const authToken = localStorage.getItem("authToken");
-    const headers: Record<string, string> = {};
+    async ({ queryKey }) => {
+      const authToken = localStorage.getItem("authToken");
+      const headers: Record<string, string> = {};
 
-    if (authToken) {
-      headers["x-auth-token"] = authToken;
-    }
-
-    const res = await fetch(String(queryKey[0]), {
-      headers,
-      credentials: "include",
-    });
-
-    // Handle 401 with token refresh and retry
-    if (res.status === 401) {
-      if (unauthorizedBehavior === "returnNull") {
-        return null;
+      if (authToken) {
+        headers["x-auth-token"] = authToken;
       }
 
-      console.log("🔑 401 in query - attempting token refresh");
+      const res = await fetch(String(queryKey[0]), {
+        headers,
+        credentials: "include",
+      });
 
-      // Try to refresh token
-      const newTokens = await refreshToken();
+      // Handle 401 with token refresh and retry
+      if (res.status === 401) {
+        if (unauthorizedBehavior === "returnNull") {
+          return null;
+        }
 
-      if (newTokens) {
-        console.log("✅ Token refreshed, retrying query");
-        // Retry the request with new token
-        const retryHeaders: Record<string, string> = {};
-        retryHeaders["x-auth-token"] = newTokens.accessToken;
+        console.log("🔑 401 in query - attempting token refresh");
 
-        const retryRes = await fetch(String(queryKey[0]), {
-          headers: retryHeaders,
-          credentials: "include",
-        });
+        // Try to refresh token
+        const newTokens = await refreshToken();
 
-        await throwIfResNotOk(retryRes, true);
-        return await retryRes.json();
-      } else {
-        console.log("❌ Token refresh failed in query");
-        // Clear auth data and trigger logout
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("userId");
-        localStorage.removeItem("username");
+        if (newTokens) {
+          console.log("✅ Token refreshed, retrying query");
+          // Retry the request with new token
+          const retryHeaders: Record<string, string> = {};
+          retryHeaders["x-auth-token"] = newTokens.accessToken;
 
-        // Call global unauthorized handler
-        if (onUnauthorizedCallback) {
-          onUnauthorizedCallback();
+          const retryRes = await fetch(String(queryKey[0]), {
+            headers: retryHeaders,
+            credentials: "include",
+          });
+
+          await throwIfResNotOk(retryRes, true);
+          return await retryRes.json();
+        } else {
+          console.log("❌ Token refresh failed in query");
+          // Clear auth data and trigger logout
+          localStorage.removeItem("authToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("userId");
+          localStorage.removeItem("username");
+
+          // Call global unauthorized handler
+          if (onUnauthorizedCallback) {
+            onUnauthorizedCallback();
+          }
         }
       }
-    }
 
-    await throwIfResNotOk(res);
-    return await res.json();
-  };
+      await throwIfResNotOk(res);
+      return await res.json();
+    };
 
 export const queryClient = new QueryClient({
   defaultOptions: {

@@ -53,8 +53,8 @@ export function EditProductWithPaymentModal({
     category: product.category || 'Outros',
     brand: product.brand || '',
     tags: product.tags || '',
-    quantity: product.quantity?.toString() || '1', // Novo campo
-    unitPrice: product.unitPrice?.toString() || product.price || '', // Novo campo
+    quantity: (product as any).quantity?.toString() || '1', // Novo campo
+    unitPrice: (product as any).unitPrice?.toString() || product.price || '', // Novo campo
   });
 
   const [paymentForm, setPaymentForm] = useState({
@@ -90,8 +90,8 @@ export function EditProductWithPaymentModal({
         category: product.category || 'Outros',
         brand: product.brand || '',
         tags: product.tags || '',
-        quantity: product.quantity?.toString() || '1', // Definir valor inicial
-        unitPrice: product.unitPrice?.toString() || product.price || '', // Definir valor inicial
+        quantity: (product as any).quantity?.toString() || '1', // Definir valor inicial
+        unitPrice: (product as any).unitPrice?.toString() || product.price || '', // Definir valor inicial
       });
 
       if (paymentData) {
@@ -304,15 +304,13 @@ export function EditProductWithPaymentModal({
 
         {/* Alerta de Problemas */}
         {hasAnyIssues(product) && (
-          <div className={`p-4 rounded-lg border-l-4 ${
-            hasCriticalIssues(product)
+          <div className={`p-4 rounded-lg border-l-4 ${hasCriticalIssues(product)
               ? 'bg-red-50 border-red-400 text-red-800'
               : 'bg-yellow-50 border-yellow-400 text-yellow-800'
-          }`}>
+            }`}>
             <div className="flex items-start">
-              <AlertTriangle className={`w-5 h-5 mr-2 mt-0.5 ${
-                hasCriticalIssues(product) ? 'text-red-500' : 'text-yellow-500'
-              }`} />
+              <AlertTriangle className={`w-5 h-5 mr-2 mt-0.5 ${hasCriticalIssues(product) ? 'text-red-500' : 'text-yellow-500'
+                }`} />
               <div>
                 <h4 className="font-semibold mb-2">
                   Problemas Detectados na Extração Automática

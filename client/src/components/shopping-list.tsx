@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Product } from "@shared/schema";
+import type { SelectProduct } from "@shared/schema";
 
 interface ShoppingListProps {
-  products: Product[];
+  products: SelectProduct[];
   isLoading: boolean;
   onProductUpdated: () => void;
 }
@@ -35,9 +35,9 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
     );
   }
 
-  const filteredProducts = useMemo(() => {
+  const filteredSelectProducts = useMemo(() => {
     if (!Array.isArray(products)) return [];
-    
+
     return products.filter(product =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.store?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -58,10 +58,10 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
   }, [products, searchTerm, sortBy, sortOrder]);
 
   const totalValue = useMemo(() => {
-    return filteredProducts.reduce((sum, product) => {
+    return filteredSelectProducts.reduce((sum, product) => {
       return sum + (product.price ? parseFloat(product.price) : 0);
     }, 0);
-  }, [filteredProducts]);
+  }, [filteredSelectProducts]);
 
   const handleSort = useCallback((newSortBy: "name" | "price" | "date") => {
     if (sortBy === newSortBy) {
@@ -143,7 +143,7 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
         {/* Summary */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-4 border-t">
           <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Mostrando {filteredProducts.length} de {products.length} produtos
+            Mostrando {filteredSelectProducts.length} de {products.length} produtos
           </div>
           <div className="text-lg font-semibold" style={{ color: 'var(--primary-action)' }}>
             Total: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
@@ -151,8 +151,8 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
         </div>
       </div>
 
-      {/* Products Grid */}
-      {filteredProducts.length === 0 ? (
+      {/* SelectProducts Grid */}
+      {filteredSelectProducts.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-16 h-16 mx-auto mb-4 neomorphic-card rounded-full flex items-center justify-center">
             <ShoppingCart className="w-8 h-8" style={{ color: 'var(--text-secondary)' }} />
@@ -166,7 +166,7 @@ export function ShoppingList({ products, isLoading, onProductUpdated }: Shopping
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((product) => (
+          {filteredSelectProducts.map((product) => (
             <ProductCard
               key={`${product.id}-${product.updatedAt || product.createdAt}`}
               product={product}

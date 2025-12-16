@@ -28,9 +28,9 @@ export interface APIError extends Error {
 
 // Helper para criar erros de API padronizados
 export function createAPIError(
-  message: string, 
-  code?: string, 
-  status?: number, 
+  message: string,
+  code?: string,
+  status?: number,
   isRetriable: boolean = false,
   apiName?: string
 ): APIError {
@@ -48,7 +48,7 @@ export function createAPIError(
  */
 export class GeminiAPIWrapper {
   private static instance: GeminiAPIWrapper;
-  
+
   static getInstance(): GeminiAPIWrapper {
     if (!GeminiAPIWrapper.instance) {
       GeminiAPIWrapper.instance = new GeminiAPIWrapper();
@@ -57,7 +57,7 @@ export class GeminiAPIWrapper {
   }
 
   async generateContent(
-    prompt: string, 
+    prompt: string,
     options: {
       model?: string;
       temperature?: number;
@@ -80,7 +80,7 @@ export class GeminiAPIWrapper {
 
     const geminiCall = async () => {
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
-      
+
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
         throw createAPIError(
@@ -93,7 +93,7 @@ export class GeminiAPIWrapper {
       }
 
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ 
+      const model = genAI.getGenerativeModel({
         model: options.model || "gemini-1.5-flash",
         generationConfig: {
           temperature: options.temperature || 0.1,
@@ -106,7 +106,7 @@ export class GeminiAPIWrapper {
         console.log(`[GeminiWrapper] 📤 Enviando prompt (${prompt.length} chars)`);
         const result = await model.generateContent(prompt);
         const response = result.response;
-        
+
         if (!response || !response.text()) {
           throw createAPIError(
             'Resposta vazia do Gemini AI',
@@ -119,9 +119,9 @@ export class GeminiAPIWrapper {
 
         const text = response.text();
         console.log(`[GeminiWrapper] 📥 Resposta recebida (${text.length} chars)`);
-        
-        return { response: { text: () => text }, usage: result.usage };
-        
+
+        return { response: { text: () => text }, usage: (result as any).usage };
+
       } catch (error: any) {
         // Classifica erros para retry logic
         if (error.message?.includes('API_KEY')) {
@@ -133,7 +133,7 @@ export class GeminiAPIWrapper {
             'gemini'
           );
         }
-        
+
         if (error.message?.includes('QUOTA_EXCEEDED')) {
           throw createAPIError(
             'Quota do Gemini excedida',
@@ -143,7 +143,7 @@ export class GeminiAPIWrapper {
             'gemini'
           );
         }
-        
+
         if (error.message?.includes('RATE_LIMIT')) {
           throw createAPIError(
             'Rate limit do Gemini atingido',
@@ -196,7 +196,7 @@ export class GeminiAPIWrapper {
 
     } catch (error: any) {
       console.error(`[${config.name}Wrapper] ❌ Erro:`, error.message);
-      
+
       // Se tem fallback configurado e erro não é crítico
       if (config.fallbackResponse && error.isRetriable !== false) {
         console.log(`[${config.name}Wrapper] 🔄 Usando resposta fallback`);
@@ -213,7 +213,7 @@ export class GeminiAPIWrapper {
  */
 export class AnyCrawlAPIWrapper {
   private static instance: AnyCrawlAPIWrapper;
-  
+
   static getInstance(): AnyCrawlAPIWrapper {
     if (!AnyCrawlAPIWrapper.instance) {
       AnyCrawlAPIWrapper.instance = new AnyCrawlAPIWrapper();
@@ -245,7 +245,7 @@ export class AnyCrawlAPIWrapper {
 
     const anyCrawlCall = async () => {
       const axios = (await import('axios')).default;
-      
+
       const apiKey = process.env.ANYCRAWL_API_KEY;
       if (!apiKey) {
         throw createAPIError(
@@ -273,9 +273,9 @@ export class AnyCrawlAPIWrapper {
         for (const endpoint of endpoints) {
           try {
             console.log(`[AnyCrawlWrapper] 🔗 Tentando endpoint: ${endpoint}`);
-            
+
             const response = await axios.post(endpoint, {
-          url: url,
+              url: url,
               extract_metadata: options.extractMetadata !== false,
               screenshot: options.screenshot || false,
               wait_for: options.waitFor || 'networkidle',
@@ -290,7 +290,7 @@ export class AnyCrawlAPIWrapper {
             });
 
             const result = response.data;
-            
+
             if (!result.success && !result.data) {
               console.log(`[AnyCrawlWrapper] ⚠️ Endpoint ${endpoint} retornou erro, tentando próximo...`);
               lastError = new Error(result.error || 'Falha no scraping');
@@ -299,9 +299,9 @@ export class AnyCrawlAPIWrapper {
 
             console.log(`[AnyCrawlWrapper] ✅ Scraping concluído com ${endpoint}`);
             console.log(`[AnyCrawlWrapper] 💰 Créditos usados: ${result.credits_used || 'N/A'}`);
-            
+
             return result;
-            
+
           } catch (endpointError: any) {
             lastError = endpointError;
             console.log(`[AnyCrawlWrapper] ⚠️ Falha em ${endpoint}: ${endpointError.message}`);
@@ -311,7 +311,7 @@ export class AnyCrawlAPIWrapper {
 
         // Se chegou aqui, todos os endpoints falharam
         throw lastError || new Error('Todos os endpoints AnyCrawl falharam');
-        
+
       } catch (error: any) {
         if (error.response?.status === 402) {
           throw createAPIError(
@@ -322,7 +322,7 @@ export class AnyCrawlAPIWrapper {
             'anycrawl'
           );
         }
-        
+
         if (error.response?.status === 401) {
           throw createAPIError(
             'API Key AnyCrawl inválida',
@@ -390,7 +390,7 @@ export class AnyCrawlAPIWrapper {
  */
 export class PlaywrightAPIWrapper {
   private static instance: PlaywrightAPIWrapper;
-  
+
   static getInstance(): PlaywrightAPIWrapper {
     if (!PlaywrightAPIWrapper.instance) {
       PlaywrightAPIWrapper.instance = new PlaywrightAPIWrapper();
@@ -421,14 +421,14 @@ export class PlaywrightAPIWrapper {
 
     const playwrightCall = async () => {
       const { chromium } = await import('playwright');
-      
+
       let browser;
       try {
-        browser = await chromium.launch({ 
+        browser = await chromium.launch({
           headless: true,
           args: [
-            '--no-sandbox', 
-            '--disable-setuid-sandbox', 
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-web-security',
             '--disable-features=VizDisplayCompositor',
@@ -456,9 +456,9 @@ export class PlaywrightAPIWrapper {
         });
 
         console.log(`[PlaywrightWrapper] 🌐 Navegando para: ${url}`);
-        await page.goto(url, { 
+        await page.goto(url, {
           waitUntil: 'domcontentloaded',
-          timeout: config.timeout 
+          timeout: config.timeout
         });
 
         // Aguarda conteúdo dinâmico carregar
@@ -507,7 +507,7 @@ export class PlaywrightAPIWrapper {
       );
     } catch (error: any) {
       console.error(`[${config.name}Wrapper] ❌ Erro:`, error.message);
-      
+
       // Para Playwright, fornece fallback básico
       if (config.name === 'playwright') {
         throw createAPIError(
@@ -518,7 +518,7 @@ export class PlaywrightAPIWrapper {
           'playwright'
         );
       }
-      
+
       throw error;
     }
   }

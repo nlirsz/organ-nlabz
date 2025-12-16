@@ -15,9 +15,9 @@ import { APIWrapperFactory } from "./services/api-wrapper.js";
 
 // Type-safe wrapper for authenticated routes that properly handles Express compatibility
 const withAuth = <T = any>(
-  handler: (req: Request, res: Response, next?: NextFunction) => Promise<T> | T
+  handler: (req: any, res: Response, next?: NextFunction) => Promise<T> | T
 ): express.RequestHandler => {
-  return handler;
+  return handler as unknown as express.RequestHandler;
 };
 
 // Rate limiting middleware for scraping endpoints
@@ -248,11 +248,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/auth/me", authenticateToken, withAuth(async (req: AuthenticatedRequest, res: Response) => {
+  app.get("/api/auth/me", authenticateToken, withAuth(async (req: Request, res: Response) => {
     try {
+      const authReq = req as AuthenticatedRequest;
       res.json({
-        userId: req.user.userId,
-        username: req.user.username
+        userId: authReq.user.userId,
+        username: authReq.user.username
       });
     } catch (error) {
       res.status(500).json({ error: "Erro interno do servidor" });

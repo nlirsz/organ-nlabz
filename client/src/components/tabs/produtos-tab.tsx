@@ -166,8 +166,8 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
     .filter(p => {
       if (!searchTerm) return true;
       return p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             p.store?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             p.description?.toLowerCase().includes(searchTerm.toLowerCase());
+        p.store?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.description?.toLowerCase().includes(searchTerm.toLowerCase());
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -178,23 +178,25 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
           const priceB = b.price ? Number(b.price) : 0;
           return priceA - priceB;
         case "date":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return timeB - timeA;
         default:
           return 0;
       }
     });
 
-    const allTags = [...new Set(
-      products?.flatMap(product => 
-        product.tags ? product.tags.split(", ").map(tag => tag.trim()).filter(Boolean) : []
-      ) || []
-    )];
+  const allTags = [...new Set(
+    products?.flatMap(product =>
+      product.tags ? product.tags.split(", ").map(tag => tag.trim()).filter(Boolean) : []
+    ) || []
+  )];
 
-    // Aplicar filtros de tags aos produtos já filtrados
+  // Aplicar filtros de tags aos produtos já filtrados
   const finalFilteredProducts = filteredProducts.filter(product => {
     if (selectedTags.length === 0) return true;
 
-    const productTags = product.tags ? 
+    const productTags = product.tags ?
       product.tags.split(",").map(tag => tag.trim()).filter(Boolean) : [];
 
     return selectedTags.every(tag => productTags.includes(tag));
@@ -280,11 +282,10 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
             <button
               key={value}
               onClick={() => setSortBy(value)}
-              className={`neomorphic-button text-sm ${
-                sortBy === value 
-                  ? 'bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700' 
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              } border border-gray-200 dark:border-gray-600`}
+              className={`neomorphic-button text-sm ${sortBy === value
+                ? 'bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-700'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                } border border-gray-200 dark:border-gray-600`}
               data-testid={`button-sort-${value}`}
               aria-label={`Ordenar por ${label}`}
               aria-pressed={sortBy === value}
@@ -294,11 +295,11 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
             </button>
           ))}
         </div>
-          <TagsFilter
-            availableTags={allTags}
-            selectedTags={selectedTags}
-            onTagsChange={setSelectedTags}
-            productsCount={finalFilteredProducts.length}
+        <TagsFilter
+          availableTags={allTags}
+          selectedTags={selectedTags}
+          onTagsChange={setSelectedTags}
+          productsCount={finalFilteredProducts.length}
         />
       </div>
 
@@ -310,7 +311,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
             Nenhum produto encontrado
           </h3>
           <p className="text-gray-600 dark:text-gray-400" data-testid="text-empty-description">
-            {products.length === 0 
+            {products.length === 0
               ? "Adicione alguns produtos à sua lista para começar!"
               : "Tente ajustar os filtros para encontrar o que procura."
             }
@@ -374,7 +375,7 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
 
                 <div className="flex items-center justify-between">
                   <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400" data-testid={`product-price-${product.id}`}>
-                    {product.price ? 
+                    {product.price ?
                       new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(product.price))
                       : 'Preço não informado'
                     }
@@ -443,7 +444,8 @@ export function ProdutosTab({ refreshKey }: ProdutosTabProps) {
       <AdvancedSearch
         isOpen={isAdvancedSearchOpen}
         onClose={() => setIsAdvancedSearchOpen(false)}
-        onSearch={(term) => setSearchTerm(term)}
+        onSearch={(filters) => setSearchTerm(filters.query)}
+        onReset={() => setSearchTerm("")}
       />
 
       {editingProduct && (
