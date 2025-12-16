@@ -6,12 +6,10 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "build:netlify": "vite build",
     "build:vercel": "vite build",
     "start": "NODE_ENV=production node --dns-result-order=ipv4first dist/index.js",
     "check": "tsc",
-    "db:push": "drizzle-kit push",
-    "postinstall": "node scripts/build-on-render.js"
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

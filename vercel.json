@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm ci && npm run build:netlify",
+  "buildCommand": "npm ci && npm run build:vercel",
   "outputDirectory": "dist",
   "env": {
     "NODE_ENV": "production"
