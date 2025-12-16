@@ -8,6 +8,9 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,10 +34,7 @@ jobs:
           path: dist
 
       - name: Trigger Netlify deploy via API
-        if: secrets.NETLIFY_AUTH_TOKEN && secrets.NETLIFY_SITE_ID
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        if: ${{ env.NETLIFY_AUTH_TOKEN != '' && env.NETLIFY_SITE_ID != '' }}
         run: |
           echo "Triggering Netlify build for site $NETLIFY_SITE_ID"
           curl -s -X POST "https://api.netlify.com/api/v1/sites/${NETLIFY_SITE_ID}/builds" \
@@ -43,7 +43,7 @@ jobs:
             -d '{"clear_cache": true}' | jq -r
 
       - name: Show note if Netlify secrets missing
-        if: !secrets.NETLIFY_AUTH_TOKEN || !secrets.NETLIFY_SITE_ID
+        if: ${{ env.NETLIFY_AUTH_TOKEN == '' || env.NETLIFY_SITE_ID == '' }}
         run: |
           echo "NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID not configured as repo secrets." 
           echo "Add them in Settings → Secrets → Actions and re-run this workflow, or provide a Deploy Hook URL instead."
