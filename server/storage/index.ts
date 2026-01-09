@@ -6,7 +6,7 @@ let initializationPromise: Promise<IStorage> | null = null;
 
 async function initializeStorage(): Promise<IStorage> {
   console.log('🔄 Initializing storage...');
-  
+
   // If DATABASE_URL is missing in development, skip directly to MemStorage
   if (process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL) {
     console.warn('⚠️  DATABASE_URL not found in development, using MemStorage');
@@ -18,20 +18,20 @@ async function initializeStorage(): Promise<IStorage> {
   if (process.env.DATABASE_URL) {
     try {
       console.log('🔍 Attempting to initialize DatabaseStorage...');
-      
+
       // Dynamic import to avoid top-level database dependency crashes
       const { DatabaseStorage } = await import('./database');
       const dbStorage = new DatabaseStorage();
-      
+
       // Test database connection with a simple query with timeout and retries
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database connection timeout (15s) - database may be paused')), 15000)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Database connection timeout (8s) - database may be paused')), 8000)
       );
-      
+
       // Try to wake up the database with retries
       let retries = 3;
       let lastError;
-      
+
       while (retries > 0) {
         try {
           console.log(`🔌 Attempting database connection (${4 - retries}/3)...`);
@@ -49,16 +49,16 @@ async function initializeStorage(): Promise<IStorage> {
           }
         }
       }
-      
+
       if (retries === 0) {
         throw lastError;
       }
-      
+
       console.log('✅ DatabaseStorage initialized successfully');
       return dbStorage;
     } catch (error: any) {
       console.error('❌ DatabaseStorage initialization failed:', error.message);
-      
+
       if (process.env.NODE_ENV === 'development') {
         console.warn('⚠️  Database connection failed in development, falling back to MemStorage');
         console.warn('💡 If database is paused, it will auto-resume on next connection');
