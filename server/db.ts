@@ -6,13 +6,16 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is required');
 }
 
-// Clean the connection string (remove brackets if any)
-const connectionString = process.env.DATABASE_URL.replace(/\[|\]/g, '');
+// Clean the connection string (remove brackets if any and handle potential whitespace)
+const connectionString = process.env.DATABASE_URL.replace(/\[|\]/g, '').trim();
 console.log('[DB] Connecting to database...');
 
 const pool = new pg.Pool({
   connectionString,
   ssl: { rejectUnauthorized: false },
+  max: 10, // Limit connections in serverless
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 });
 
 // Disable prepare for compatibility with connection poolers

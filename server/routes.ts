@@ -76,7 +76,7 @@ const rateLimitScraping = async (req: any, res: any, next: any) => {
   }
 };
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function setupRoutes(app: Express) {
 
   // Enhanced health check with rate limiting information
   app.get("/api/health", async (req, res) => {
